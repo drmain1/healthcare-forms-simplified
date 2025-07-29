@@ -1,0 +1,45 @@
+/* ================================
+   Main CSS Entry Point - CLEAN SLATE
+   Design system foundation with minimal imports
+   ================================ */
+
+/* Import design system foundation */
+@import './base/_variables.css';
+@import './base/_reset.css';
+@import './base/_typography.css';
+
+/* Separate CSS files for different contexts */
+/* These will be imported conditionally by components */
+/* @import './form-builder-styles.css'; */ /* For form builder only */
+/* @import './form-viewer-styles.css'; */  /* For form viewer only */
+
+/* Basic utility classes only */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Loading spinner - minimal */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Compatibility layer for Tailwind integration */
+@import './compatibility.css';
+
+/* Form Builder Specific Styles */
+.svc-creator {
+  height: 100vh;
+}

@@ -1,0 +1,29 @@
+/* Ensure MUI and Tailwind play nice */
+.MuiPaper-root {
+  /* Preserve MUI paper styling */
+}
+
+.sv-container {
+  /* Preserve SurveyJS container styling */
+}
+
+/* Scoped Tailwind usage */
+.tw-layout {
+  /* Use this class to enable Tailwind in specific areas */
+}
+
+/* Prevent Tailwind from affecting SurveyJS components */
+.sv-root-modern *,
+.sv-root-default-v2 *,
+.sv-root-default * {
+  /* Ensure SurveyJS styles take precedence */
+  all: revert-layer;
+}
+
+/* Prevent Tailwind from affecting MUI dialogs and modals */
+.MuiDialog-root *,
+.MuiModal-root *,
+.MuiPopover-root * {
+  /* Ensure MUI styles take precedence in overlays */
+  all: revert-layer;
+}

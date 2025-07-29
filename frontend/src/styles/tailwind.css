@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom utility classes that don't conflict */
+@layer utilities {
+  .tw-safe-area {
+    @apply tw-p-4;
+  }
+}

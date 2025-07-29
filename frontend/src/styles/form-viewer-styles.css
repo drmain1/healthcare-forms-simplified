@@ -1,0 +1,145 @@
+/* ================================
+   Form Viewer Specific Styles
+   Uses standard SurveyJS theme
+   ================================ */
+
+/* 
+   This file is for Form Viewer (patient-facing) specific customizations only.
+   By default, we use the standard SurveyJS theme.
+   Add custom styles here as needed.
+*/
+
+/* Example: Container padding for patient forms */
+/* .patient-form-view { */
+  /* Standard SurveyJS styles will apply */
+  /* padding: 20px; */
+  /* max-width: 800px; */
+  /* margin: 0 auto; */
+/* } */
+
+/* ================================
+   Patient Demographics Icons
+   For form viewer (patient-facing)
+   ================================ */
+
+/* Remove pseudo-element approach as it's causing alignment issues */
+/* Icons will be handled by background images below */
+
+/* Adjust input padding to make room for icons */
+/* [data-name="first_name"] input,
+[data-name="last_name"] input,
+[data-name="phone_number"] input,
+[data-name="secondary_phone"] input,
+[data-name="email"] input,
+[data-name="street_address"] input,
+[data-name="city"] input,
+[data-name="zip_code"] input {
+  padding-left: 40px !important;
+} */
+
+/* Dropdown value padding for state and sex fields */
+/* [data-name="state"] .sv-dropdown__value,
+[data-name="sex_at_birth"] .sv-dropdown__value {
+  padding-left: 40px !important;
+} */
+
+/* Style improvements for demographics panel */
+/* [data-name="patient_demographics"] {
+  background-color: #fafafa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+} */
+
+/* [data-name="patient_demographics"] .sv-panel__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+} */
+
+/* ================================
+   Panelless View Styles
+   ================================ */
+
+/* Remove panel borders and shadows in panelless mode */
+/* .sv-body--panelless .sv-panel {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+} */
+
+/* Ensure questions have proper spacing in panelless mode */
+/* .sv-body--panelless .sv-question {
+  margin-bottom: 24px;
+} */
+
+/* Remove question numbers in panelless mode */
+/* .sv-body--panelless .sv-question__num {
+  display: none;
+} */
+
+/* Clean title styling for panelless mode */
+/* .sv-body--panelless .sv-title {
+  border: none;
+  padding: 0;
+  margin-bottom: 16px;
+} */
+
+/* Alternative approach: Add icons as background to inputs if pseudo-elements don't work */
+/* [data-name="first_name"] input,
+[data-name="last_name"] input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+} */
+
+/* [data-name="phone_number"] input,
+[data-name="secondary_phone"] input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+} */
+
+/* [data-name="email"] input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+} */
+
+/* [data-name="street_address"] input,
+[data-name="city"] input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+} */
+
+/* [data-name="zip_code"] input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+} */
+
+/* State dropdown with location icon */
+/* [data-name="state"] .sv-dropdown {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+  padding-left: 40px !important;
+} */
+
+/* Sex at birth dropdown with gender icon */
+/* [data-name="sex_at_birth"] .sv-dropdown {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+  padding-left: 40px !important;
+} */

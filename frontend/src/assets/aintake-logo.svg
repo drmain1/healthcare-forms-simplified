@@ -1,0 +1,36 @@
+<svg viewBox="0 0 350 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle for icon -->
+  <circle cx="50" cy="50" r="35" fill="#3B82F6" opacity="0.1"/>
+  
+  <!-- Clipboard base -->
+  <rect x="35" y="30" width="30" height="40" rx="3" fill="#3B82F6"/>
+  
+  <!-- Clipboard clip -->
+  <rect x="45" y="25" width="10" height="8" rx="2" fill="#60A5FA"/>
+  
+  <!-- Paper on clipboard -->
+  <rect x="39" y="35" width="22" height="30" rx="1" fill="white"/>
+  
+  <!-- Checkmarks on paper -->
+  <path d="M43 42 L45 44 L49 40" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 48 L45 50 L49 46" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 54 L45 56 L49 52" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Heart accent -->
+  <path d="M55 38 C55 36 53 34 51 34 C49 34 47 36 47 38 C47 36 45 34 43 34 C41 34 39 36 39 38 C39 42 47 46 47 46 C47 46 55 42 55 38 Z" fill="#EF4444" opacity="0.8" transform="translate(15, -8) scale(0.7)"/>
+  
+  <!-- Text: "easydocforms" -->
+  <text x="90" y="58" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#1F2937">
+    <tspan fill="#10B981">easy</tspan><tspan fill="#3B82F6">doc</tspan><tspan fill="#1F2937">forms</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="90" y="72" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">
+    medical forms made simple
+  </text>
+  
+  <!-- Decorative dots -->
+  <circle cx="310" cy="30" r="3" fill="#60A5FA" opacity="0.3"/>
+  <circle cx="320" cy="40" r="2" fill="#10B981" opacity="0.3"/>
+  <circle cx="315" cy="50" r="2.5" fill="#EF4444" opacity="0.3"/>
+</svg>

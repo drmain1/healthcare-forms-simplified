@@ -11,26 +11,24 @@ app = None
 
 try:
     if not firebase_admin._apps:
-        # Determine credentials
-        cred_path = Path(__file__).parent.parent / "healthcare-forms-v2-credentials.json"
-        
-        if cred_path.exists():
-            # Use service account file if it exists
-            cred = credentials.Certificate(str(cred_path))
-            app = firebase_admin.initialize_app(cred)
-        else:
-            # Fallback to Application Default Credentials (ADC)
-            # This is ideal for Cloud Run, Cloud Functions, and local dev with `gcloud auth`
-            try:
-                cred = credentials.ApplicationDefault()
+        # For Cloud Run, use Application Default Credentials
+        # This automatically uses the service account attached to the Cloud Run service
+        try:
+            # Try to initialize without credentials (uses ADC)
+            app = firebase_admin.initialize_app(options={
+                'projectId': os.environ.get('PROJECT_ID', 'healthcare-forms-v2')
+            })
+        except Exception as init_error:
+            # If that fails, try with explicit credentials file
+            cred_path = Path(__file__).parent.parent / "healthcare-forms-v2-credentials.json"
+            if cred_path.exists():
+                cred = credentials.Certificate(str(cred_path))
                 app = firebase_admin.initialize_app(cred)
-            except DefaultCredentialsError:
-                # This will be raised if ADC are not configured.
-                # Provide a helpful error message for developers.
+            else:
                 raise Exception(
-                    "Could not find Application Default Credentials. "
-                    "Please run 'gcloud auth application-default login' in your terminal "
-                    "or ensure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set."
+                    f"Failed to initialize Firebase: {init_error}. "
+                    "For local development, run 'gcloud auth application-default login' "
+                    "or provide healthcare-forms-v2-credentials.json"
                 )
     else:
         # If the app is already initialized, get the default app

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Optional
 from services.firebase_admin import verify_id_token
-from services.firestore import db
+from services.firebase_admin import db
 from datetime import datetime
 
 router = APIRouter()

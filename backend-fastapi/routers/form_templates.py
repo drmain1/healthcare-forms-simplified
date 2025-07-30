@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from models.form_template import FormTemplate
-from services.firestore import db
+from services.firebase_admin import db
 from services.auth import get_current_user
 
 router = APIRouter()

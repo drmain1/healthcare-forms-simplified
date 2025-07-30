@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from models.form import Form, FormCreate, FormUpdate
-from services.firestore import db
+from services.firebase_admin import db  # Use the unified Firestore client
 from services.auth import get_current_user
-from datetime import datetime
+from datetime import datetime, timezone  # Import timezone
 
 router = APIRouter()
 
@@ -21,8 +21,8 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
                 'uid': user["uid"],
                 'name': user.get("email", "My Organization"),
                 'email': user.get("email", ""),
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
+                'created_at': datetime.now(timezone.utc),
+                'updated_at': datetime.now(timezone.utc),
                 'settings': {
                     'hipaa_compliant': True,
                     'data_retention_days': 2555  # 7 years for HIPAA
@@ -34,8 +34,8 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
         form_dict = form_data.dict(exclude_unset=True, exclude={'category'})  # Exclude category for now
         form_dict['created_by'] = user["uid"]
         form_dict['organization_id'] = organization_id
-        form_dict['created_at'] = datetime.utcnow()
-        form_dict['updated_at'] = datetime.utcnow()
+        form_dict['created_at'] = datetime.now(timezone.utc)
+        form_dict['updated_at'] = datetime.now(timezone.utc)
         form_dict['updated_by'] = user["uid"]
         
         # Add to Firestore
@@ -96,7 +96,7 @@ def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_
         
         # Update only provided fields
         update_dict = form_update.dict(exclude_unset=True, exclude={'category'})
-        update_dict['updated_at'] = datetime.utcnow()
+        update_dict['updated_at'] = datetime.now(timezone.utc)
         update_dict['updated_by'] = user["uid"]
         
         doc_ref.update(update_dict)

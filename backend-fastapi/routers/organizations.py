@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.organization import Organization
-from services.firestore import db
+from services.firebase_admin import db
 from services.auth import get_current_user
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -19,8 +19,8 @@ def get_my_organization(user: dict = Depends(get_current_user)):
                 'uid': user["uid"],
                 'name': user.get("email", "My Organization"),
                 'email': user.get("email", ""),
-                'created_at': datetime.utcnow(),
-                'updated_at': datetime.utcnow(),
+                'created_at': datetime.now(timezone.utc),
+                'updated_at': datetime.now(timezone.utc),
                 'settings': {
                     'hipaa_compliant': True,
                     'data_retention_days': 2555  # 7 years for HIPAA
@@ -47,7 +47,7 @@ def update_my_organization(updates: dict, user: dict = Depends(get_current_user)
             raise HTTPException(status_code=404, detail="Organization not found")
         
         # Add update timestamp
-        updates['updated_at'] = datetime.utcnow()
+        updates['updated_at'] = datetime.now(timezone.utc)
         
         # Prevent updating critical fields
         protected_fields = ['uid', 'created_at', 'id']

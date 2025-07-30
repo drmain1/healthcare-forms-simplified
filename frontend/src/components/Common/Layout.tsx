@@ -32,7 +32,7 @@ import {
   Logout,
   LocalHospital,
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { useFirebaseAuth } from '../../contexts/FirebaseAuthContext';
@@ -41,9 +41,7 @@ import aintakeLogo from '../../assets/aintake-logo.svg';
 
 const drawerWidth = designTokens.spacing.drawerWidth;
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+interface LayoutProps {}
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -54,7 +52,7 @@ const menuItems = [
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
@@ -194,7 +192,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   if (isFormBuilder) {
     return (
       <Box className="tw-bg-surface-light tw-min-h-screen">
-        {children}
+        <Outlet />
       </Box>
     );
   }
@@ -320,7 +318,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           minHeight: 'calc(100vh - 64px)',
         }}
       >
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );

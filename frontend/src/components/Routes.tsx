@@ -36,29 +36,30 @@ const Settings: React.FC = () => (
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Public routes (no layout) */}
+      {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/forms/:formId/fill/:shareToken" element={<PublicFormFill />} />
-      
-      {/* Admin routes (with layout) */}
-      <Route path="/*" element={
-        <PrivateRoute>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/forms" element={<FormsList />} />
-              <Route path="/forms/create" element={<FormBuilder />} />
-              <Route path="/forms/:id/edit" element={<FormBuilder />} />
-              <Route path="/forms/:id/send" element={<FormSendSimplified />} />
-              <Route path="/forms/:formId/responses" element={<ResponsesList />} />
-              <Route path="/forms/:formId/responses/:responseId" element={<ResponseDetail />} />
-              <Route path="/patients" element={<Patients />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </Layout>
-        </PrivateRoute>
-      } />
+
+      {/* Private routes with Layout */}
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="forms" element={<FormsList />} />
+        <Route path="forms/create" element={<FormBuilder />} />
+        <Route path="forms/:id/edit" element={<FormBuilder />} />
+        <Route path="forms/:id/send" element={<FormSendSimplified />} />
+        <Route path="forms/:formId/responses" element={<ResponsesList />} />
+        <Route path="forms/:formId/responses/:responseId" element={<ResponseDetail />} />
+        <Route path="patients" element={<Patients />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
     </Routes>
   );
 };

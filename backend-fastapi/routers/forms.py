@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-from models.form import Form, FormCreate, FormUpdate
+from models.form import Form, FormCreate, FormUpdate, FormListResponse
 from services.firebase_admin import db  # Use the unified Firestore client
 from services.auth import get_current_user
 from datetime import datetime, timezone  # Import timezone
@@ -55,27 +55,21 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/forms/", response_model=List[Form], response_model_by_alias=False)
+@router.get("/forms/", response_model=FormListResponse, response_model_by_alias=False)
 def list_forms(user: dict = Depends(get_current_user)):
     try:
         organization_id = user["uid"]
-        print(f"LIST_FORMS: Querying forms for organization_id: {organization_id}")
-
+        
         forms = []
         docs = db.collection('forms').where("organization_id", "==", organization_id).stream()
         
-        doc_list = list(docs) # Consume the stream to count documents
-        print(f"LIST_FORMS: Found {len(doc_list)} forms for this organization.")
-
-        for doc in doc_list:
+        for doc in docs:
             form_data = doc.to_dict()
             form_data["_id"] = doc.id
             forms.append(Form(**form_data))
         
-        print(f"LIST_FORMS: Returning {len(forms)} forms in the response.")
-        return forms
+        return {"count": len(forms), "results": forms}
     except Exception as e:
-        print(f"LIST_FORMS: An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/forms/{form_id}", response_model=Form, response_model_by_alias=False, include_in_schema=False)

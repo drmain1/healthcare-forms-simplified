@@ -45,3 +45,8 @@ class Form(BaseModel):
             datetime: lambda v: v.isoformat()
         }
     )
+
+class FormListResponse(BaseModel):
+    """Paginated response for a list of forms"""
+    count: int
+    results: List[Form]

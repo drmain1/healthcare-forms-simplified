@@ -7,7 +7,7 @@ from datetime import datetime, timezone  # Import timezone
 
 router = APIRouter()
 
-@router.post("/forms/", response_model=Form)
+@router.post("/forms/", response_model=Form, response_model_by_alias=False)
 def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
     try:
         # In single-user model, organization_id == user_id
@@ -55,23 +55,31 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/forms/", response_model=List[Form])
+@router.get("/forms/", response_model=List[Form], response_model_by_alias=False)
 def list_forms(user: dict = Depends(get_current_user)):
     try:
-        # In single-user model, organization_id == user_id
         organization_id = user["uid"]
+        print(f"LIST_FORMS: Querying forms for organization_id: {organization_id}")
 
         forms = []
         docs = db.collection('forms').where("organization_id", "==", organization_id).stream()
-        for doc in docs:
+        
+        doc_list = list(docs) # Consume the stream to count documents
+        print(f"LIST_FORMS: Found {len(doc_list)} forms for this organization.")
+
+        for doc in doc_list:
             form_data = doc.to_dict()
-            form_data["_id"] = doc.id  # Use _id for the alias
+            form_data["_id"] = doc.id
             forms.append(Form(**form_data))
+        
+        print(f"LIST_FORMS: Returning {len(forms)} forms in the response.")
         return forms
     except Exception as e:
+        print(f"LIST_FORMS: An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/forms/{form_id}", response_model=Form)
+@router.get("/forms/{form_id}", response_model=Form, response_model_by_alias=False, include_in_schema=False)
+@router.get("/forms/{form_id}/", response_model=Form, response_model_by_alias=False)
 def get_form(form_id: str, user: dict = Depends(get_current_user)):
     try:
         doc = db.collection('forms').document(form_id).get()
@@ -83,7 +91,7 @@ def get_form(form_id: str, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/forms/{form_id}", response_model=Form)
+@router.put("/forms/{form_id}", response_model=Form, response_model_by_alias=False)
 def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_current_user)):
     try:
         doc_ref = db.collection('forms').document(form_id)

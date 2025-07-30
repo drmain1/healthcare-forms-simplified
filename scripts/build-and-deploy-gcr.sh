@@ -47,7 +47,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --cpu 1 \
   --max-instances 10 \
   --min-instances 0 \
-  --set-env-vars "PROJECT_ID=${PROJECT_ID},GOOGLE_APPLICATION_CREDENTIALS=" \
+  --set-env-vars "PROJECT_ID=${PROJECT_ID}" \
   --timeout 300 \
   --quiet
 

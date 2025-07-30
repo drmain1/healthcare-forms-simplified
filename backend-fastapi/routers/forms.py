@@ -88,7 +88,10 @@ def get_form(form_id: str, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/forms/{form_id}", response_model=Form, response_model_by_alias=False)
+@router.put("/forms/{form_id}", response_model=Form, response_model_by_alias=False, include_in_schema=False)
+@router.put("/forms/{form_id}/", response_model=Form, response_model_by_alias=False, include_in_schema=False)
+@router.patch("/forms/{form_id}", response_model=Form, response_model_by_alias=False, include_in_schema=False)
+@router.patch("/forms/{form_id}/", response_model=Form, response_model_by_alias=False)
 def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_current_user)):
     try:
         doc_ref = db.collection('forms').document(form_id)
@@ -113,7 +116,8 @@ def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/forms/{form_id}", status_code=204)
+@router.delete("/forms/{form_id}", status_code=204, include_in_schema=False)
+@router.delete("/forms/{form_id}/", status_code=204)
 def delete_form(form_id: str, user: dict = Depends(get_current_user)):
     try:
         doc_ref = db.collection('forms').document(form_id)

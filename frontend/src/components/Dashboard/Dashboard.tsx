@@ -49,6 +49,9 @@ export const Dashboard: React.FC = () => {
   
   const responses = responsesData?.results || [];
   
+  // Debug log
+  console.log('Dashboard responses:', responses);
+  
   // Loading state
   if (isLoading) {
     return (
@@ -140,7 +143,7 @@ export const Dashboard: React.FC = () => {
                       <IconButton 
                         size="small" 
                         color="primary"
-                        onClick={() => navigate(`/responses/${response.id}`)}
+                        onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)}
                       >
                         <Visibility />
                       </IconButton>

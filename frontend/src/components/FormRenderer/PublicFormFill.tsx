@@ -376,10 +376,9 @@ export const PublicFormFill: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          form: formId,
+          form_id: formId,
           share_token: shareToken,
-          response_data: formData,
-          status: 'completed'
+          response_data: formData
         }),
       });
 

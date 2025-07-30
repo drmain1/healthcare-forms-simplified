@@ -12,9 +12,15 @@ import {
 // Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || 'healthcare-forms-prod.firebaseapp.com',
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || 'healthcare-forms-prod',
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || 'healthcare-forms-v2.firebaseapp.com',
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || 'healthcare-forms-v2',
 };
+
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey,
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId
+});
 
 // Initialize Firebase only if we have an API key (skip in test environment)
 let app: FirebaseApp | null = null;

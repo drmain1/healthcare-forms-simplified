@@ -67,6 +67,7 @@ const convertPageToBase64Image = async (page: PDFPageProxy, scale: number = 2.0)
   const renderContext = {
     canvasContext: context,
     viewport: viewport,
+    canvas: canvas,
   };
   
   await page.render(renderContext).promise;

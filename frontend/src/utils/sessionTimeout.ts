@@ -1,5 +1,5 @@
 import { store } from '../store';
-import { logout } from '../store/slices/authSlice';
+import { fullLogout } from '../store/actions/authActions';
 import { clearPatientData } from '../store/slices/patientSlice';
 import { clearResponseData } from '../store/slices/responseSlice';
 import { clearEncryptionKey } from './encryption';
@@ -32,7 +32,7 @@ const handleTimeout = () => {
   clearEncryptionKey();
   
   // Log out the user
-  store.dispatch(logout());
+  store.dispatch(fullLogout() as any); // Use `as any` because store.dispatch is not typed for thunks here
   
   // Redirect to login
   window.location.href = '/login';

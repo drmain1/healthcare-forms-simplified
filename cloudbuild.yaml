@@ -1,0 +1,90 @@
+# Cloud Build configuration for deploying to Cloud Run
+steps:
+  # Build backend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/healthcare-forms-backend:$COMMIT_SHA', './backend-fastapi']
+    id: 'build-backend'
+
+  # Build frontend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/healthcare-forms-frontend:$COMMIT_SHA', './frontend']
+    id: 'build-frontend'
+
+  # Push backend image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/healthcare-forms-backend:$COMMIT_SHA']
+    id: 'push-backend'
+    waitFor: ['build-backend']
+
+  # Push frontend image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/healthcare-forms-frontend:$COMMIT_SHA']
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'healthcare-forms-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/healthcare-forms-backend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'GOOGLE_APPLICATION_CREDENTIALS=/app/healthcare-forms-v2-credentials.json'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '100'
+    id: 'deploy-backend'
+    waitFor: ['push-backend']
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'healthcare-forms-frontend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/healthcare-forms-frontend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+      - '--port'
+      - '80'
+    id: 'deploy-frontend'
+    waitFor: ['push-frontend']
+
+# Timeout for the entire build
+timeout: '1200s'
+
+# Use kaniko for faster builds (optional)
+options:
+  machineType: 'E2_HIGHCPU_8'
+  substitution_option: 'ALLOW_LOOSE'
+
+# Tag images with latest after successful deployment
+images:
+  - 'gcr.io/$PROJECT_ID/healthcare-forms-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/healthcare-forms-backend:latest'
+  - 'gcr.io/$PROJECT_ID/healthcare-forms-frontend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/healthcare-forms-frontend:latest'

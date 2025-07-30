@@ -33,8 +33,8 @@ import {
   LocalHospital,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { useAppDispatch } from '../../store/hooks';
+import { fullLogout } from '../../store/actions/authActions';
 import { useFirebaseAuth } from '../../contexts/FirebaseAuthContext';
 import { designTokens } from '../../styles/design-tokens';
 import aintakeLogo from '../../assets/aintake-logo.svg';
@@ -59,7 +59,7 @@ export const Layout: React.FC<LayoutProps> = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   
   // Check if we're in form builder mode
   const isFormBuilder = location.pathname.includes('/forms/') && 
@@ -91,13 +91,13 @@ export const Layout: React.FC<LayoutProps> = () => {
       // Sign out from Firebase
       await signOut();
       // Clear Redux state
-      dispatch(logout());
+      dispatch(fullLogout());
       // Navigate to login page
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
       // Even if Firebase fails, clear local state and redirect
-      dispatch(logout());
+      dispatch(fullLogout());
       navigate('/login');
     }
   };

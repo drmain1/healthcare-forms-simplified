@@ -1,0 +1,102 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: healthcare-forms-v2
+  REGION: us-central1
+  BACKEND_SERVICE: healthcare-forms-backend
+  FRONTEND_SERVICE: healthcare-forms-frontend
+
+jobs:
+  setup-build-deploy:
+    name: Setup, Build, and Deploy
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Authenticate to Google Cloud using Workload Identity Federation
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+        service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+    # Setup gcloud CLI
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    # Configure Docker to use gcloud as a credential helper
+    - name: Docker Auth
+      run: |-
+        gcloud auth configure-docker
+
+    # Build and push backend image
+    - name: Build and Push Backend
+      run: |-
+        docker build -t gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA ./backend-fastapi
+        docker push gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA
+        docker tag gcr.io/$PROJECT_ID/$BACKEND_SERVICE:$GITHUB_SHA gcr.io/$PROJECT_ID/$BACKEND_SERVICE:latest
+        docker push gcr.io/$PROJECT_ID/$BACKEND_SERVICE:latest
+
+    # Build and push frontend image
+    - name: Build and Push Frontend
+      run: |-
+        docker build -t gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA ./frontend
+        docker push gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA
+        docker tag gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:latest
+        docker push gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:latest
+
+    # Deploy backend to Cloud Run
+    - name: Deploy Backend to Cloud Run
+      id: deploy-backend
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.BACKEND_SERVICE }}
+        region: ${{ env.REGION }}
+        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
+        flags: |
+          --allow-unauthenticated
+          --memory=512Mi
+          --cpu=1
+          --timeout=300
+          --concurrency=80
+          --max-instances=100
+        env_vars: |
+          GOOGLE_APPLICATION_CREDENTIALS=/app/healthcare-forms-v2-credentials.json
+          ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    # Deploy frontend to Cloud Run
+    - name: Deploy Frontend to Cloud Run
+      id: deploy-frontend
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.FRONTEND_SERVICE }}
+        region: ${{ env.REGION }}
+        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
+        flags: |
+          --allow-unauthenticated
+          --memory=256Mi
+          --cpu=1
+          --port=80
+        env_vars: |
+          REACT_APP_API_URL=${{ steps.deploy-backend.outputs.url }}
+          ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    # Output URLs
+    - name: Show URLs
+      run: |
+        echo "Backend URL: ${{ steps.deploy-backend.outputs.url }}"
+        echo "Frontend URL: ${{ steps.deploy-frontend.outputs.url }}"

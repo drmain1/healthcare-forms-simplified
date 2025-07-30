@@ -10,9 +10,9 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  organization: JSON.parse(localStorage.getItem('organization') || 'null'),
-  isAuthenticated: false, // Will be set by checkAuth
+  user: null,
+  organization: null,
+  isAuthenticated: false,
   isLoading: false,
   error: null,
 };
@@ -34,10 +34,6 @@ const authSlice = createSlice({
       state.organization = action.payload.organization;
       state.isAuthenticated = true;
       state.error = null;
-      
-      // Only store non-sensitive user info
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
-      localStorage.setItem('organization', JSON.stringify(action.payload.organization));
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
@@ -50,10 +46,6 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.isLoading = false;
       state.error = null;
-      
-      // Clear localStorage
-      localStorage.removeItem('user');
-      localStorage.removeItem('organization');
     },
     setAuthStatus: (state, action: PayloadAction<{ authenticated: boolean; user?: User }>) => {
       state.isAuthenticated = action.payload.authenticated;

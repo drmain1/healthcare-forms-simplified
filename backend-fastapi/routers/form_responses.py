@@ -182,30 +182,6 @@ def get_response(response_id: str, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/responses/{response_id}", response_model=FormResponse)
-def update_response(response_id: str, response: FormResponse, user: dict = Depends(get_current_user)):
-    try:
-        doc_ref = db.collection('form_responses').document(response_id)
-        if not doc_ref.get().exists:
-            raise HTTPException(status_code=404, detail="Response not found")
-        
-        response_dict = response.dict(exclude_unset=True)
-        doc_ref.update(response_dict)
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.delete("/responses/{response_id}", status_code=204)
-def delete_response(response_id: str, user: dict = Depends(get_current_user)):
-    try:
-        doc_ref = db.collection('form_responses').document(response_id)
-        if not doc_ref.get().exists:
-            raise HTTPException(status_code=404, detail="Response not found")
-        
-        doc_ref.delete()
-        return
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/responses/submit_public/", response_model=FormResponse)
 def submit_public_response(submission: PublicFormSubmission):

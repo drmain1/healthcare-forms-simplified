@@ -10,11 +10,25 @@ router = APIRouter()
 @router.post("/forms/", response_model=Form)
 def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
     try:
-        # Get the user's organization
-        org_docs = list(db.collection('organizations').where("owner_uid", "==", user["uid"]).limit(1).stream())
-        if not org_docs:
-            raise HTTPException(status_code=400, detail="User does not have an organization")
-        organization_id = org_docs[0].id
+        # In single-user model, organization_id == user_id
+        organization_id = user["uid"]
+        
+        # Check if organization exists, create if not
+        org_doc = db.collection('organizations').document(organization_id).get()
+        if not org_doc.exists:
+            # Auto-create organization for new user
+            org_data = {
+                'uid': user["uid"],
+                'name': user.get("email", "My Organization"),
+                'email': user.get("email", ""),
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
+                'settings': {
+                    'hipaa_compliant': True,
+                    'data_retention_days': 2555  # 7 years for HIPAA
+                }
+            }
+            db.collection('organizations').document(organization_id).set(org_data)
 
         # Create the form with required fields
         form_dict = form_data.dict(exclude_unset=True, exclude={'category'})  # Exclude category for now
@@ -22,6 +36,7 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
         form_dict['organization_id'] = organization_id
         form_dict['created_at'] = datetime.utcnow()
         form_dict['updated_at'] = datetime.utcnow()
+        form_dict['updated_by'] = user["uid"]
         
         # Add to Firestore
         doc_ref = db.collection('forms').add(form_dict)
@@ -43,11 +58,8 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
 @router.get("/forms/", response_model=List[Form])
 def list_forms(user: dict = Depends(get_current_user)):
     try:
-        # Get the user's organization
-        org_docs = list(db.collection('organizations').where("owner_uid", "==", user["uid"]).limit(1).stream())
-        if not org_docs:
-            return [] # No organization, no forms
-        organization_id = org_docs[0].id
+        # In single-user model, organization_id == user_id
+        organization_id = user["uid"]
 
         forms = []
         docs = db.collection('forms').where("organization_id", "==", organization_id).stream()
@@ -85,6 +97,7 @@ def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_
         # Update only provided fields
         update_dict = form_update.dict(exclude_unset=True, exclude={'category'})
         update_dict['updated_at'] = datetime.utcnow()
+        update_dict['updated_by'] = user["uid"]
         
         doc_ref.update(update_dict)
         

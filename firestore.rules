@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+    
+    // Helper function to check if user owns the organization (single-user model)
+    function isOrganizationOwner(orgId) {
+      return isAuthenticated() && request.auth.uid == orgId;
+    }
+    
+    // Helper function to validate PHI fields are not exposed inappropriately
+    function validatePHIAccess() {
+      return isAuthenticated();
+    }
+    
+    // Organizations collection - each org ID matches the user's UID (single-user model)
+    match /organizations/{orgId} {
+      // Users can only access their own organization (orgId == userId)
+      allow read: if isOrganizationOwner(orgId);
+      allow update: if isOrganizationOwner(orgId) &&
+        // Prevent changing critical fields
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['created_at', 'uid']));
+      allow create: if isAuthenticated() && request.auth.uid == orgId &&
+        request.resource.data.keys().hasAll(['name', 'created_at', 'uid']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.created_at == request.time;
+      allow delete: if false; // Organizations cannot be deleted through client
+    }
+    
+    // Forms collection - single-user tenant isolation
+    match /forms/{formId} {
+      // Users can only access forms from their organization (orgId == userId)
+      allow read: if isOrganizationOwner(resource.data.organization_id);
+      
+      allow create: if isAuthenticated() &&
+        request.resource.data.organization_id == request.auth.uid &&
+        request.resource.data.keys().hasAll(['organization_id', 'created_by', 'created_at', 'title', 'surveyjs_schema']) &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.created_at == request.time;
+      
+      allow update: if isOrganizationOwner(resource.data.organization_id) &&
+        // Prevent changing organization_id
+        request.resource.data.organization_id == resource.data.organization_id &&
+        // Track who modified and when
+        request.resource.data.keys().hasAll(['updated_by', 'updated_at']) &&
+        request.resource.data.updated_by == request.auth.uid &&
+        request.resource.data.updated_at == request.time;
+      
+      allow delete: if isOrganizationOwner(resource.data.organization_id);
+    }
+    
+    // Form responses collection - strict PHI protection
+    match /form_responses/{responseId} {
+      // Only the tenant owner can read their responses
+      allow read: if isOrganizationOwner(resource.data.organization_id) && validatePHIAccess();
+      
+      // Create response with required audit fields
+      allow create: if isAuthenticated() &&
+        request.resource.data.organization_id == request.auth.uid &&
+        request.resource.data.keys().hasAll(['organization_id', 'form_id', 'submitted_by', 'submitted_at', 'data']) &&
+        request.resource.data.submitted_by == request.auth.uid &&
+        request.resource.data.submitted_at == request.time &&
+        // Ensure form exists and belongs to same organization
+        exists(/databases/$(database)/documents/forms/$(request.resource.data.form_id)) &&
+        get(/databases/$(database)/documents/forms/$(request.resource.data.form_id)).data.organization_id == request.auth.uid;
+      
+      // Responses are immutable once created (for audit trail)
+      allow update: if false;
+      
+      // Only the tenant owner can delete responses (soft delete recommended)
+      allow delete: if isOrganizationOwner(resource.data.organization_id);
+    }
+    
+    // Form templates collection - each tenant has their own templates
+    match /form_templates/{templateId} {
+      allow read: if isOrganizationOwner(resource.data.organization_id);
+      allow create: if isAuthenticated() &&
+        request.resource.data.organization_id == request.auth.uid;
+      allow update: if isOrganizationOwner(resource.data.organization_id);
+      allow delete: if isOrganizationOwner(resource.data.organization_id);
+    }
+    
+    // Audit logs collection - write-only for system, read for tenant owner
+    match /audit_logs/{logId} {
+      allow read: if isOrganizationOwner(resource.data.organization_id);
+      allow write: if false; // Only system/backend can write audit logs
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

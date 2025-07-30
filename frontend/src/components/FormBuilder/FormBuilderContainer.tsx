@@ -7,6 +7,8 @@ import { SurveyCreator } from 'survey-creator-react';
 import { createMinimalSurveyCreator, createMinimalSurveyModel } from '../../utils/surveyConfigMinimal';
 import { applyCreatorTheme } from '../../config/surveyThemes';
 import { FormBuilderUI } from './FormBuilderUI';
+import { useAppSelector } from '../../store/hooks';
+import { selectOrganization } from '../../store/selectors/authSelectors';
 
 // Register custom components
 import './BodyPainDiagramQuestion';
@@ -30,6 +32,7 @@ export const FormBuilderContainer: React.FC = () => {
   const [formCategory, setFormCategory] = useState('intake');
   const [isEditing, setIsEditing] = useState(false);
   const [currentFormJson, setCurrentFormJson] = useState<any>(null);
+  const organization = useAppSelector(selectOrganization);
 
   // API hooks
   const [createForm, { isLoading: isCreating }] = useCreateFormMutation();
@@ -118,7 +121,10 @@ export const FormBuilderContainer: React.FC = () => {
         require_authentication: true,
         auto_save: true,
         allow_partial_submission: true,
+        organization_id: organization?.id,
       };
+
+      console.log('Saving form data:', formData);
 
       if (isEditing && existingForm) {
         await updateForm({

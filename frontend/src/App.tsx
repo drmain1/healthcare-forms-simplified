@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { store } from './store';
 import { AppRoutes } from './components/Routes';
+import { AuthInitializer } from './components/Auth/AuthInitializer';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import { initializeSessionTimeout, cleanupSessionTimeout } from './utils/sessionTimeout';
 import { FirebaseAuthProvider } from './contexts/FirebaseAuthContext';
@@ -91,11 +92,13 @@ function App() {
     <Provider store={store}>
       <FirebaseAuthProvider>
         <BrowserRouter>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <AppRoutes />
-            <SessionTimeoutWarning />
-          </ThemeProvider>
+          <AuthInitializer>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <AppRoutes />
+              <SessionTimeoutWarning />
+            </ThemeProvider>
+          </AuthInitializer>
         </BrowserRouter>
       </FirebaseAuthProvider>
     </Provider>

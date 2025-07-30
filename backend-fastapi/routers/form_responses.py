@@ -19,9 +19,22 @@ def create_response(response: FormResponse, user: dict = Depends(get_current_use
         # In single-user model, organization_id == user_id
         organization_id = user["uid"]
 
+        # Set fields according to Firestore schema
         response.submitted_by = user["uid"]
         response.organization_id = organization_id
-        response_dict = response.dict(exclude_unset=True)
+        
+        # Convert response model to dict, handling field aliases
+        response_dict = {
+            'organization_id': organization_id,
+            'form_id': response.form_id,
+            'data': response.data,  # Frontend sends as response_data, we store as data
+            'submitted_by': user["uid"],
+            'submitted_at': response.submitted_at or datetime.now(timezone.utc)
+        }
+        
+        # Add optional fields if present
+        if hasattr(response, 'metadata') and response.metadata:
+            response_dict['metadata'] = response.metadata
         doc_ref = db.collection('form_responses').add(response_dict)
         created_response = response.copy(update={"id": doc_ref[1].id})
         return created_response
@@ -69,7 +82,6 @@ def list_responses(
         for doc in docs:
             response_data = doc.to_dict()
             response_data["id"] = doc.id
-            response_data["_id"] = doc.id  # Also set _id for alias
             
             # Get form title for display
             if response_data.get('form_id'):
@@ -78,6 +90,28 @@ def list_responses(
                     form_data = form_doc.to_dict()
                     response_data['form_title'] = form_data.get('title', 'Untitled Form')
             
+            # Map Firestore 'data' field to 'response_data' for frontend
+            if 'data' in response_data:
+                response_data['response_data'] = response_data.pop('data')
+            
+            # Ensure required fields are set (handle legacy data)
+            if 'submitted_by' not in response_data:
+                response_data['submitted_by'] = response_data.get('organization_id', organization_id)
+            
+            if 'submitted_at' not in response_data:
+                response_data['submitted_at'] = response_data.get('created_at', datetime.now(timezone.utc))
+                
+            # Ensure started_at is set (frontend expects this)
+            if 'started_at' not in response_data:
+                response_data['started_at'] = response_data.get('submitted_at', datetime.now(timezone.utc))
+            
+            # Extract metadata fields if present
+            if 'metadata' in response_data and response_data['metadata']:
+                metadata = response_data['metadata']
+                response_data['ip_address'] = metadata.get('ip_address')
+                response_data['user_agent'] = metadata.get('user_agent')
+                response_data['session_id'] = metadata.get('session_id')
+                
             # Debug log
             print(f"Response data before creating FormResponse: {response_data.get('id')}, form_id: {response_data.get('form_id')}")
             responses.append(FormResponse(**response_data))
@@ -119,6 +153,31 @@ def get_response(response_id: str, user: dict = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="Response not found")
         response_data = doc.to_dict()
         response_data["id"] = doc.id
+        
+        # Map Firestore 'data' field to 'response_data' for frontend
+        if 'data' in response_data:
+            response_data['response_data'] = response_data.pop('data')
+        
+        # Get organization_id for fallback
+        organization_id = response_data.get('organization_id', user['uid'])
+        
+        # Ensure required fields are set (handle legacy data)
+        if 'submitted_by' not in response_data:
+            response_data['submitted_by'] = organization_id
+            
+        if 'submitted_at' not in response_data:
+            response_data['submitted_at'] = response_data.get('created_at', datetime.now(timezone.utc))
+            
+        # Ensure started_at is set
+        if 'started_at' not in response_data:
+            response_data['started_at'] = response_data.get('submitted_at', datetime.now(timezone.utc))
+            
+        # Extract metadata if present
+        if 'metadata' in response_data and response_data['metadata']:
+            metadata = response_data['metadata']
+            response_data['ip_address'] = metadata.get('ip_address')
+            response_data['user_agent'] = metadata.get('user_agent')
+            
         return FormResponse(**response_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -194,16 +253,17 @@ def submit_public_response(submission: PublicFormSubmission):
         
         form_data = form_doc.to_dict()
         
-        # Create response document
+        # Create response document following Firestore schema
         response_data = {
             'form_id': submission.form_id,
             'organization_id': form_data.get('organization_id'),
-            'response_data': submission.response_data,
+            'data': submission.response_data,  # Store as 'data' per Firestore schema
             'submitted_at': datetime.now(timezone.utc),
-            'submitted_via': 'share_link',
-            'share_link_id': share_link_id,
-            'status': 'submitted',
-            'reviewed': False
+            'submitted_by': form_data.get('organization_id'),  # In single-user model
+            'metadata': {
+                'submitted_via': 'share_link',
+                'share_link_id': share_link_id
+            }
         }
         
         # Add to Firestore
@@ -216,10 +276,12 @@ def submit_public_response(submission: PublicFormSubmission):
         
         # Return created response
         response_data['id'] = doc_ref[1].id
-        # Add required fields that FormResponse model expects
-        response_data['submitted_by'] = 'anonymous'  # Public submission
-        response_data['created_at'] = response_data.get('submitted_at', datetime.now(timezone.utc))
-        response_data['updated_at'] = response_data.get('submitted_at', datetime.now(timezone.utc))
+        # Map 'data' back to 'response_data' for frontend
+        response_data['response_data'] = response_data.pop('data')
+        # Add fields for frontend compatibility
+        response_data['started_at'] = response_data['submitted_at']
+        response_data['status'] = 'submitted'
+        response_data['reviewed'] = False
         return FormResponse(**response_data)
         
     except HTTPException:

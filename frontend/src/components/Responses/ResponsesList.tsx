@@ -95,7 +95,7 @@ export const ResponsesList: React.FC = () => {
     }
     
     const result = generateResponsePdf(
-      formData.surveyjs_schema,
+      formData.surveyJson,
       response.response_data,
       formData.title,
       response.patient_name,
@@ -186,7 +186,7 @@ export const ResponsesList: React.FC = () => {
               startIcon={<GetApp />}
               onClick={() => {
                 const result = generateBlankFormPdf(
-                  formData.surveyjs_schema,
+                  formData.surveyJson,
                   formData.title
                 );
                 if (!result.success) {

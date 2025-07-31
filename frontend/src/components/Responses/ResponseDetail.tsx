@@ -104,7 +104,7 @@ export const ResponseDetail: React.FC = () => {
   };
   
   // Create a read-only survey instance with the response data
-  const surveyModel = new Model(form.surveyjs_schema);
+  const surveyModel = new Model(form.surveyJson);
   surveyModel.mode = 'display';
   surveyModel.data = response.response_data;
   
@@ -129,7 +129,7 @@ export const ResponseDetail: React.FC = () => {
             startIcon={<GetApp />}
             onClick={() => {
               const result = generateResponsePdf(
-                form.surveyjs_schema,
+                form.surveyJson,
                 response.response_data,
                 form.title,
                 response.patient_name,

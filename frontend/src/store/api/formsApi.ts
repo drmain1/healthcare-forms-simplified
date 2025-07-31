@@ -3,17 +3,11 @@ import { Form, FormTemplate, PaginatedResponse, FilterParams } from '../../types
 
 export interface CreateFormRequest {
   title: string;
-  description: string;
-  surveyjs_schema: any;
-  status?: 'draft' | 'active' | 'paused' | 'archived';
-  allow_anonymous?: boolean;
-  require_authentication?: boolean;
-  auto_save?: boolean;
-  allow_partial_submission?: boolean;
-  contains_phi?: boolean;
-  encryption_required?: boolean;
-  template?: string;
+  description?: string;
+  surveyJson: any;  // Changed from surveyjs_schema to match backend
   category?: string;
+  tags?: string[];
+  isTemplate?: boolean;
 }
 
 export interface UpdateFormRequest extends Partial<CreateFormRequest> {
@@ -97,10 +91,10 @@ export const formsApi = baseApi.injectEndpoints({
 
     // Test form (validate SurveyJS schema)
     testForm: builder.mutation<{ valid: boolean; errors?: string[] }, any>({
-      query: (surveyjs_schema) => ({
+      query: (surveyJson) => ({
         url: '/forms/test/',
         method: 'POST',
-        body: { surveyjs_schema },
+        body: { surveyJson },
       }),
     }),
 

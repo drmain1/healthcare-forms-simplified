@@ -62,7 +62,7 @@ export const PublicFormFill: React.FC = () => {
         setForm(formData);
         
         // Create survey instance
-        const surveyModel = createSurveyModel(formData.surveyjs_schema, { isBuilder: false, isPreview: false });
+        const surveyModel = createSurveyModel(formData.surveyJson, { isBuilder: false, isPreview: false });
         
         // Apply patient form theme with panelless view
         applyTheme(surveyModel, patientFormTheme);

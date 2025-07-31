@@ -62,7 +62,7 @@ export const FormBuilderContainer: React.FC = () => {
       setFormTitle(existingForm.title);
       setFormDescription(existingForm.description);
       setFormCategory(getFormCategory(existingForm));
-      surveyCreator.text = JSON.stringify(existingForm.surveyjs_schema);
+      surveyCreator.text = JSON.stringify(existingForm.surveyJson);
     } else if (id === 'create' || !id) {
       console.log('Creating new form');
       setIsEditing(false);
@@ -113,15 +113,9 @@ export const FormBuilderContainer: React.FC = () => {
       const formData = {
         title: saveData.title,
         description: saveData.description,
-        surveyjs_schema: saveData.surveyjs_schema,
-        status: 'draft' as const,
-        contains_phi: true,
-        encryption_required: true,
-        allow_anonymous: false,
-        require_authentication: true,
-        auto_save: true,
-        allow_partial_submission: true,
-        organization_id: organization?.id,
+        surveyJson: saveData.surveyjs_schema,  // Changed to match backend expectation
+        category: saveData.category,
+        // Only send fields that backend expects, removed all extra fields
       };
 
       console.log('Saving form data:', formData);

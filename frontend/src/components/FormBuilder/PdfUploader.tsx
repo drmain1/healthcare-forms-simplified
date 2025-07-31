@@ -18,6 +18,9 @@ import {
   Build as BuildIcon,
 } from '@mui/icons-material';
 
+import { useFirebaseAuth } from '../../contexts/FirebaseAuthContext';
+import { generateFormFromPdfViaBackend } from '../../services/vertexAIService';
+
 interface PdfUploaderProps {
   onFormGenerated: (surveyJson: any) => void;
   onError: (error: string) => void;
@@ -37,8 +40,8 @@ const steps = [
     description: 'Select and upload your PDF form',
   },
   {
-    label: 'Extract Text',
-    description: 'Mistral OCR extracts text from PDF',
+    label: 'Process PDF',
+    description: 'Backend service processes PDF securely',
   },
   {
     label: 'Generate Form',
@@ -51,6 +54,7 @@ const steps = [
 ];
 
 export const PdfUploader: React.FC<PdfUploaderProps> = ({ onFormGenerated, onError }) => {
+  const { user } = useFirebaseAuth();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState<ProcessingState>({
@@ -120,97 +124,43 @@ export const PdfUploader: React.FC<PdfUploaderProps> = ({ onFormGenerated, onErr
   };
 
   const processFile = async () => {
-    if (!selectedFile) return;
-
-    /**
-     * Simplified AI Processing Pipeline:
-     * 1. Mistral OCR: Extract text from PDF
-     * 2. Gemini 2.5 Pro: Direct form generation with advanced reasoning
-     * 3. SurveyJS Conversion: Final form generation
-     */
+    if (!selectedFile) {
+      onError('Please select a file first.');
+      return;
+    }
+    if (!user || !user.idToken) {
+      onError('You must be logged in to process a form.');
+      return;
+    }
 
     setProcessing({
       step: 0,
       isProcessing: true,
       progress: 0,
-      statusMessage: 'Starting enhanced AI processing...',
+      statusMessage: 'Starting secure AI processing...',
     });
 
     try {
-      // Step 1: Convert to base64
-      updateProcessingState(1, 25, 'Preparing PDF for OCR...');
+      // Step 1: Convert file to base64
+      updateProcessingState(1, 25, 'Preparing PDF for upload...');
       const base64Pdf = await convertFileToBase64(selectedFile);
 
-      // Option to use Gemini for the entire process (PDF to JSON in one step)
-      const USE_GEMINI_DIRECT = true; // Set to true to use Gemini for everything
-      
-      let formSchema;
-      
-      if (USE_GEMINI_DIRECT) {
-        // Gemini handles both OCR and form generation in one step
-        updateProcessingState(2, 50, 'Processing PDF with Gemini (extracting and converting)...');
-        
-        try {
-          const { generateFormJsonFromPdfGemini } = await import('../../services/geminiService');
-          formSchema = await generateFormJsonFromPdfGemini(base64Pdf);
-          console.log('Gemini direct PDF processing successful');
-        } catch (error: any) {
-          console.error('Gemini direct PDF processing failed:', error.message);
-          throw error;
-        }
-      } else {
-        // Original two-step process
-        // Step 2: Extract text using Mistral OCR
-        updateProcessingState(2, 30, 'Extracting text from PDF...');
-        
-        // Toggle between Mistral API and Vertex AI for testing
-        const USE_VERTEX_AI = false; // Using Mistral API directly since mistral-ocr-2505 is not available in Vertex AI
-        
-        let extractedText: string;
-        if (USE_VERTEX_AI) {
-          console.log('Using Mistral OCR via Vertex AI');
-          const { extractPdfContentViaOcrVertexAI } = await import('../../services/mistralVertexService');
-          extractedText = await extractPdfContentViaOcrVertexAI(base64Pdf);
-        } else {
-          // Mistral API service has been removed from the workflow
-          throw new Error('Direct Mistral API is no longer supported. Please use Vertex AI.');
-        }
+      // Step 2: Call backend to process with Vertex AI
+      updateProcessingState(2, 50, 'Processing PDF with secure backend service...');
+      const formSchema = await generateFormFromPdfViaBackend(base64Pdf, user.idToken);
+      console.log('Backend PDF processing successful');
 
-        // Step 3: Generate form structure with Gemini 2.5 Pro
-        updateProcessingState(3, 70, 'Please be patient, this is a complex process (est. 1-3 min)...');
-        try {
-          const { generateFormJsonFromTextGemini } = await import('../../services/geminiService');
-          formSchema = await generateFormJsonFromTextGemini(extractedText);
-          console.log('Gemini form generation successful');
-        } catch (geminiError: any) {
-          console.error('Gemini form generation failed:', geminiError.message);
-          throw new Error(`Failed to generate form: ${geminiError.message}`);
-        }
+      // Step 3: Finalize and load the form
+      updateProcessingState(3, 90, 'Finalizing form...');
+      if (!formSchema) {
+        throw new Error('Backend did not return a valid form schema.');
       }
 
-      // Step 4: Finalize SurveyJS format
-      updateProcessingState(4, 90, 'Finalizing form...');
-      
-      let surveyJson: any;
-      
-      // Gemini output should already be in SurveyJS format
-      if (formSchema) {
-        console.log('Using Gemini-generated form');
-        // Check if wrapped in a form object
-        if ((formSchema as any).form) {
-          surveyJson = (formSchema as any).form;
-        } else {
-          surveyJson = formSchema;
-        }
-      } else {
-        throw new Error('No form schema generated');
-      }
-
-      updateProcessingState(3, 100, 'Form generated successfully!');
+      updateProcessingState(4, 100, 'Form generated successfully!');
       
       setTimeout(() => {
-        onFormGenerated(surveyJson);
-        setProcessing(prev => ({ ...prev, isProcessing: false }));
+        onFormGenerated(formSchema);
+        setProcessing(prev => ({ ...prev, isProcessing: false, step: 0 }));
       }, 1000);
 
     } catch (error: any) {
@@ -218,9 +168,9 @@ export const PdfUploader: React.FC<PdfUploaderProps> = ({ onFormGenerated, onErr
       setProcessing(prev => ({
         ...prev,
         isProcessing: false,
-        error: error.message || 'Failed to process PDF',
+        error: error.message || 'Failed to process PDF.',
       }));
-      onError(error.message || 'Failed to process PDF');
+      onError(error.message || 'Failed to process PDF.');
     }
   };
 

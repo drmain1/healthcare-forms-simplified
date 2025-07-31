@@ -6,7 +6,6 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@google-cloud/vertexai": "^1.10.0",
     "@google/generative-ai": "^0.24.1",
     "@mistralai/mistralai": "^1.7.1",
     "@mui/icons-material": "^5.15.1",

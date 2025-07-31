@@ -1,52 +1,81 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field, conlist
+from typing import List, Optional, Dict, Any
 from datetime import datetime
+from .share_link import ShareLink
 
-class FormCreate(BaseModel):
-    """Model for creating a new form"""
+# Represents a single element in a SurveyJS page (question, panel, etc.)
+class FormElement(BaseModel):
+    type: str
+    name: str
+    title: Optional[str] = None
+    is_required: Optional[bool] = Field(None, alias='isRequired')
+    choices: Optional[List[Any]] = None
+    
+    class Config:
+        extra = 'allow'  # Allow extra fields not explicitly defined
+
+# Represents a single page in a SurveyJS form
+class Page(BaseModel):
+    name: str
+    elements: List[FormElement]
+
+# Represents the main SurveyJS JSON structure
+class SurveyJSModel(BaseModel):
     title: str
     description: Optional[str] = None
-    surveyjs_schema: Dict[str, Any]
-    status: str = "draft"
-    template_id: Optional[str] = None
-    contains_phi: bool = False
-    encryption_required: bool = False
-    category: Optional[str] = None  # Frontend sends this but we don't store it yet
-
-class FormUpdate(BaseModel):
-    """Model for updating an existing form"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    surveyjs_schema: Optional[Dict[str, Any]] = None
-    status: Optional[str] = None
-    template_id: Optional[str] = None
-    contains_phi: Optional[bool] = None
-    encryption_required: Optional[bool] = None
-    category: Optional[str] = None
+    pages: conlist(Page, min_length=1)
+    
+    class Config:
+        extra = 'allow'
 
 class Form(BaseModel):
-    """Complete form model with all fields"""
-    id: Optional[str] = Field(None, alias="_id")
+    id: str = Field(..., alias='_id')
     title: str
     description: Optional[str] = None
-    organization_id: str
-    surveyjs_schema: Dict[str, Any]
-    status: str = "draft"
-    created_by: str
-    template_id: Optional[str] = None
-    contains_phi: bool = False
-    encryption_required: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
+    survey_json: SurveyJSModel = Field(..., alias='surveyJson')
+    created_at: datetime = Field(default_factory=datetime.utcnow, alias='createdAt')
+    updated_at: datetime = Field(default_factory=datetime.utcnow, alias='updatedAt')
+    created_by: str = Field(..., alias='createdBy')
+    updated_by: str = Field(..., alias='updatedBy')
+    organization_id: str = Field(..., alias='organizationId')
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    is_template: bool = Field(False, alias='isTemplate')
+    version: int = 1
+    
+    class Config:
+        populate_by_name = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
         }
-    )
+        allow_population_by_field_name = True
+
+class FormCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    survey_json: SurveyJSModel = Field(..., alias='surveyJson')
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    is_template: bool = Field(False, alias='isTemplate')
+
+    class Config:
+        populate_by_name = True
+        allow_population_by_field_name = True
+
+class FormUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    survey_json: Optional[SurveyJSModel] = Field(None, alias='surveyJson')
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+    class Config:
+        populate_by_name = True
+        allow_population_by_field_name = True
 
 class FormListResponse(BaseModel):
-    """Paginated response for a list of forms"""
     count: int
     results: List[Form]
+
+class PdfProcessRequest(BaseModel):
+    pdf_data: str = Field(..., description="Base64-encoded PDF data")

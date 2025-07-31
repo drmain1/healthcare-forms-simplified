@@ -61,7 +61,7 @@ export interface Form {
   organization: string;
   title: string;
   description: string;
-  surveyjs_schema: any; // SurveyJS JSON schema
+  surveyJson: any; // SurveyJS JSON schema - matches backend field name
   status: 'draft' | 'active' | 'paused' | 'archived';
   allow_anonymous: boolean;
   require_authentication: boolean;
@@ -83,7 +83,7 @@ export interface FormTemplate {
   name: string;
   category: 'intake' | 'medical_history' | 'consent' | 'assessment' | 'discharge' | 'insurance' | 'other';
   description: string;
-  surveyjs_schema: any;
+  surveyJson: any;  // Updated to match backend
   fhir_mapping: Record<string, any>;
   is_global: boolean;
   created_at: string;
@@ -94,7 +94,7 @@ export interface FormVersion {
   id: string;
   form: string;
   version: number;
-  surveyjs_schema: any;
+  surveyJson: any;  // Updated to match backend
   change_notes: string;
   created_at: string;
   created_by: string;

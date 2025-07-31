@@ -135,9 +135,9 @@ export const FormsList: React.FC = () => {
 
   // Handle when full form data is loaded
   React.useEffect(() => {
-    if (fullFormData && fullFormData.surveyjs_schema && isLoadingFullForm === false) {
+    if (fullFormData && fullFormData.surveyJson && isLoadingFullForm === false) {
       try {
-        const survey = createSurveyModel(fullFormData.surveyjs_schema);
+        const survey = createSurveyModel(fullFormData.surveyJson);
         
         // Configure survey for preview mode
         survey.mode = 'display'; // Use display mode for preview (read-only)
@@ -510,7 +510,7 @@ export const FormsList: React.FC = () => {
                         size="small"
                         onClick={() => {
                           const result = generateBlankFormPdf(
-                            form.surveyjs_schema,
+                            form.surveyJson,
                             form.title
                           );
                           if (!result.success) {

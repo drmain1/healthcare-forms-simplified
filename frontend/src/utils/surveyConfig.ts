@@ -802,10 +802,10 @@ export const createSurveyModel = (json: any, options?: { isBuilder?: boolean; is
   applyMultiColumnLayout(survey);
   
   // Configure survey settings from JSON or use defaults
-  survey.showProgressBar = json.showProgressBar || 'top';
-  survey.progressBarType = json.progressBarType || 'pages';
-  survey.showQuestionNumbers = json.showQuestionNumbers || 'off';
-  survey.questionTitleLocation = json.questionTitleLocation || 'top';
+  survey.showProgressBar = json?.showProgressBar || 'top';
+  survey.progressBarType = json?.progressBarType || 'pages';
+  survey.showQuestionNumbers = json?.showQuestionNumbers || 'off';
+  survey.questionTitleLocation = json?.questionTitleLocation || 'top';
   survey.showCompletedPage = false;
   survey.checkErrorsMode = 'onValueChanged';
   survey.textUpdateMode = 'onTyping';

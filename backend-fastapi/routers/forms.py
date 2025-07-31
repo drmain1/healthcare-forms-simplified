@@ -562,10 +562,9 @@ def create_share_link(form_id: str, settings: ShareLinkCreate, user: dict = Depe
         # Add to Firestore
         doc_ref = db.collection('share_links').add(share_link_data)
         
-        # Create response with proper URL
+        # Create response with ID and relative path
         share_link_data['_id'] = doc_ref[1].id
-        # In production, this should use the actual domain
-        share_link_data['share_url'] = f"http://localhost:3000/forms/{form_id}/fill/{share_token}"
+        share_link_data['share_path'] = f"/forms/{form_id}/fill/{share_token}"
         
         return ShareLink(**share_link_data)
     except HTTPException:
@@ -592,9 +591,9 @@ def get_share_links(form_id: str, user: dict = Depends(get_current_user)):
         for doc in docs:
             link_data = doc.to_dict()
             link_data["_id"] = doc.id
-            # Reconstruct share URL
+            # Return relative path instead of full URL
             share_token = link_data.get('share_token', '')
-            link_data['share_url'] = f"http://localhost:3000/forms/{form_id}/fill/{share_token}"
+            link_data['share_path'] = f"/forms/{form_id}/fill/{share_token}"
             share_links.append(ShareLink(**link_data))
         
         return share_links
@@ -603,7 +602,38 @@ def get_share_links(form_id: str, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/forms/{form_id}/fill/{share_token}/", response_model=Form, response_model_by_alias=False)
+@router.delete("/forms/{form_id}/share_links/{share_link_id}/", status_code=204)
+def delete_share_link(form_id: str, share_link_id: str, user: dict = Depends(get_current_user)):
+    """Delete a specific share link"""
+    try:
+        # Verify form exists and user has access
+        form_doc = db.collection('forms').document(form_id).get()
+        if not form_doc.exists:
+            raise HTTPException(status_code=404, detail="Form not found")
+        
+        form_data = form_doc.to_dict()
+        if form_data.get('organization_id') != user["uid"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Get the share link document
+        share_link_doc = db.collection('share_links').document(share_link_id).get()
+        if not share_link_doc.exists:
+            raise HTTPException(status_code=404, detail="Share link not found")
+        
+        share_link_data = share_link_doc.to_dict()
+        if share_link_data.get('form_id') != form_id:
+            raise HTTPException(status_code=404, detail="Share link not found for this form")
+        
+        # Delete the share link
+        db.collection('share_links').document(share_link_id).delete()
+        
+        return
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/forms/{form_id}/fill/{share_token}/", response_model=Form, response_model_by_alias=True)
 def get_form_by_share_token(form_id: str, share_token: str):
     """Public endpoint to get form by share token - no authentication required"""
     try:
@@ -642,6 +672,13 @@ def get_form_by_share_token(form_id: str, share_token: str):
         
         form_data = form_doc.to_dict()
         form_data["_id"] = form_doc.id
+        
+        # Log the form data structure for debugging
+        logger.info(f"Form data keys: {list(form_data.keys())}")
+        if 'survey_json' in form_data:
+            logger.info(f"survey_json type: {type(form_data['survey_json'])}")
+        if 'surveyJson' in form_data:
+            logger.info(f"surveyJson type: {type(form_data['surveyJson'])}")
         
         return Form(**form_data)
     except HTTPException:

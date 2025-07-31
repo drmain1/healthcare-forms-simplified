@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "https://healthcare-forms-backend-yv6dlhmhwa-uc.a.run.app"
+        "destination": "https://healthcare-forms-backend-ubaop6yg4q-uc.a.run.app"
       },
       {
         "source": "**",

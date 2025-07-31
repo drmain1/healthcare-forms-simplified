@@ -27,12 +27,14 @@ import {
   Email as EmailIcon,
   Sms as SmsIcon,
   QrCode as QrCodeIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   useGetFormQuery, 
   useCreateShareLinkMutation,
-  useGetShareLinksQuery 
+  useGetShareLinksQuery,
+  useDeleteShareLinkMutation 
 } from '../../store/api/formsApi';
 
 export const FormSendSimplified: React.FC = () => {
@@ -76,6 +78,9 @@ export const FormSendSimplified: React.FC = () => {
 
   // Create share link mutation
   const [createShareLink, { isLoading: isCreatingLink }] = useCreateShareLinkMutation();
+  
+  // Delete share link mutation
+  const [deleteShareLink, { isLoading: isDeletingLink }] = useDeleteShareLinkMutation();
 
   // Set default email subject when form loads
   useEffect(() => {
@@ -98,9 +103,11 @@ export const FormSendSimplified: React.FC = () => {
       }).unwrap();
       
       console.log('Share link created:', result);
+      // Construct full URL from relative path
+      const fullShareUrl = `${window.location.origin}${result.share_path}`;
       // Copy to clipboard
-      await navigator.clipboard.writeText(result.share_url);
-      setCopiedLink(result.share_url);
+      await navigator.clipboard.writeText(fullShareUrl);
+      setCopiedLink(fullShareUrl);
       
       // Refresh share links
       refetchShareLinks();
@@ -120,6 +127,28 @@ export const FormSendSimplified: React.FC = () => {
       setTimeout(() => setCopiedLink(null), 3000);
     } catch (error) {
       console.error('Failed to copy:', error);
+    }
+  };
+
+  const handleDeleteShareLink = async (shareLinkId: string) => {
+    if (!formIdFromUrl) return;
+    
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this share link? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteShareLink({
+        formId: formIdFromUrl,
+        shareLinkId: shareLinkId
+      }).unwrap();
+      
+      // Refresh share links
+      refetchShareLinks();
+    } catch (error: any) {
+      console.error('Error deleting share link:', error);
+      alert('Failed to delete share link. Please try again.');
     }
   };
 
@@ -299,7 +328,10 @@ export const FormSendSimplified: React.FC = () => {
                   Existing Share Links
                 </Typography>
                 <List sx={{ bgcolor: 'grey.50', borderRadius: 2, p: 1 }}>
-                  {shareLinks.map((link: any) => (
+                  {shareLinks.map((link: any) => {
+                    // Construct full URL from relative path
+                    const fullShareUrl = `${window.location.origin}${link.share_path}`;
+                    return (
                     <ListItem 
                       key={link.id} 
                       sx={{ 
@@ -325,15 +357,25 @@ export const FormSendSimplified: React.FC = () => {
                                 flex: 1
                               }}
                             >
-                              {link.share_url}
+                              {fullShareUrl}
                             </Typography>
-                            <Tooltip title={copiedLink === link.share_url ? "Copied!" : "Copy link"}>
+                            <Tooltip title={copiedLink === fullShareUrl ? "Copied!" : "Copy link"}>
                               <IconButton
                                 size="small"
-                                onClick={() => handleCopyLink(link.share_url)}
-                                color={copiedLink === link.share_url ? "success" : "default"}
+                                onClick={() => handleCopyLink(fullShareUrl)}
+                                color={copiedLink === fullShareUrl ? "success" : "default"}
                               >
-                                {copiedLink === link.share_url ? <CheckIcon /> : <CopyIcon />}
+                                {copiedLink === fullShareUrl ? <CheckIcon /> : <CopyIcon />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete share link">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteShareLink(link.id)}
+                                color="error"
+                                disabled={isDeletingLink}
+                              >
+                                <DeleteIcon />
                               </IconButton>
                             </Tooltip>
                           </Box>
@@ -359,7 +401,8 @@ export const FormSendSimplified: React.FC = () => {
                         }
                       />
                     </ListItem>
-                  ))}
+                    );
+                  })}
                 </List>
               </Box>
             )}

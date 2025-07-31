@@ -143,6 +143,14 @@ export const formsApi = baseApi.injectEndpoints({
       providesTags: ['Form'],
     }),
 
+    deleteShareLink: builder.mutation<void, { formId: string; shareLinkId: string }>({
+      query: ({ formId, shareLinkId }) => ({
+        url: `/forms/${formId}/share_links/${shareLinkId}/`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Form'],
+    }),
+
     deactivateShareLink: builder.mutation<any, string>({
       query: (shareId) => ({
         url: `/form-shares/${shareId}/deactivate/`,
@@ -178,6 +186,7 @@ export const {
   useGetFormAnalyticsQuery,
   useCreateShareLinkMutation,
   useGetShareLinksQuery,
+  useDeleteShareLinkMutation,
   useDeactivateShareLinkMutation,
   useGetDashboardStatsQuery,
   useGetRecentActivityQuery,

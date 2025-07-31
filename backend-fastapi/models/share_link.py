@@ -19,7 +19,7 @@ class ShareLinkCreate(BaseModel):
 
 class ShareLink(ShareLinkBase):
     id: str = Field(alias="_id")
-    share_url: str
+    share_path: str
     created_at: datetime
     created_by: str
     organization_id: str

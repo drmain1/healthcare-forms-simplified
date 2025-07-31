@@ -59,7 +59,24 @@ jobs:
         docker tag gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:$GITHUB_SHA gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:latest
         docker push gcr.io/$PROJECT_ID/$FRONTEND_SERVICE:latest
 
-    # Deploy backend to Cloud Run
+    # Deploy frontend to Cloud Run first to get its URL
+    - name: Deploy Frontend to Cloud Run
+      id: deploy-frontend
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.FRONTEND_SERVICE }}
+        region: ${{ env.REGION }}
+        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
+        flags: |
+          --allow-unauthenticated
+          --memory=256Mi
+          --cpu=1
+          --port=80
+        env_vars: |
+          REACT_APP_API_URL=https://${{ env.BACKEND_SERVICE }}-yv6dlhmhwa-uc.a.run.app
+          ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    # Deploy backend to Cloud Run with frontend URL
     - name: Deploy Backend to Cloud Run
       id: deploy-backend
       uses: google-github-actions/deploy-cloudrun@v2
@@ -78,9 +95,8 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS=/app/healthcare-forms-v2-credentials.json
           ENVIRONMENT=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
-    # Deploy frontend to Cloud Run
-    - name: Deploy Frontend to Cloud Run
-      id: deploy-frontend
+    # Update frontend with backend URL
+    - name: Update Frontend with Backend URL
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: ${{ env.FRONTEND_SERVICE }}

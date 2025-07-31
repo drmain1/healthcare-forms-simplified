@@ -61,8 +61,26 @@ export const PublicFormFill: React.FC = () => {
         const formData = await fetchFormByShareToken(formId, shareToken);
         setForm(formData);
         
+        // Debug log to see what we're getting
+        console.log('Form data received:', formData);
+        
         // Create survey instance
-        const surveyModel = createSurveyModel(formData.surveyJson, { isBuilder: false, isPreview: false });
+        // Ensure surveyJson exists and has proper structure
+        const surveyJson = formData.surveyJson || formData.survey_json || {};
+        
+        // Add default widthMode if missing
+        if (!surveyJson.widthMode) {
+          surveyJson.widthMode = 'responsive';
+        }
+        
+        // Ensure surveyJson has at least the minimum structure
+        if (!surveyJson.pages && !surveyJson.elements) {
+          surveyJson.pages = [];
+        }
+        
+        console.log('Creating survey with JSON:', surveyJson);
+        
+        const surveyModel = createSurveyModel(surveyJson, { isBuilder: false, isPreview: false });
         
         // Apply patient form theme with panelless view
         applyTheme(surveyModel, patientFormTheme);
@@ -356,6 +374,8 @@ export const PublicFormFill: React.FC = () => {
         setSurvey(surveyModel);
         setError(null);
       } catch (err: any) {
+        console.error('Error loading form:', err);
+        console.error('Error stack:', err.stack);
         setError(err.message || 'Failed to load form');
       } finally {
         setLoading(false);

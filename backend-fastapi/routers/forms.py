@@ -290,7 +290,7 @@ Your instructions are complete. Now, analyze the user's request and provided con
         response = model.generate_content(
             vertex_request,
             generation_config={
-                "max_output_tokens": 8192,
+                "max_output_tokens": 40000,
                 "temperature": 0.1,
             },
             safety_settings={

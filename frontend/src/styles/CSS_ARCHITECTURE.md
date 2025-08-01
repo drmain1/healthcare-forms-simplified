@@ -3,7 +3,7 @@
 ## Overview
 This document outlines the CSS architecture implemented for the healthcare forms application. The architecture separates styles between the form builder (admin interface) and the form viewer (patient-facing interface).
 
-## Directory Structure (Updated July 22, 2025)
+## Directory Structure (Updated January 31, 2025)
 
 ```
 src/styles/
@@ -15,7 +15,9 @@ src/styles/
 ├── tailwind.css           # Tailwind CSS imports
 ├── form-viewer-styles.css # Patient-facing form styles
 ├── height-weight-slider.css # Custom slider styling
-└── compatibility.css      # Tailwind/MUI/SurveyJS compatibility layer
+├── compatibility.css      # Tailwind/MUI/SurveyJS compatibility layer
+├── design-tokens.ts       # TypeScript design tokens (colors, spacing, typography)
+└── utilities.ts           # Tailwind utility patterns and helper functions
 ```
 
 ### Recently Removed Files:
@@ -185,6 +187,29 @@ Each component's styles should be isolated and not affect other components:
 3. Print styles need enhancement  
 4. Dark mode support to be added
 
+## TypeScript Design System Files
+
+### design-tokens.ts
+- **Purpose**: Centralized design tokens as TypeScript objects
+- **Content**: Colors, spacing, typography, shadows, transitions, z-index
+- **Usage**: Actively used in 7 components for consistent styling
+- **Key Features**:
+  - Comprehensive color palette (primary, surface, warm healthcare theme, semantic colors)
+  - Spacing system based on 8px unit
+  - Typography scales and font stacks
+  - Shadow and transition systems
+
+### utilities.ts
+- **Purpose**: Tailwind CSS utility patterns and helper functions
+- **Content**: Pre-composed Tailwind classes for common patterns
+- **Usage**: Currently unused (prepared for future Tailwind migration)
+- **Key Features**:
+  - Flex layout patterns
+  - Card styling variants
+  - Button variants
+  - Text styles
+  - `cn()` utility for class composition
+
 ## Recent Updates (July 22, 2025)
 
 ### ✅ Completed Cleanup:
@@ -192,7 +217,7 @@ Each component's styles should be isolated and not affect other components:
 - **Integrated design system** - CSS variables now properly imported in main.css
 - **Added bundle monitoring** - `npm run bundle-size` for performance tracking
 - **Created MigrationWrapper** - Helper component for gradual Tailwind adoption
-- **Consolidated styles** - form-builder-styles.css merged into main.css (only 4 lines!)
+- **Consolidated styles** - form-builder-styles.css merged into main.css (only 3 lines!)
 - **Simplified imports** - Removed unnecessary CSS imports from components
 
 ### 📊 Current Bundle Size:
@@ -204,3 +229,9 @@ Each component's styles should be isolated and not affect other components:
 - **Better organization**: Clear separation of concerns
 - **Reduced complexity**: Fewer files to maintain
 - **Performance maintained**: No increase in bundle size despite improvements
+
+### 📝 January 31, 2025 Update:
+- **Documented TypeScript files**: Added design-tokens.ts and utilities.ts to architecture
+- **Usage analysis**: design-tokens.ts is actively used, utilities.ts prepared for future
+- **Clarification**: form-builder-styles.css shows as commented out in main.css
+- **Correction**: Only 3 lines of form builder styles in main.css (not 4)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -21,6 +21,14 @@ import insuranceCardGeminiService from '../../services/insuranceCardGeminiServic
 import { designTokens } from '../../styles/design-tokens';
 import { applyTheme, patientFormTheme } from '../../utils/surveyThemes';
 import { apiEndpoints } from '../../config/api';
+import { 
+  detectMobile, 
+  applyMobileTheme, 
+  createMobileStatusBar, 
+  createMobileFormTitle,
+  ensureViewportMeta 
+} from '../../utils/mobileDetection';
+import '../../styles/mobile-dark-theme.css';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -46,6 +54,8 @@ export const PublicFormFill: React.FC = () => {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const formContainerRef = useRef<HTMLDivElement>(null);
   const { processInsuranceCard, isProcessing } = useInsuranceCardProcessor(survey);
 
   useEffect(() => {
@@ -385,6 +395,33 @@ export const PublicFormFill: React.FC = () => {
     loadForm();
   }, [formId, shareToken]);
 
+  // Mobile detection and theme application
+  useEffect(() => {
+    // Ensure proper viewport
+    ensureViewportMeta();
+    
+    // Detect mobile and set state
+    const mobileInfo = detectMobile();
+    setIsMobile(mobileInfo.isMobile);
+    
+    // Apply mobile theme to form container
+    if (formContainerRef.current) {
+      applyMobileTheme(formContainerRef.current, true);
+    }
+    
+    // Handle resize events
+    const handleResize = () => {
+      const mobileInfo = detectMobile();
+      setIsMobile(mobileInfo.isMobile);
+      if (formContainerRef.current) {
+        applyMobileTheme(formContainerRef.current, true);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [survey]); // Re-run when survey changes
+
   const handleFormSubmission = async (formData: any) => {
     try {
       console.log('Form submitted:', formData);
@@ -496,8 +533,33 @@ export const PublicFormFill: React.FC = () => {
   }
 
   // Main form display
+  if (isMobile && survey) {
+    // Mobile view with dark theme
+    return (
+      <Box ref={formContainerRef} className="patient-form-view mobile-dark">
+        {/* Mobile Status Bar */}
+        <div dangerouslySetInnerHTML={{ __html: createMobileStatusBar() }} />
+        
+        {/* Mobile Form Title */}
+        <div dangerouslySetInnerHTML={{ __html: createMobileFormTitle(form?.title || 'PATIENT FORM') }} />
+        
+        {/* Survey Form */}
+        <Survey model={survey} />
+        
+        {/* Mobile Save Button */}
+        <button 
+          className="mobile-save-button"
+          onClick={() => survey.completeLastPage()}
+        >
+          SAVE JOURNAL
+        </button>
+      </Box>
+    );
+  }
+
+  // Desktop view (existing)
   return (
-    <Box className="tw-min-h-screen" style={{ backgroundColor: designTokens.colors.warm.beige }}>
+    <Box ref={formContainerRef} className="patient-form-view tw-min-h-screen" style={{ backgroundColor: designTokens.colors.warm.beige }}>
       {/* Header */}
       <Box className="tw-bg-primary-700 tw-text-white tw-py-8 tw-mb-8">
         <Container maxWidth="md">

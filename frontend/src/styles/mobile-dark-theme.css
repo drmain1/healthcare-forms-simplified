@@ -1,0 +1,332 @@
+/* ================================
+   Mobile Dark Theme - Healthcare Forms
+   Inspired by modern health tracking apps
+   ================================ */
+
+/* Color Palette */
+:root {
+  --mobile-purple-header: #5B4A8A;
+  --mobile-purple-dark: #4A3B70;
+  --mobile-bg-black: #1A1A1F;
+  --mobile-card-dark: #2A2A35;
+  --mobile-text-white: #FFFFFF;
+  --mobile-text-gray: #B8B8C8;
+  --mobile-accent-blue: #5E9EFF;
+  --mobile-toggle-active: #5E9EFF;
+  --mobile-toggle-inactive: #4A4A5A;
+  --mobile-input-bg: #3A3A45;
+  --mobile-border: #4A4A5A;
+}
+
+/* ================================
+   Mobile-Only Dark Theme Application
+   ================================ */
+@media (max-width: 768px) {
+  .patient-form-view.mobile-dark {
+    /* Background and base colors */
+    background-color: var(--mobile-bg-black) !important;
+    color: var(--mobile-text-white) !important;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+
+  /* Remove all default SurveyJS styling */
+  .patient-form-view.mobile-dark .sd-root-modern,
+  .patient-form-view.mobile-dark .sv-root-modern {
+    background: transparent !important;
+    color: inherit !important;
+  }
+
+  /* Mobile Status Bar Style */
+  .mobile-header {
+    background: var(--mobile-purple-header);
+    color: white;
+    padding: 12px 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .mobile-header .time {
+    font-weight: 600;
+  }
+
+  .mobile-header .status-icons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Form Title Bar */
+  .mobile-form-title {
+    background: var(--mobile-purple-dark);
+    color: white;
+    padding: 16px;
+    margin-top: 44px; /* Account for status bar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Form Container */
+  .patient-form-view.mobile-dark .sd-body,
+  .patient-form-view.mobile-dark .sv-body {
+    padding: 0 !important;
+    margin-top: 100px; /* Account for fixed headers */
+  }
+
+  /* Question Container */
+  .patient-form-view.mobile-dark .sd-question,
+  .patient-form-view.mobile-dark .sv-question {
+    background: transparent !important;
+    border: none !important;
+    padding: 20px 16px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid var(--mobile-border) !important;
+  }
+
+  /* Question Title */
+  .patient-form-view.mobile-dark .sd-question__title,
+  .patient-form-view.mobile-dark .sv-question__title {
+    color: var(--mobile-text-white) !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    margin-bottom: 12px !important;
+    padding: 0 !important;
+  }
+
+  /* Hide question numbers */
+  .patient-form-view.mobile-dark .sd-question__num,
+  .patient-form-view.mobile-dark .sv-question__num {
+    display: none !important;
+  }
+
+  /* ================================
+     Custom Toggle Switch Style
+     ================================ */
+  /* Boolean (Yes/No) Questions as Toggles */
+  .patient-form-view.mobile-dark .sd-boolean,
+  .patient-form-view.mobile-dark .sv-boolean {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-boolean__switch,
+  .patient-form-view.mobile-dark .sv-boolean__switch {
+    position: relative !important;
+    width: 60px !important;
+    height: 32px !important;
+    background: var(--mobile-toggle-inactive) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-boolean--checked .sd-boolean__switch,
+  .patient-form-view.mobile-dark .sv-boolean--checked .sv-boolean__switch {
+    background: var(--mobile-toggle-active) !important;
+  }
+
+  /* Toggle thumb */
+  .patient-form-view.mobile-dark .sd-boolean__switch::after,
+  .patient-form-view.mobile-dark .sv-boolean__switch::after {
+    content: '' !important;
+    position: absolute !important;
+    width: 28px !important;
+    height: 28px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    top: 2px !important;
+    left: 2px !important;
+    transition: transform 0.3s ease !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-boolean--checked .sd-boolean__switch::after,
+  .patient-form-view.mobile-dark .sv-boolean--checked .sv-boolean__switch::after {
+    transform: translateX(28px) !important;
+  }
+
+  /* Checkmark for active state */
+  .patient-form-view.mobile-dark .sd-boolean--checked .sd-boolean__switch::before,
+  .patient-form-view.mobile-dark .sv-boolean--checked .sv-boolean__switch::before {
+    content: '✓' !important;
+    position: absolute !important;
+    left: 8px !important;
+    top: 6px !important;
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+  }
+
+  /* ================================
+     Input Fields
+     ================================ */
+  .patient-form-view.mobile-dark input[type="text"],
+  .patient-form-view.mobile-dark input[type="number"],
+  .patient-form-view.mobile-dark input[type="email"],
+  .patient-form-view.mobile-dark input[type="tel"],
+  .patient-form-view.mobile-dark select,
+  .patient-form-view.mobile-dark textarea,
+  .patient-form-view.mobile-dark .sd-input,
+  .patient-form-view.mobile-dark .sv-input {
+    background: var(--mobile-input-bg) !important;
+    border: 1px solid var(--mobile-border) !important;
+    color: var(--mobile-text-white) !important;
+    padding: 14px 16px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    width: 100% !important;
+    -webkit-appearance: none !important;
+  }
+
+  .patient-form-view.mobile-dark input::placeholder,
+  .patient-form-view.mobile-dark .sd-input::placeholder {
+    color: var(--mobile-text-gray) !important;
+    opacity: 0.7 !important;
+  }
+
+  /* Focus states */
+  .patient-form-view.mobile-dark input:focus,
+  .patient-form-view.mobile-dark select:focus,
+  .patient-form-view.mobile-dark textarea:focus {
+    outline: none !important;
+    border-color: var(--mobile-accent-blue) !important;
+    box-shadow: 0 0 0 2px rgba(94, 158, 255, 0.2) !important;
+  }
+
+  /* ================================
+     Section Headers
+     ================================ */
+  .patient-form-view.mobile-dark .sd-panel__title,
+  .patient-form-view.mobile-dark .sv-panel__title {
+    color: var(--mobile-text-gray) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    margin: 24px 16px 16px 16px !important;
+    padding: 0 !important;
+  }
+
+  /* ================================
+     Bottom Action Button
+     ================================ */
+  .mobile-save-button {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: white !important;
+    color: var(--mobile-purple-dark) !important;
+    padding: 18px !important;
+    border-radius: 28px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-align: center !important;
+    z-index: 90;
+  }
+
+  .mobile-save-button:active {
+    transform: scale(0.98) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  }
+
+  /* Hide default navigation */
+  .patient-form-view.mobile-dark .sd-action-bar,
+  .patient-form-view.mobile-dark .sv-action-bar,
+  .patient-form-view.mobile-dark .sd-navigation,
+  .patient-form-view.mobile-dark .sv-navigation {
+    display: none !important;
+  }
+
+  /* ================================
+     Special Components
+     ================================ */
+  /* Slider for numeric inputs */
+  .patient-form-view.mobile-dark input[type="range"] {
+    -webkit-appearance: none !important;
+    width: 100% !important;
+    height: 6px !important;
+    background: var(--mobile-input-bg) !important;
+    border-radius: 3px !important;
+    outline: none !important;
+  }
+
+  .patient-form-view.mobile-dark input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 24px !important;
+    height: 24px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  }
+
+  /* Radio buttons as cards */
+  .patient-form-view.mobile-dark .sd-item,
+  .patient-form-view.mobile-dark .sv-item {
+    background: var(--mobile-card-dark) !important;
+    border: 1px solid var(--mobile-border) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-item--checked,
+  .patient-form-view.mobile-dark .sv-item--checked {
+    background: var(--mobile-purple-dark) !important;
+    border-color: var(--mobile-accent-blue) !important;
+  }
+
+  /* Hide default radio/checkbox */
+  .patient-form-view.mobile-dark .sd-item input[type="radio"],
+  .patient-form-view.mobile-dark .sd-item input[type="checkbox"],
+  .patient-form-view.mobile-dark .sv-item input[type="radio"],
+  .patient-form-view.mobile-dark .sv-item input[type="checkbox"] {
+    display: none !important;
+  }
+
+  /* ================================
+     Responsive Adjustments
+     ================================ */
+  /* Add padding to account for fixed elements */
+  .patient-form-view.mobile-dark {
+    padding-bottom: 100px !important;
+  }
+
+  /* Smooth scrolling */
+  .patient-form-view.mobile-dark {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Remove all shadows and borders from panels */
+  .patient-form-view.mobile-dark .sd-panel,
+  .patient-form-view.mobile-dark .sv-panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

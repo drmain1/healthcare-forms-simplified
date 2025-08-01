@@ -1,0 +1,298 @@
+/* ================================
+   Mobile Enhanced Styles for Patient Forms
+   Safely extends SurveyJS with mobile optimizations
+   ================================ */
+
+/* Mobile Detection Classes - Applied via JavaScript */
+.is-mobile-device .patient-form-view {
+  /* CSS Variables for Mobile */
+  --sjs-mobile-padding: 16px;
+  --sjs-mobile-touch-target: 48px;
+  --sjs-mobile-font-size: 16px; /* Prevents zoom on iOS */
+  --sjs-mobile-border-radius: 12px;
+  --sjs-mobile-spacing: 20px;
+}
+
+/* ================================
+   1. Touch-Optimized Inputs
+   ================================ */
+@media (max-width: 768px) {
+  .patient-form-view {
+    /* Prevent font size zoom on iOS */
+    font-size: var(--sjs-mobile-font-size) !important;
+  }
+
+  /* All interactive elements get minimum touch target */
+  .patient-form-view .sd-input,
+  .patient-form-view .sd-btn,
+  .patient-form-view .sv-btn,
+  .patient-form-view button,
+  .patient-form-view input[type="text"],
+  .patient-form-view input[type="email"],
+  .patient-form-view input[type="tel"],
+  .patient-form-view input[type="date"],
+  .patient-form-view select,
+  .patient-form-view textarea {
+    min-height: var(--sjs-mobile-touch-target);
+    padding: 12px 16px;
+    font-size: var(--sjs-mobile-font-size);
+  }
+
+  /* Checkboxes and Radio buttons */
+  .patient-form-view .sd-selectbase__item,
+  .patient-form-view .sv-item__decorator {
+    min-height: var(--sjs-mobile-touch-target);
+    padding: 8px 12px;
+  }
+
+  /* Increase clickable area for checkboxes/radios */
+  .patient-form-view .sd-item__control:before,
+  .patient-form-view .sv-item__control:before {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ================================
+   2. Mobile Layout Optimizations
+   ================================ */
+@media (max-width: 768px) {
+  /* Full width containers on mobile */
+  .patient-form-view .sd-container,
+  .patient-form-view .sv-container {
+    padding: var(--sjs-mobile-padding);
+    max-width: 100%;
+  }
+
+  /* Stack form elements vertically */
+  .patient-form-view .sd-row,
+  .patient-form-view .sv-row {
+    flex-direction: column;
+  }
+
+  /* Full width questions */
+  .patient-form-view .sd-question,
+  .patient-form-view .sv-question {
+    width: 100% !important;
+    margin-bottom: var(--sjs-mobile-spacing);
+  }
+
+  /* Remove side padding for better space usage */
+  .patient-form-view .sd-body,
+  .patient-form-view .sv-body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* ================================
+   3. Mobile Navigation
+   ================================ */
+@media (max-width: 768px) {
+  /* Fixed bottom navigation */
+  .patient-form-view .sd-action-bar,
+  .patient-form-view .sv-nav-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: var(--sjs-mobile-padding);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+  }
+
+  /* Add padding to prevent content hiding behind fixed nav */
+  .patient-form-view {
+    padding-bottom: calc(var(--sjs-mobile-touch-target) + 32px);
+  }
+
+  /* Full width buttons on mobile */
+  .patient-form-view .sd-btn,
+  .patient-form-view .sv-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* ================================
+   4. Tailwind Mobile Utilities
+   ================================ */
+@media (max-width: 768px) {
+  /* Mobile-specific Tailwind utilities */
+  .patient-form-view .tw-mobile-stack {
+    @apply tw-flex-col tw-gap-4;
+  }
+
+  .patient-form-view .tw-mobile-full {
+    @apply tw-w-full;
+  }
+
+  .patient-form-view .tw-mobile-center {
+    @apply tw-text-center tw-mx-auto;
+  }
+
+  .patient-form-view .tw-mobile-rounded {
+    @apply tw-rounded-xl;
+  }
+
+  .patient-form-view .tw-mobile-shadow {
+    @apply tw-shadow-lg;
+  }
+}
+
+/* ================================
+   5. Enhanced Touch Interactions
+   ================================ */
+.is-mobile-device .patient-form-view {
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  
+  /* Disable text selection on buttons */
+  button, .sd-btn, .sv-btn {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active state feedback */
+  button:active,
+  .sd-btn:active,
+  .sv-btn:active,
+  input:active,
+  select:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* ================================
+   6. Mobile-Specific Components
+   ================================ */
+@media (max-width: 768px) {
+  /* Date picker enhancement */
+  .patient-form-view input[type="date"] {
+    position: relative;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23666666'%3E%3Cpath d='M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: calc(100% - 12px) center;
+    padding-right: 40px;
+  }
+
+  /* Signature pad sizing */
+  .patient-form-view .sd-signaturepad,
+  .patient-form-view .sv-signaturepad {
+    width: 100% !important;
+    height: 200px !important;
+  }
+
+  /* File upload enhancement */
+  .patient-form-view input[type="file"] {
+    width: 100%;
+    padding: var(--sjs-mobile-padding);
+    border: 2px dashed var(--sjs-border-default);
+    border-radius: var(--sjs-mobile-border-radius);
+    background-color: var(--sjs-general-backcolor-dim);
+  }
+}
+
+/* ================================
+   7. Performance Optimizations
+   ================================ */
+@media (max-width: 768px) {
+  /* Reduce animations on mobile */
+  .patient-form-view * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.2s !important;
+  }
+
+  /* Optimize long lists */
+  .patient-form-view .sd-dropdown,
+  .patient-form-view .sv-dropdown {
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+}
+
+/* ================================
+   8. Accessibility Enhancements
+   ================================ */
+@media (max-width: 768px) {
+  /* Larger focus indicators */
+  .patient-form-view *:focus {
+    outline: 3px solid var(--sjs-primary-backcolor);
+    outline-offset: 2px;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .patient-form-view {
+      --sjs-border-default: #000;
+      --sjs-primary-backcolor: #000;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .patient-form-view * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* ================================
+   9. Healthcare-Specific Mobile Styles
+   ================================ */
+@media (max-width: 768px) {
+  /* Pain scale visual enhancement */
+  .patient-form-view .pain-scale {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--sjs-mobile-padding);
+  }
+
+  .patient-form-view .pain-scale-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    min-height: var(--sjs-mobile-touch-target);
+  }
+
+  /* Insurance card upload */
+  .patient-form-view .insurance-upload {
+    border: 3px dashed var(--sjs-primary-backcolor);
+    padding: 24px;
+    text-align: center;
+    border-radius: var(--sjs-mobile-border-radius);
+  }
+
+  /* Emergency contact section */
+  .patient-form-view .emergency-contact {
+    background-color: var(--sjs-general-backcolor-dim);
+    padding: var(--sjs-mobile-padding);
+    border-radius: var(--sjs-mobile-border-radius);
+    margin-top: var(--sjs-mobile-spacing);
+  }
+}
+
+/* ================================
+   10. Debug Mode (Development Only)
+   ================================ */
+.mobile-debug .patient-form-view {
+  border: 2px solid red;
+}
+
+.mobile-debug .patient-form-view::before {
+  content: "Mobile Mode Active";
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: red;
+  color: white;
+  padding: 5px 10px;
+  font-size: 12px;
+  z-index: 9999;
+  border-radius: 4px;
+}

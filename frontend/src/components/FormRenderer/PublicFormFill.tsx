@@ -30,7 +30,7 @@ import {
 } from '../../utils/mobileDetection';
 import '../../styles/mobile-minimal.css';
 import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
-import { forceMobileTheme, removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
+import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
 
 // Fetch form using the public share token endpoint
@@ -422,7 +422,7 @@ export const PublicFormFill: React.FC = () => {
     // Apply mobile theme fix if on mobile
     if (mobileInfo.isMobile && survey) {
       // Force mobile theme to override SurveyJS theme
-      forceMobileTheme(survey);
+      // forceMobileTheme(survey); // Commented out - using minimal CSS approach
       
       // Also optimize the survey model at runtime
       optimizeSurveyModelForMobile(survey);

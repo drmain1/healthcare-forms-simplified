@@ -83,6 +83,12 @@ class FormMobileOptimizer:
                     element['maxWidth'] = '100%'
                     logger.info(f"Set maxWidth to 100% for {element.get('name', 'unnamed')}")
             
+            # Optimize dropdowns for mobile
+            elif element_type == 'dropdown':
+                # Force native select rendering on mobile
+                element['renderAs'] = 'select'
+                logger.info(f"Set renderAs='select' for {element.get('name', 'unnamed')} (native mobile dropdown)")
+            
             # Optimize file uploads
             elif element_type == 'file':
                 # Ensure camera access on mobile

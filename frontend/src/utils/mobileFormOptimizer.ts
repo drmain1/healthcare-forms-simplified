@@ -42,6 +42,9 @@ function optimizeElement(element: any) {
   
   // Optimize dropdowns
   if (element.type === 'dropdown') {
+    // Force native select rendering on mobile
+    element.renderAs = 'select';
+    
     // Ensure dropdowns have proper placeholder
     if (!element.placeholder) {
       element.placeholder = 'Select an option';
@@ -83,6 +86,13 @@ export function optimizeSurveyModelForMobile(survey: any) {
       }
     }
     
+    // Optimize dropdowns for mobile
+    if (question.getType() === 'dropdown') {
+      // Force native select rendering
+      question.renderAs = 'select';
+      console.log(`Set renderAs='select' for dropdown: ${question.name}`);
+    }
+    
     // Add mobile-specific CSS classes
     if (question.cssClasses) {
       question.cssClasses.root = (question.cssClasses.root || '') + ' mobile-optimized';
@@ -108,6 +118,11 @@ export function needsMobileOptimization(surveyJson: any): boolean {
       if (element.renderAs === 'table') {
         needsOptimization = true;
       }
+    }
+    
+    // Check dropdowns - always optimize on mobile
+    if (element.type === 'dropdown') {
+      needsOptimization = true;
     }
     
     // Check nested elements

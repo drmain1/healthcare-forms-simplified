@@ -298,6 +298,14 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
         },
         {
           type: 'text',
+          name: 'form_date',
+          title: "Today's Date",
+          inputType: 'date',
+          defaultValue: new Date().toISOString().split('T')[0],
+          readOnly: true
+        },
+        {
+          type: 'text',
           name: 'first_name',
           title: 'First Name',
           isRequired: true,

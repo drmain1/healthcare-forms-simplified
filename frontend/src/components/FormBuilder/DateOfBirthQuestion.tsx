@@ -58,9 +58,9 @@ export const DateOfBirthInput: React.FC<{
   const minDateString = minDate.toISOString().split('T')[0];
 
   return (
-    <div className="tw-p-4 tw-bg-gray-100 tw-rounded-lg tw-border tw-border-gray-300">
+    <div className="tw-p-4 tw-rounded-lg tw-border tw-border-gray-300">
       <div className="tw-mb-4">
-        <label className="tw-block tw-mb-2 tw-text-sm tw-font-medium tw-text-gray-700">
+        <label className="tw-block tw-mb-2 tw-text-sm tw-font-medium">
           Date of Birth
         </label>
         <input
@@ -70,27 +70,27 @@ export const DateOfBirthInput: React.FC<{
           disabled={readOnly}
           max={maxDate}
           min={minDateString}
-          className={`tw-w-full tw-p-3 tw-text-base tw-border tw-border-gray-400 tw-rounded tw-text-gray-700 ${
+          className={`tw-w-full tw-p-3 tw-text-base tw-border tw-border-gray-400 tw-rounded ${
             readOnly 
-              ? 'tw-bg-gray-100 tw-cursor-not-allowed' 
-              : 'tw-bg-white tw-cursor-pointer hover:tw-border-primary-500 focus:tw-border-primary-500 focus:tw-ring-2 focus:tw-ring-primary-200'
+              ? 'tw-cursor-not-allowed' 
+              : 'tw-cursor-pointer hover:tw-border-primary-500 focus:tw-border-primary-500 focus:tw-ring-2 focus:tw-ring-primary-200'
           }`}
         />
       </div>
       
       {dob && (
-        <div className="tw-flex tw-items-center tw-justify-between tw-p-3 tw-bg-blue-50 tw-rounded tw-mt-3">
-          <span className="tw-text-sm tw-text-gray-600 tw-font-medium">
+        <div className="tw-flex tw-items-center tw-justify-between tw-p-3 tw-rounded tw-mt-3 tw-border tw-border-gray-300">
+          <span className="tw-text-sm tw-font-medium">
             Calculated Age:
           </span>
-          <span className="tw-text-2xl tw-font-bold tw-text-primary-700">
+          <span className="tw-text-2xl tw-font-bold">
             {age} years
           </span>
         </div>
       )}
       
       {!dob && (
-        <div className="tw-p-3 tw-bg-orange-50 tw-rounded tw-mt-3 tw-text-sm tw-text-gray-600 tw-text-center">
+        <div className="tw-p-3 tw-rounded tw-mt-3 tw-text-sm tw-text-center tw-border tw-border-gray-300">
           Please select date of birth to calculate age
         </div>
       )}

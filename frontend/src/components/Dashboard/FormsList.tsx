@@ -135,9 +135,11 @@ export const FormsList: React.FC = () => {
 
   // Handle when full form data is loaded
   React.useEffect(() => {
-    if (fullFormData && fullFormData.surveyJson && isLoadingFullForm === false) {
+    console.log('Form preview data:', fullFormData); // Debug log
+    if (fullFormData && (fullFormData.surveyJson || (fullFormData as any).survey_json) && isLoadingFullForm === false) {
       try {
-        const survey = createSurveyModel(fullFormData.surveyJson);
+        const surveyJson = fullFormData.surveyJson || (fullFormData as any).survey_json;
+        const survey = createSurveyModel(surveyJson);
         
         // Configure survey for preview mode
         survey.mode = 'display'; // Use display mode for preview (read-only)

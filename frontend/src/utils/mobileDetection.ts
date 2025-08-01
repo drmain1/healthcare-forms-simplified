@@ -3,6 +3,8 @@
  * Provides reliable mobile device detection and theme application
  */
 
+import * as React from 'react';
+
 export interface MobileDetectionResult {
   isMobile: boolean;
   isTablet: boolean;
@@ -154,8 +156,3 @@ export const ensureViewportMeta = (): void => {
   
   viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 };
-
-/**
- * Import React for the hook
- */
-import * as React from 'react';

@@ -23,8 +23,9 @@
    ================================ */
 @media (max-width: 768px) {
   .patient-form-view.mobile-dark {
-    /* Background and base colors */
-    background-color: var(--mobile-bg-black) !important;
+    /* Background gradient - deep blue */
+    background: linear-gradient(to bottom, #000428, #004e92) !important;
+    background-attachment: fixed !important;
     color: var(--mobile-text-white) !important;
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
@@ -82,7 +83,7 @@
   /* Form Container */
   .patient-form-view.mobile-dark .sd-body,
   .patient-form-view.mobile-dark .sv-body {
-    padding: 0 !important;
+    padding: 0 0 100px 0 !important; /* Bottom padding for fixed nav */
     margin-top: 100px; /* Account for fixed headers */
   }
 
@@ -172,24 +173,54 @@
   }
 
   /* ================================
-     Input Fields
+     Input Fields - Unified Mobile Style
      ================================ */
+  
+  /* First, normalize all question containers */
+  .patient-form-view.mobile-dark .sd-question__content,
+  .patient-form-view.mobile-dark .sv-question__content,
+  .patient-form-view.mobile-dark .sd-row,
+  .patient-form-view.mobile-dark .sv-row {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+  
+  /* All input types - consistent flush style */
   .patient-form-view.mobile-dark input[type="text"],
   .patient-form-view.mobile-dark input[type="number"],
   .patient-form-view.mobile-dark input[type="email"],
   .patient-form-view.mobile-dark input[type="tel"],
+  .patient-form-view.mobile-dark input[type="date"],
+  .patient-form-view.mobile-dark input[type="url"],
   .patient-form-view.mobile-dark select,
   .patient-form-view.mobile-dark textarea,
   .patient-form-view.mobile-dark .sd-input,
   .patient-form-view.mobile-dark .sv-input {
-    background: var(--mobile-input-bg) !important;
-    border: 1px solid var(--mobile-border) !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
     color: var(--mobile-text-white) !important;
-    padding: 14px 16px !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
+    padding: 12px 0 8px 0 !important;
+    border-radius: 0 !important;
+    font-size: 17px !important;
     width: 100% !important;
     -webkit-appearance: none !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  
+  /* Remove any input containers that create boxes */
+  .patient-form-view.mobile-dark .sd-input-container,
+  .patient-form-view.mobile-dark .sv-input-container,
+  .patient-form-view.mobile-dark .sd-text__content,
+  .patient-form-view.mobile-dark .sv-text__content {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
   }
 
   .patient-form-view.mobile-dark input::placeholder,
@@ -198,13 +229,16 @@
     opacity: 0.7 !important;
   }
 
-  /* Focus states */
+  /* Focus states - minimal style for flush inputs */
   .patient-form-view.mobile-dark input:focus,
   .patient-form-view.mobile-dark select:focus,
-  .patient-form-view.mobile-dark textarea:focus {
+  .patient-form-view.mobile-dark textarea:focus,
+  .patient-form-view.mobile-dark .sd-input:focus,
+  .patient-form-view.mobile-dark .sv-input:focus {
     outline: none !important;
-    border-color: var(--mobile-accent-blue) !important;
-    box-shadow: 0 0 0 2px rgba(94, 158, 255, 0.2) !important;
+    border-bottom: 2px solid var(--mobile-accent-blue) !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   /* ================================
@@ -219,6 +253,16 @@
     letter-spacing: 1px !important;
     margin: 24px 16px 16px 16px !important;
     padding: 0 !important;
+  }
+
+  /* Hide form description/header sections on mobile */
+  .patient-form-view.mobile-dark .sd-description,
+  .patient-form-view.mobile-dark .sv-description,
+  .patient-form-view.mobile-dark .sd-page__description,
+  .patient-form-view.mobile-dark .sv-page__description,
+  .patient-form-view.mobile-dark .sd-survey__description,
+  .patient-form-view.mobile-dark .sv-survey__description {
+    display: none !important;
   }
 
   /* ================================
@@ -250,12 +294,40 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
   }
 
-  /* Hide default navigation */
+  /* Style navigation buttons for mobile */
   .patient-form-view.mobile-dark .sd-action-bar,
-  .patient-form-view.mobile-dark .sv-action-bar,
-  .patient-form-view.mobile-dark .sd-navigation,
-  .patient-form-view.mobile-dark .sv-navigation {
-    display: none !important;
+  .patient-form-view.mobile-dark .sv-action-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 16px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+    z-index: 100 !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-navigation__complete-btn,
+  .patient-form-view.mobile-dark .sd-navigation__next-btn,
+  .patient-form-view.mobile-dark .sd-navigation__prev-btn,
+  .patient-form-view.mobile-dark .sv-nav-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #000428 !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    margin: 0 8px !important;
+    min-width: 100px !important;
+  }
+
+  .patient-form-view.mobile-dark .sd-navigation__complete-btn:active,
+  .patient-form-view.mobile-dark .sd-navigation__next-btn:active,
+  .patient-form-view.mobile-dark .sd-navigation__prev-btn:active {
+    transform: scale(0.95) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
   }
 
   /* ================================
@@ -307,6 +379,26 @@
     display: none !important;
   }
 
+  /* Fix radio button text color */
+  .patient-form-view.mobile-dark .sd-item__control-label,
+  .patient-form-view.mobile-dark .sv-item__control-label,
+  .patient-form-view.mobile-dark .sd-item label,
+  .patient-form-view.mobile-dark .sv-item label,
+  .patient-form-view.mobile-dark .sd-item span,
+  .patient-form-view.mobile-dark .sv-item span {
+    color: var(--mobile-text-white) !important;
+  }
+
+  /* Hide checkbox/radio decorators on mobile */
+  .patient-form-view.mobile-dark .sd-item__decorator,
+  .patient-form-view.mobile-dark .sv-item__decorator,
+  .patient-form-view.mobile-dark .sd-item__control,
+  .patient-form-view.mobile-dark .sv-item__control,
+  .patient-form-view.mobile-dark .sd-visuallyhidden,
+  .patient-form-view.mobile-dark .sv-visuallyhidden {
+    display: none !important;
+  }
+
   /* ================================
      Responsive Adjustments
      ================================ */
@@ -328,5 +420,169 @@
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
+  }
+
+  /* ================================
+     Custom Date of Birth Question Overrides
+     ================================ */
+  /* Override the gray background container */
+  .patient-form-view.mobile-dark .tw-bg-gray-100 {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Override all Tailwind gray backgrounds and borders in date of birth question */
+  .patient-form-view.mobile-dark [class*="tw-bg-gray"],
+  .patient-form-view.mobile-dark [class*="tw-border-gray"] {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  /* Style the date of birth label */
+  .patient-form-view.mobile-dark .tw-text-gray-700 {
+    color: var(--mobile-text-white) !important;
+  }
+
+  /* Override the age display container */
+  .patient-form-view.mobile-dark .tw-bg-blue-50 {
+    background: rgba(94, 158, 255, 0.1) !important;
+    border: 1px solid rgba(94, 158, 255, 0.3) !important;
+  }
+
+  /* Override the "please select" container */
+  .patient-form-view.mobile-dark .tw-bg-orange-50 {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Style text in custom containers */
+  .patient-form-view.mobile-dark .tw-text-gray-600 {
+    color: var(--mobile-text-gray) !important;
+  }
+
+  /* Style the age number */
+  .patient-form-view.mobile-dark .tw-text-primary-700 {
+    color: var(--mobile-accent-blue) !important;
+  }
+
+  /* Ensure date input inside custom question follows flush style */
+  .patient-form-view.mobile-dark [class*="tw-border"] input[type="date"] {
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: transparent !important;
+    padding: 12px 0 8px 0 !important;
+  }
+
+  /* ================================
+     Mobile Status Bar Styles
+     ================================ */
+  /* Mobile status bar container */
+  .mobile-status-bar {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* Ensure status bar text is always visible */
+  .mobile-status-bar span,
+  .mobile-status-bar svg {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ================================
+     Mobile Progress Indicator Styles
+     ================================ */
+  /* Hide default SurveyJS progress bar on mobile */
+  .patient-form-view.mobile-dark .sd-progress,
+  .patient-form-view.mobile-dark .sv-progress,
+  .patient-form-view.mobile-dark .sd-progress-bar,
+  .patient-form-view.mobile-dark .sv-progress-bar {
+    display: none !important;
+  }
+
+  /* Ensure proper spacing for fixed progress indicators */
+  .patient-form-view.mobile-dark .pt-\[60px\] {
+    padding-top: 60px !important;
+  }
+  
+  /* Padding for status bar + progress indicator */
+  .patient-form-view.mobile-dark .pt-\[104px\] {
+    padding-top: 104px !important;
+  }
+
+  /* Adjust form container for bottom progress */
+  .patient-form-view.mobile-dark {
+    padding-bottom: 160px !important; /* Space for bottom nav + progress */
+  }
+
+  /* Progress indicator mobile optimizations */
+  .mobile-progress-indicator {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  /* Smooth transitions for progress changes */
+  .mobile-progress-indicator * {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ================================
+     Mobile Status Bar Styles
+     ================================ */
+  .mobile-status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1000;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .mobile-status-bar .status-time {
+    flex: 1;
+    text-align: left;
+    min-width: 50px;
+  }
+
+  .mobile-status-bar .status-carrier {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+    opacity: 0.9;
+  }
+
+  .mobile-status-bar .status-icons {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .mobile-status-bar .status-icons svg {
+    display: block;
+  }
+
+  /* Add subtle animation to battery when charging */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .mobile-status-bar .status-icons svg:has(path[stroke]) {
+    animation: pulse 2s ease-in-out infinite;
   }
 }

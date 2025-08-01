@@ -537,22 +537,8 @@ export const PublicFormFill: React.FC = () => {
     // Mobile view with dark theme
     return (
       <Box ref={formContainerRef} className="patient-form-view mobile-dark">
-        {/* Mobile Status Bar */}
-        <div dangerouslySetInnerHTML={{ __html: createMobileStatusBar() }} />
-        
-        {/* Mobile Form Title */}
-        <div dangerouslySetInnerHTML={{ __html: createMobileFormTitle(form?.title || 'PATIENT FORM') }} />
-        
         {/* Survey Form */}
         <Survey model={survey} />
-        
-        {/* Mobile Save Button */}
-        <button 
-          className="mobile-save-button"
-          onClick={() => survey.completeLastPage()}
-        >
-          SAVE JOURNAL
-        </button>
       </Box>
     );
   }

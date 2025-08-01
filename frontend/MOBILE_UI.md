@@ -207,7 +207,73 @@ If mobile theme causes issues:
 - Add field validation animations
 - Create loading skeletons
 
-## Recent Changes (January 31, 2025)
+## Recent Changes (January 31, 2025) - Theme Conflict Resolution
+
+### Issue Resolved: SurveyJS Theme Conflict
+**Problem**: Forms displayed with half dark theme and half beige/tan background on mobile due to SurveyJS `patientFormTheme` overriding mobile CSS.
+
+**Root Cause**: The `patientFormTheme` in `surveyThemes.ts` sets background colors (`--sjs-general-backcolor: '#efe9dc'`) that have higher specificity than the mobile dark theme CSS.
+
+**Solution Implemented**:
+
+#### 1. Mobile Diagnostics Tool (`/src/utils/mobileDiagnostics.ts`)
+A comprehensive diagnostic system that runs automatically on mobile to identify theme issues:
+
+```typescript
+// Automatically runs 8 diagnostic tests:
+- CSS File Loading Check
+- Mobile Detection Verification  
+- CSS Classes Application
+- CSS Variable Override Validation
+- Style Conflict Detection
+- SurveyJS Theme Analysis
+- Computed Style Inspection
+- Media Query Verification
+
+// Usage from console:
+await mobileDiagnostics.runAllTests();
+mobileDiagnostics.logResults();
+mobileDiagnostics.createVisualDebugOverlay(); // Shows red borders on problematic elements
+```
+
+#### 2. Mobile Theme Fix (`/src/utils/mobileThemeFix.ts`)
+Runtime theme override system that forcefully applies mobile dark theme:
+
+```typescript
+export function forceMobileTheme(survey: any) {
+  // Injects high-specificity CSS overrides
+  // Sets all SurveyJS backgrounds to transparent
+  // Modifies survey theme object at runtime
+  // Forces re-render with mobile theme
+}
+```
+
+Key features:
+- Overrides ALL SurveyJS background CSS variables
+- Targets every possible container element
+- Uses `!important` flags for maximum specificity
+- Ensures gradient background shows through
+
+#### 3. Updated PublicFormFill Component
+Modified to automatically apply fixes on mobile:
+- Detects mobile devices
+- Applies `mobile-dark` class
+- Runs `forceMobileTheme()` on survey instance
+- Executes diagnostics in development mode
+- Shows visual debug overlay for 5 seconds
+
+### Files Modified/Created:
+1. `/src/utils/mobileDiagnostics.ts` - NEW: Diagnostic tool
+2. `/src/utils/mobileThemeFix.ts` - NEW: Theme override system  
+3. `/src/components/FormRenderer/PublicFormFill.tsx` - MODIFIED: Auto-applies fixes
+
+### Testing the Fix:
+1. Visit form on mobile device or Chrome mobile view
+2. Check console for diagnostic results (✅/❌ indicators)
+3. Look for red overlay showing problematic elements
+4. Verify gradient background is consistent throughout form
+
+## Recent Changes (January 31, 2025) - UI Updates
 
 ### Major Updates:
 1. **Background**: Changed from solid black to blue gradient (#000428 → #004e92)
@@ -239,31 +305,175 @@ If mobile theme causes issues:
 - Minimal borders and decorations
 - Maximum screen space for content
 
+## CSS Architecture & Theming System
+
+### CSS Loading Order
+1. **Foundation** (`src/index.tsx`):
+   - `./styles/main.css` - Foundation styles + design system
+   - `./styles/tailwind.css` - Tailwind CSS
+
+2. **SurveyJS Styles** (`src/App.tsx`):
+   - `survey-core/survey-core.css` - Core SurveyJS components
+   - `survey-creator-core/survey-creator-core.css` - Form builder interface
+
+3. **Component-Specific** (conditionally):
+   - `mobile-dark-theme.css` - Mobile-specific overrides
+
+### SurveyJS Theme Variables Override
+
+The mobile dark theme overrides ALL SurveyJS background variables to ensure consistent styling:
+
+```css
+/* Primary backgrounds */
+--sjs-general-backcolor: transparent !important;
+--sjs-general-backcolor-dim: transparent !important;
+--sjs-general-backcolor-dim-light: transparent !important;
+
+/* Component backgrounds */
+--sjs-question-background: transparent !important;
+--sjs-panel-backcolor: transparent !important;
+
+/* Text colors */
+--sjs-general-forecolor: var(--mobile-text-white) !important;
+--sjs-general-forecolor-light: var(--mobile-text-gray) !important;
+```
+
+### Known Background Color Sources
+1. **SurveyJS Theme** (`surveyThemes.ts`):
+   - `--sjs-general-backcolor: #efe9dc` (main background)
+   - `--sjs-general-backcolor-dim: #f5f2e8` (secondary - causes tan issue)
+
+2. **Design Tokens** (`design-tokens.ts`):
+   - `colors.warm.beige: #CEC5B4`
+
+3. **Container Elements**:
+   - `.sd-root-modern`, `.sv-root-modern` - Survey root
+   - `.sd-body`, `.sv-body` - Survey body
+   - `.sd-page`, `.sv-page` - Page containers
+   - `.sd-panel`, `.sv-panel` - Panel containers
+
 ## Troubleshooting
 
 ### Common Issues:
 
-1. **Theme Not Applied**:
+1. **Tan/Beige Background on Forms** (RESOLVED):
+   - **Cause**: SurveyJS theme variables (`--sjs-general-backcolor-dim: #f5f2e8`)
+   - **Solution**: Implemented `mobileThemeFix.ts` that forcefully overrides all backgrounds
+   - **Automatic**: Fix is now automatically applied when mobile is detected
+   - **Verify**: Run `mobileDiagnostics.runAllTests()` in console to check
+
+2. **Theme Not Applied**:
    - Check browser console for errors
    - Verify CSS file imports
    - Confirm mobile detection working
    - Clear browser cache
+   - Check CSS specificity conflicts
 
-2. **Inputs Too Small**:
+3. **Inconsistent Styling Between Forms**:
+   - Forms from different PDFs may have different theme settings
+   - Mobile dark theme forces consistency with transparent backgrounds
+   - All forms share same gradient background from container
+
+4. **Inputs Too Small**:
    - Check CSS specificity
    - Verify min-height: 48px applied
    - Test with different zoom levels
 
-3. **Toggle Switches Not Showing**:
+5. **Toggle Switches Not Showing**:
    - Verify boolean question type in SurveyJS
    - Check CSS for .sd-boolean classes
    - Inspect DOM for proper structure
 
-4. **Performance Issues**:
+6. **Performance Issues**:
    - Reduce animation durations
    - Check for console errors
    - Test on real devices
    - Monitor memory usage
+
+## CSS Override Strategy
+
+### Comprehensive Background Override (January 31, 2025) - ENHANCED
+
+The mobile dark theme now implements a two-pronged override strategy to ensure consistent styling:
+
+#### A. CSS-Based Overrides (`mobile-dark-theme.css`)
+
+1. **CSS Variable Overrides** (Lines 42-62):
+   ```css
+   .patient-form-view.mobile-dark {
+     /* Override ALL SurveyJS background variables */
+     --sjs-general-backcolor: transparent !important;
+     --sjs-general-backcolor-dim: transparent !important;
+     /* ... all other background variables */
+   }
+   ```
+
+2. **Container Element Overrides** (Lines 449-461):
+   ```css
+   .patient-form-view.mobile-dark .sd-container,
+   .patient-form-view.mobile-dark .sv-container,
+   .patient-form-view.mobile-dark .sd-page,
+   /* ... all SurveyJS containers */
+   {
+     background: transparent !important;
+     background-color: transparent !important;
+   }
+   ```
+
+3. **Specificity Strategy**:
+   - Use `.patient-form-view.mobile-dark` for high specificity
+   - Apply `!important` to override inline styles
+   - Target both `sd-*` and `sv-*` prefixes (SurveyJS naming conventions)
+
+#### B. Runtime JavaScript Overrides (`mobileThemeFix.ts`) - NEW
+Dynamic theme override system that runs after CSS is applied:
+
+1. **Style Injection**:
+   ```typescript
+   // Injects a <style> element with maximum specificity rules
+   styleEl.textContent = `
+     @media (max-width: 768px) {
+       .patient-form-view.mobile-dark,
+       .patient-form-view.mobile-dark * {
+         --sjs-general-backcolor: transparent !important;
+         // ... all other background variables
+       }
+     }
+   `;
+   ```
+
+2. **Runtime Theme Modification**:
+   ```typescript
+   // Modifies the survey's CSS classes at runtime
+   survey.css.root = 'sd-root-modern mobile-transparent';
+   survey.css.container = 'sd-container-modern mobile-transparent';
+   // Forces re-render with new classes
+   survey.render();
+   ```
+
+3. **Automatic Application**:
+   - Detects mobile devices
+   - Applies fixes when survey loads
+   - Cleans up on component unmount
+
+### Maintainability Guidelines
+
+1. **When Adding New Overrides**:
+   - Check SurveyJS documentation for new CSS variables
+   - Test with multiple forms from different PDF sources
+   - Verify text contrast remains accessible
+
+2. **Testing Checklist**:
+   - [ ] Form displays with gradient background
+   - [ ] No tan/beige patches visible
+   - [ ] All text is readable (white/gray on dark)
+   - [ ] Input fields have consistent styling
+   - [ ] Custom components (like DateOfBirth) blend seamlessly
+
+3. **Future-Proofing**:
+   - Monitor SurveyJS updates for new theme variables
+   - Keep override list comprehensive but organized
+   - Document any form-specific styling needs
 
 ## Browser Support
 

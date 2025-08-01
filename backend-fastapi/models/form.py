@@ -10,6 +10,14 @@ class FormElement(BaseModel):
     title: Optional[str] = None
     is_required: Optional[bool] = Field(None, alias='isRequired')
     choices: Optional[List[Any]] = None
+    # Mobile optimization properties
+    col_count: Optional[int] = Field(None, alias='colCount')  # For radio/checkbox groups
+    render_as: Optional[str] = Field(None, alias='renderAs')  # Rendering mode
+    max_width: Optional[str] = Field(None, alias='maxWidth')  # Max width constraint
+    min_width: Optional[str] = Field(None, alias='minWidth')  # Min width constraint
+    source_type: Optional[str] = Field(None, alias='sourceType')  # For file uploads
+    mobile_view: Optional[str] = Field(None, alias='mobileView')  # For matrix questions
+    start_with_new_line: Optional[bool] = Field(None, alias='startWithNewLine')  # Layout control
     
     class Config:
         extra = 'allow'  # Allow extra fields not explicitly defined
@@ -24,6 +32,11 @@ class SurveyJSModel(BaseModel):
     title: str
     description: Optional[str] = None
     pages: conlist(Page, min_length=1)
+    # Mobile optimization properties
+    width_mode: Optional[str] = Field('responsive', alias='widthMode')  # Default to responsive
+    show_question_numbers: Optional[str] = Field('off', alias='showQuestionNumbers')
+    mobile_breakpoint: Optional[int] = Field(768, alias='mobileBreakpoint')
+    questions_on_page_mode: Optional[str] = Field('standard', alias='questionsOnPageMode')
     
     class Config:
         extra = 'allow'

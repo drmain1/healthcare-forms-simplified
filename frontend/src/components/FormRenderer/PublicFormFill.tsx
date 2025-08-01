@@ -28,7 +28,10 @@ import {
   createMobileFormTitle,
   ensureViewportMeta 
 } from '../../utils/mobileDetection';
-import '../../styles/mobile-dark-theme.css';
+import '../../styles/mobile-minimal.css';
+import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
+import { forceMobileTheme, removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
+import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -76,7 +79,7 @@ export const PublicFormFill: React.FC = () => {
         
         // Create survey instance
         // Ensure surveyJson exists and has proper structure
-        const surveyJson = formData.surveyJson || formData.survey_json || {};
+        let surveyJson = formData.surveyJson || formData.survey_json || {};
         
         // Add default widthMode if missing
         if (!surveyJson.widthMode) {
@@ -86,6 +89,13 @@ export const PublicFormFill: React.FC = () => {
         // Ensure surveyJson has at least the minimum structure
         if (!surveyJson.pages && !surveyJson.elements) {
           surveyJson.pages = [];
+        }
+        
+        // Optimize form for mobile if needed
+        const mobileInfo = detectMobile();
+        if (mobileInfo.isMobile && needsMobileOptimization(surveyJson)) {
+          console.log('Optimizing form for mobile display...');
+          surveyJson = optimizeFormForMobile(surveyJson);
         }
         
         console.log('Creating survey with JSON:', surveyJson);
@@ -409,6 +419,27 @@ export const PublicFormFill: React.FC = () => {
       applyMobileTheme(formContainerRef.current, true);
     }
     
+    // Apply mobile theme fix if on mobile
+    if (mobileInfo.isMobile && survey) {
+      // Force mobile theme to override SurveyJS theme
+      forceMobileTheme(survey);
+      
+      // Also optimize the survey model at runtime
+      optimizeSurveyModelForMobile(survey);
+      
+      // Run diagnostics after a short delay to ensure DOM is ready
+      setTimeout(async () => {
+        console.log('🔍 Running mobile theme diagnostics...');
+        const results = await mobileDiagnostics.runAllTests();
+        mobileDiagnostics.logResults();
+        
+        // Also create visual debug overlay to show problem areas
+        if (process.env.NODE_ENV === 'development') {
+          mobileDiagnostics.createVisualDebugOverlay();
+        }
+      }, 1000);
+    }
+    
     // Handle resize events
     const handleResize = () => {
       const mobileInfo = detectMobile();
@@ -419,7 +450,11 @@ export const PublicFormFill: React.FC = () => {
     };
     
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      // Clean up mobile theme overrides
+      removeMobileThemeOverrides();
+    };
   }, [survey]); // Re-run when survey changes
 
   const handleFormSubmission = async (formData: any) => {
@@ -536,7 +571,7 @@ export const PublicFormFill: React.FC = () => {
   if (isMobile && survey) {
     // Mobile view with dark theme
     return (
-      <Box ref={formContainerRef} className="patient-form-view mobile-dark">
+      <Box ref={formContainerRef} className="patient-form-view mobile-minimal">
         {/* Survey Form */}
         <Survey model={survey} />
       </Box>

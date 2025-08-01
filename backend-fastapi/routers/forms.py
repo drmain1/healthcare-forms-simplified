@@ -20,6 +20,7 @@ from services.firebase_admin import db  # Use the unified Firestore client
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part, HarmCategory, HarmBlockThreshold
 from services.auth import get_current_user
+from services.form_mobile_optimizer import form_mobile_optimizer
 from datetime import datetime, timezone, timedelta
 import secrets
 import hashlib
@@ -66,8 +67,9 @@ Every JSON object you generate must start with this exact root structure and pro
 {
   "title": "Form Title From Source",
   "description": "Optional: A brief description of the form's purpose.",
+  "widthMode": "responsive",
   "progressBarLocation": "bottom",
-  "showQuestionNumbers": "on",
+  "showQuestionNumbers": "off",
   "showProgressBar": "bottom",
   "questionsOrder": "initial",
   "pages": [
@@ -120,8 +122,8 @@ You must use the following precise JSON structures when you identify these field
 | **Signature Line** | `signaturepad` | `{"type": "signaturepad", "name": "terms_signature", "title": "Electronic Signature", "isRequired": true}` |
 | **Simple Text Entry** | `text` | `{"type": "text", "name": "field_name", "title": "Field Title"}` (Add `inputType` for "email", "tel") |
 | **Large Text Area** | `comment` | `{"type": "comment", "name": "explanation_field", "title": "Please explain"}` |
-| **Single Choice (Yes/No)** | `radiogroup` | `{"type": "radiogroup", "name": "question_name", "title": "Question Title?", "choices": ["Yes", "No"]}` |
-| **Multiple Choices** | `checkbox` | `{"type": "checkbox", "name": "symptoms", "title": "Check all that apply", "choices": ["Option 1", "Option 2"]}` |
+| **Single Choice (Yes/No)** | `radiogroup` | `{"type": "radiogroup", "name": "question_name", "title": "Question Title?", "choices": ["Yes", "No"], "colCount": 0}` |
+| **Multiple Choices** | `checkbox` | `{"type": "checkbox", "name": "symptoms", "title": "Check all that apply", "choices": ["Option 1", "Option 2"], "colCount": 0}` |
 
 ---
 
@@ -140,6 +142,7 @@ If you detect **any** insurance-related fields (Member ID, Group Number, etc.), 
       "name": "has_insurance",
       "title": "Do you have insurance?",
       "choices": ["Yes", "No"],
+      "colCount": 0,
       "isRequired": true
     }
     ```
@@ -247,7 +250,74 @@ When you encounter legal text, privacy policies, or consent agreements, choose o
 
 ---
 
-## V. Modes of Operation
+## V. Mobile-First Design Principles
+
+Every form you generate must be optimized for mobile devices. Apply these rules to ALL form elements:
+
+### A. Radio Button and Checkbox Groups
+ALWAYS include these properties for consistent mobile display:
+```json
+{
+  "type": "radiogroup",
+  "name": "field_name",
+  "title": "Question Title",
+  "choices": ["Option 1", "Option 2"],
+  "colCount": 0,  // REQUIRED: Forces single column layout, prevents misalignment
+  "isRequired": true
+}
+```
+
+### B. Root Survey Configuration
+Your root JSON must include these mobile optimization properties:
+```json
+{
+  "title": "Form Title",
+  "description": "Form description",
+  "widthMode": "responsive",  // REQUIRED: Enables mobile responsiveness
+  "showQuestionNumbers": "off",  // Cleaner mobile UI
+  "showProgressBar": "bottom",
+  "questionsOrder": "initial",
+  "pages": [...]
+}
+```
+
+### C. Text Input Fields
+Include width constraints for better mobile display:
+```json
+{
+  "type": "text",
+  "name": "field_name",
+  "title": "Field Title",
+  "maxWidth": "100%",  // Prevents overflow on mobile
+  "inputType": "text"  // or "email", "tel", "number"
+}
+```
+
+### D. File Upload Fields (Insurance Cards, etc.)
+Optimize for mobile camera usage:
+```json
+{
+  "type": "file",
+  "name": "insurance_card_front",
+  "title": "Front of Insurance Card",
+  "acceptedTypes": "image/*",
+  "sourceType": "camera,file-picker",  // REQUIRED: Enables camera on mobile
+  "storeDataAsText": false,
+  "allowMultiple": false,
+  "maxSize": 10485760
+}
+```
+
+### E. CRITICAL Mobile Rules
+1. **NEVER use** `"renderAs": "table"` - it breaks mobile layouts
+2. **ALWAYS set** `"colCount": 0` for radio/checkbox groups
+3. **AVOID** multi-column layouts (colCount > 1) unless absolutely necessary
+4. **USE** `"startWithNewLine": false` for inline elements on mobile
+5. **INCLUDE** `"maxWidth"` for text inputs to prevent overflow
+
+---
+
+## VI. Modes of Operation
 
 Your final task depends on the user's request. You will be in one of three modes:
 
@@ -397,6 +467,15 @@ Your instructions are complete. Now, analyze the user's request and provided con
                 except:
                     raise HTTPException(status_code=500, detail=f"Failed to parse JSON: {str(e)}")
         
+        # Optimize form for mobile before validation
+        logger.info("Optimizing form for mobile display...")
+        form_json = form_mobile_optimizer.optimize_form(form_json)
+        
+        # Validate mobile properties
+        warnings = form_mobile_optimizer.validate_mobile_properties(form_json)
+        if warnings:
+            logger.warning(f"Mobile optimization warnings: {warnings}")
+        
         # Validate the structure with Pydantic before returning
         return SurveyJSModel(**form_json)
 
@@ -429,6 +508,17 @@ def create_form(form_data: FormCreate, user: dict = Depends(get_current_user)):
 
         # Create the form with required fields
         form_dict = form_data.dict(exclude_unset=True, exclude={'category'})  # Exclude category for now
+        
+        # Optimize survey JSON for mobile if provided
+        if 'surveyJson' in form_dict and form_dict['surveyJson']:
+            logger.info("Optimizing survey JSON for mobile...")
+            form_dict['surveyJson'] = form_mobile_optimizer.optimize_form(form_dict['surveyJson'])
+            
+            # Validate mobile properties
+            warnings = form_mobile_optimizer.validate_mobile_properties(form_dict['surveyJson'])
+            if warnings:
+                logger.warning(f"Mobile optimization warnings: {warnings}")
+        
         form_dict['created_by'] = user["uid"]
         form_dict['organization_id'] = organization_id
         form_dict['created_at'] = datetime.now(timezone.utc)
@@ -498,6 +588,17 @@ def update_form(form_id: str, form_update: FormUpdate, user: dict = Depends(get_
         
         # Update only provided fields
         update_dict = form_update.dict(exclude_unset=True, exclude={'category'})
+        
+        # If survey_json is being updated, optimize it for mobile
+        if 'surveyJson' in update_dict and update_dict['surveyJson']:
+            logger.info("Optimizing updated survey JSON for mobile...")
+            update_dict['surveyJson'] = form_mobile_optimizer.optimize_form(update_dict['surveyJson'])
+            
+            # Validate mobile properties
+            warnings = form_mobile_optimizer.validate_mobile_properties(update_dict['surveyJson'])
+            if warnings:
+                logger.warning(f"Mobile optimization warnings: {warnings}")
+        
         update_dict['updated_at'] = datetime.now(timezone.utc)
         update_dict['updated_by'] = user["uid"]
         

@@ -1,0 +1,90 @@
+/* ================================
+   Minimal Mobile Theme - Healthcare Forms
+   Start from scratch with only essentials
+   ================================ */
+
+@media (max-width: 768px) {
+  /* 1. Basic gradient background */
+  .patient-form-view.mobile-minimal {
+    background: linear-gradient(to bottom, #000428, #004e92);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+
+  /* 2. Make SurveyJS container transparent */
+  .patient-form-view.mobile-minimal .sd-root-modern {
+    background: transparent;
+  }
+
+  /* 3. Basic text color */
+  .patient-form-view.mobile-minimal .sd-question__title {
+    color: white;
+  }
+
+  /* 4. Input styling - minimal approach */
+  .patient-form-view.mobile-minimal input[type="text"],
+  .patient-form-view.mobile-minimal input[type="email"],
+  .patient-form-view.mobile-minimal input[type="tel"],
+  .patient-form-view.mobile-minimal input[type="number"],
+  .patient-form-view.mobile-minimal input[type="date"],
+  .patient-form-view.mobile-minimal textarea,
+  .patient-form-view.mobile-minimal select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  /* 5. Focus state */
+  .patient-form-view.mobile-minimal input:focus,
+  .patient-form-view.mobile-minimal textarea:focus,
+  .patient-form-view.mobile-minimal select:focus {
+    outline: none;
+    border-color: #5E9EFF;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* 6. Radio/checkbox items */
+  .patient-form-view.mobile-minimal .sd-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 8px;
+    padding: 12px;
+  }
+
+  .patient-form-view.mobile-minimal .sd-item--checked {
+    background: rgba(94, 158, 255, 0.3);
+    border-color: #5E9EFF;
+  }
+
+  /* 7. Radio/checkbox labels */
+  .patient-form-view.mobile-minimal .sd-item__control-label {
+    color: white;
+  }
+
+  /* 8. Navigation buttons */
+  .patient-form-view.mobile-minimal .sd-navigation__complete-btn,
+  .patient-form-view.mobile-minimal .sd-navigation__next-btn,
+  .patient-form-view.mobile-minimal .sd-navigation__prev-btn {
+    background: white;
+    color: #000428;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  /* 9. Bottom padding for fixed nav */
+  .patient-form-view.mobile-minimal .sd-body {
+    padding-bottom: 100px;
+  }
+
+  /* 10. Placeholder text */
+  .patient-form-view.mobile-minimal input::placeholder,
+  .patient-form-view.mobile-minimal textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+}

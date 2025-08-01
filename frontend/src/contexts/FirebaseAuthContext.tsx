@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { firebaseAuth, AuthUser } from '../services/firebaseAuth';
-import axios from 'axios';
+import { authService } from '../services/authService';
 
 interface FirebaseAuthContextType {
   user: AuthUser | null;
@@ -24,29 +24,18 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const syncWithBackend = async (authUser: AuthUser) => {
+  const exchangeTokenForSession = async (authUser: AuthUser) => {
+    if (!authUser.idToken) {
+      console.error("No ID token available for session exchange.");
+      return;
+    }
     try {
-      // Call the Django backend to sync the Firebase user
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-      const response = await axios.post(
-        `${apiUrl}/auth/firebase-login/`,
-        {
-          idToken: authUser.idToken,
-          displayName: authUser.displayName,
-          email: authUser.email,
-          photoURL: authUser.photoURL,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      console.log('Backend sync successful:', response.data);
+      await authService.sessionLogin(authUser.idToken);
+      console.log('Session login successful');
     } catch (error) {
-      console.error('Failed to sync with backend:', error);
-      // Don't throw here - the user is still authenticated with Firebase
-      // The backend sync can be retried on the next API call
+      console.error('Failed to exchange token for session:', error);
+      // If session login fails, the user is still logged in via Firebase,
+      // but subsequent API calls may fail.
     }
   };
 
@@ -54,12 +43,12 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Subscribe to auth state changes
     const unsubscribe = firebaseAuth.onAuthStateChange(async (authUser) => {
       setUser(authUser);
-      
-      // Sync with backend when user signs in
       if (authUser) {
-        await syncWithBackend(authUser);
+        await exchangeTokenForSession(authUser);
+      } else {
+        // Clear session when user logs out
+        authService.logout();
       }
-      
       setLoading(false);
     });
 
@@ -68,7 +57,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (currentUser) {
       setUser(currentUser);
       // Sync with backend for existing session
-      syncWithBackend(currentUser);
+      exchangeTokenForSession(currentUser);
     }
     setLoading(false);
 
@@ -80,7 +69,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setLoading(true);
       const authUser = await firebaseAuth.signInWithGoogle();
       // Sync with backend immediately after sign in
-      await syncWithBackend(authUser);
+      // The onAuthStateChange listener will handle the session exchange
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -93,6 +82,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       setLoading(true);
       await firebaseAuth.signOut();
+      // The onAuthStateChange listener handles clearing the session token
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;

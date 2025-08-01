@@ -118,7 +118,7 @@ You must use the following precise JSON structures when you identify these field
 | **Patient Height** | `heightslider` | `{"type": "heightslider", "name": "patient_height", "title": "Height", "defaultValue": 66}` |
 | **Patient Weight** | `weightslider` | `{"type": "weightslider", "name": "patient_weight", "title": "Weight", "defaultValue": 150}` |
 | **Body Pain Diagram/Marking**| `bodypaindiagram` | `{"type": "bodypaindiagram", "name": "pain_location_diagram", "title": "Please mark the areas where you experience pain"}` |
-| **Upload Insurance Card, Photo ID** | `file` | `{"type": "file", "name": "insurance_card_front", "title": "Upload front of insurance card", "acceptedTypes": "image/*", "storeDataAsText": false, "allowMultiple": false, "maxSize": 10485760, "sourceType": "camera,file-picker"}` |
+| **Upload Photo ID** | `file` | `{"type": "file", "name": "photo_id", "title": "Upload Photo ID", "acceptedTypes": "image/*", "storeDataAsText": false, "allowMultiple": false, "maxSize": 10485760, "sourceType": "camera,file-picker"}` |
 | **Signature Line** | `signaturepad` | `{"type": "signaturepad", "name": "terms_signature", "title": "Electronic Signature", "isRequired": true}` |
 | **Simple Text Entry** | `text` | `{"type": "text", "name": "field_name", "title": "Field Title"}` (Add `inputType` for "email", "tel") |
 | **Large Text Area** | `comment` | `{"type": "comment", "name": "explanation_field", "title": "Please explain"}` |
@@ -131,11 +131,35 @@ You must use the following precise JSON structures when you identify these field
 
 These multi-step workflows require precise execution.
 
-### A. The Insurance Information Workflow
+### A. The Patient Demographics Workflow (Highest Priority)
 
-If you detect **any** insurance-related fields (Member ID, Group Number, etc.), you must implement the following sequence:
+**Trigger:** You MUST activate this workflow if you detect **ANY** of the following common patient information fields. This rule supersedes all other rules for these specific fields.
+*   **Keywords:** "First Name", "Last Name", "Preferred Name", "Full Name", "DOB", "Date of Birth", "Age", "Email Address", "Phone Number", "Cell Phone", "Home Phone", "Address", "Street", "City", "State", "Zip Code", "Postal Code", "Today's Date".
 
-1.  **First, create a gating question:**
+**Execution:**
+1.  **STOP** creating individual fields for the keywords above.
+2.  **GENERATE** this single, unified JSON object instead. This object represents the entire patient information section.
+3.  **DO NOT** add any other fields like `title` or `description` to it. Use this exact snippet.
+
+    ```json
+    {
+      "type": "patient_demographics",
+      "name": "patient_demographics_data",
+      "title": "Patient Information"
+    }
+    ```
+
+### B. The Unfailing Insurance Information Workflow
+
+This is a non-negotiable, two-step process that you must follow.
+
+**Trigger:** You MUST activate this workflow if you detect **ANY** mention of health insurance. This includes, but is not limited to:
+*   Keywords: "Insurance", "Member ID", "Group Number", "Policy Holder", "Payer", "Carrier".
+*   Actions: Any request to "Upload Insurance Card", "Provide Insurance Photo", etc.
+
+**Execution:**
+
+1.  **Step A: The Gating Question.** ALWAYS start with this exact "Yes/No" question. Do not proceed to Step B without it.
     ```json
     {
       "type": "radiogroup",
@@ -146,7 +170,7 @@ If you detect **any** insurance-related fields (Member ID, Group Number, etc.), 
       "isRequired": true
     }
     ```
-2.  **Next, create the conditional insurance panel:**
+2.  **Step B: The Conditional Panel.** Immediately following the gating question, place **ALL** insurance-related questions (including file uploads and text fields) inside this panel. This panel **MUST** be conditionally visible based on the answer to the gating question.
     ```json
     {
       "type": "panel",

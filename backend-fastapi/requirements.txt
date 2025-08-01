@@ -4,3 +4,5 @@ pydantic
 google-cloud-firestore
 firebase-admin
 google-cloud-aiplatform
+gunicorn
+python-jose[cryptography]

@@ -1,17 +1,17 @@
 package api
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"html/template"
+	"log"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/vertexai/genai"
 	"github.com/gemini/forms-api/internal/data"
-	"github.com/gemini/forms-api/internal/pdf"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -106,7 +106,7 @@ func ListForms(client *firestore.Client) gin.HandlerFunc {
 			forms = append(forms, form)
 		}
 
-		c.JSON(http.StatusOK, forms)
+		c.JSON(http.StatusOK, gin.H{"results": forms})
 	}
 }
 
@@ -191,8 +191,6 @@ func DeleteForm(client *firestore.Client) gin.HandlerFunc {
 	}
 }
 
-// ... (ProcessPDFWithVertex remains the same as it's not tied to a specific form)
-
 // GenerateBlankPDF generates a blank PDF for a given form, ensuring it belongs to the correct organization.
 func GenerateBlankPDF(client *firestore.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -260,4 +258,316 @@ func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 
 		// ... (rest of the function remains the same)
 	}
+}
+
+// ProcessPDFWithVertex processes a PDF with Vertex AI to extract form fields.
+func ProcessPDFWithVertex(genaiClient *genai.GenerativeModel) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Println("Starting PDF processing")
+		var requestBody struct {
+			PdfData string `json:"pdf_data"`
+		}
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			log.Printf("Error binding JSON: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		log.Println("Decoding PDF data")
+		pdfBytes, err := base64.StdEncoding.DecodeString(requestBody.PdfData)
+		log.Printf("Decoded PDF data size: %d bytes", len(pdfBytes))
+		if err != nil {
+			log.Printf("Error decoding base64: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid base64 encoding for PDF"})
+			return
+		}
+
+		log.Println("Generating content with Vertex AI")
+		prompt := genai.Text(getComprehensivePrompt())
+		pdfPart := genai.Blob{MIMEType: "application/pdf", Data: pdfBytes}
+
+		// Configure generation with proper settings
+		genaiClient.SetTemperature(0.1)
+		genaiClient.SetMaxOutputTokens(40000)
+		
+		resp, err := genaiClient.GenerateContent(c, pdfPart, prompt)
+		if err != nil {
+			log.Printf("Error from Vertex AI: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process PDF with Vertex AI"})
+			return
+		}
+
+		log.Println("Successfully received response from Vertex AI")
+		if resp == nil || resp.Candidates == nil || len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil || resp.Candidates[0].Content.Parts == nil || len(resp.Candidates[0].Content.Parts) == 0 {
+			log.Println("Invalid response from Vertex AI: empty or malformed")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid response from Vertex AI"})
+			return
+		}
+
+		log.Printf("Vertex AI response part: %v", resp.Candidates[0].Content.Parts[0])
+
+		// Extract and parse the JSON response
+		part := resp.Candidates[0].Content.Parts[0]
+		var rawText string
+		if txt, ok := part.(genai.Text); ok {
+			rawText = string(txt)
+		} else {
+			log.Printf("Invalid response part type from Vertex AI: %T", part)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid response part type from Vertex AI"})
+			return
+		}
+
+		log.Printf("Raw response from Gemini (first 500 chars): %s", rawText[:min(500, len(rawText))])
+
+		// Clean and extract JSON from response
+		jsonString := extractJSONFromResponse(rawText)
+		if jsonString == "" {
+			log.Printf("No JSON found in response. First 200 chars: %s", rawText[:min(200, len(rawText))])
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "No valid JSON found in AI response"})
+			return
+		}
+
+		log.Printf("Extracted JSON string length: %d", len(jsonString))
+		log.Printf("JSON string (first 200 chars): %s", jsonString[:min(200, len(jsonString))])
+
+		// Parse the JSON
+		var surveyJSON map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonString), &surveyJSON); err != nil {
+			log.Printf("JSON parsing error: %v", err)
+			// Try to fix common JSON errors
+			fixedJSON := fixCommonJSONErrors(jsonString)
+			if err := json.Unmarshal([]byte(fixedJSON), &surveyJSON); err != nil {
+				log.Printf("Failed to parse even after fixes: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON from Vertex AI"})
+				return
+			}
+			log.Println("Successfully parsed JSON after applying fixes")
+		}
+
+		// Optimize form for mobile
+		surveyJSON = optimizeFormForMobile(surveyJSON)
+
+		c.JSON(http.StatusOK, surveyJSON)
+	}
+}
+
+// getComprehensivePrompt returns the full prompt for Vertex AI
+func getComprehensivePrompt() string {
+	return `You are a hyper-specialized AI system, an expert architect of digital medical forms. Your sole purpose is to meticulously analyze unstructured source material (text, PDF content) and transform it into a single, complete, and perfectly valid SurveyJS JSON object.
+
+## CRITICAL: Your response must be ONLY valid JSON
+
+1. Start your response with { and end with }
+2. DO NOT wrap the JSON in markdown code blocks
+3. DO NOT include any text before or after the JSON
+4. EVERY property must end with a comma except the last one
+5. VERIFY the JSON is valid before responding
+
+## Golden Rule: The Output is ALWAYS a Single JSON Object
+
+Your entire response must be a single, valid JSON object. Do not output any commentary, explanations, apologies, or any text whatsoever outside of the final JSON structure.
+
+## I. The Root JSON Schema (Non-Negotiable)
+
+Every JSON object you generate must start with this exact root structure and properties. This is a mandatory requirement.
+
+{
+  "title": "Form Title From Source",
+  "description": "Optional: A brief description of the form's purpose.",
+  "widthMode": "responsive",
+  "progressBarLocation": "bottom",
+  "showQuestionNumbers": "off",
+  "showProgressBar": "bottom",
+  "questionsOrder": "initial",
+  "pages": [
+    // All form content goes here, organized into pages and panels.
+  ]
+}
+
+## II. Core Architectural Principles
+
+1. Absolute Completeness: You must capture every single question, label, checkbox, input field, and choice option from the source. Nothing may be omitted.
+2. Logical Structure: Use panel elements to group related fields into the visual sections seen in the original form (e.g., "Patient Information," "Medical History"). For long forms, distribute these panels across multiple pages.
+3. Conditional Logic is Paramount (visibleIf): This is your most critical function. You must actively scan the text for relationships between questions to implement visibleIf expressions.
+   - Keywords: Hunt for phrases like "If yes, please explain...", "If checked, provide details...", "If other, specify...".
+   - Gating Questions: A "Yes/No" radiogroup is a primary trigger. The question that follows it should be made visible based on its answer.
+
+## III. Master Component Blueprint (Exact JSON Structures)
+
+You must use the following precise JSON structures when you identify these field types. Do not improvise.
+
+For Date of Birth: {"type": "dateofbirth", "name": "patient_dob", "title": "Date of Birth", "isRequired": true, "ageFieldName": "patient_age"}
+For Patient Height: {"type": "heightslider", "name": "patient_height", "title": "Height", "defaultValue": 66}
+For Patient Weight: {"type": "weightslider", "name": "patient_weight", "title": "Weight", "defaultValue": 150}
+For Body Pain Diagram: {"type": "bodypaindiagram", "name": "pain_location_diagram", "title": "Please mark the areas where you experience pain"}
+For Upload Photo ID: {"type": "file", "name": "photo_id", "title": "Upload Photo ID", "acceptedTypes": "image/*", "storeDataAsText": false, "allowMultiple": false, "maxSize": 10485760, "sourceType": "camera,file-picker"}
+For Signature Line: {"type": "signaturepad", "name": "terms_signature", "title": "Electronic Signature", "isRequired": true}
+For Simple Text Entry: {"type": "text", "name": "field_name", "title": "Field Title"}
+For Large Text Area: {"type": "comment", "name": "explanation_field", "title": "Please explain"}
+For Single Choice (Yes/No): {"type": "radiogroup", "name": "question_name", "title": "Question Title?", "choices": ["Yes", "No"], "colCount": 0}
+For Multiple Choices: {"type": "checkbox", "name": "symptoms", "title": "Check all that apply", "choices": ["Option 1", "Option 2"], "colCount": 0}
+
+## IV. Advanced Workflow Directives
+
+These multi-step workflows require precise execution.
+
+### A. The Patient Demographics Workflow (Highest Priority)
+
+Trigger: You MUST activate this workflow if you detect ANY of the following common patient information fields.
+- Keywords: "First Name", "Last Name", "Preferred Name", "Full Name", "DOB", "Date of Birth", "Age", "Email Address", "Phone Number", "Cell Phone", "Home Phone", "Address", "Street", "City", "State", "Zip Code", "Postal Code", "Today's Date".
+
+Execution:
+1. STOP creating individual fields for the keywords above.
+2. GENERATE this single, unified JSON object instead:
+   {
+     "type": "patient_demographics",
+     "name": "patient_demographics_data",
+     "title": "Patient Information"
+   }
+
+### B. The Insurance Information Workflow
+
+Trigger: You MUST activate this workflow if you detect ANY mention of health insurance.
+- Keywords: "Insurance", "Member ID", "Group Number", "Policy Holder", "Payer", "Carrier".
+
+Execution:
+1. Step A: The Gating Question.
+   {
+     "type": "radiogroup",
+     "name": "has_insurance",
+     "title": "Do you have insurance?",
+     "choices": ["Yes", "No"],
+     "colCount": 0,
+     "isRequired": true
+   }
+2. Step B: The Conditional Panel with insurance fields.
+
+## V. Mobile-First Design Principles
+
+Every form you generate must be optimized for mobile devices:
+
+### Critical Mobile Rules
+1. NEVER use "renderAs": "table" - it breaks mobile layouts
+2. ALWAYS set "colCount": 0 for radio/checkbox groups
+3. AVOID multi-column layouts (colCount > 1) unless absolutely necessary
+4. USE "startWithNewLine": false for inline elements on mobile
+5. INCLUDE "maxWidth" for text inputs to prevent overflow
+
+## Final Command
+
+Your instructions are complete. Now, analyze the PDF content and generate only the single, valid JSON object as your final answer.`
+}
+
+// extractJSONFromResponse extracts JSON from the AI response
+func extractJSONFromResponse(rawText string) string {
+	// First check if response is wrapped in markdown code blocks
+	if strings.Contains(rawText, "```") {
+		// Extract content between code blocks
+		re := regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)\\s*```")
+		matches := re.FindStringSubmatch(rawText)
+		if len(matches) > 1 {
+			return strings.TrimSpace(matches[1])
+		}
+	}
+
+	// Check if it's raw JSON
+	if strings.HasPrefix(strings.TrimSpace(rawText), "{") {
+		return strings.TrimSpace(rawText)
+	}
+
+	// Find JSON boundaries
+	jsonStart := strings.Index(rawText, "{")
+	jsonEnd := strings.LastIndex(rawText, "}") + 1
+	if jsonStart != -1 && jsonEnd > 0 {
+		return rawText[jsonStart:jsonEnd]
+	}
+
+	return ""
+}
+
+// fixCommonJSONErrors attempts to fix common JSON formatting issues
+func fixCommonJSONErrors(jsonString string) string {
+	fixed := jsonString
+
+	// Remove JavaScript-style comments
+	fixed = regexp.MustCompile(`//.*$`).ReplaceAllString(fixed, "")
+	fixed = regexp.MustCompile(`/\*[\s\S]*?\*/`).ReplaceAllString(fixed, "")
+
+	// Remove trailing commas before closing brackets/braces
+	fixed = regexp.MustCompile(`,\s*([}\]])`).ReplaceAllString(fixed, "$1")
+
+	// Fix missing commas between properties
+	fixed = regexp.MustCompile(`"\s*\n\s*"`).ReplaceAllString(fixed, `",\n"`)
+	fixed = regexp.MustCompile(`([}\]])\s*\n\s*"`).ReplaceAllString(fixed, `$1,\n"`)
+	fixed = regexp.MustCompile(`"\s*\n\s*([{\[])`).ReplaceAllString(fixed, `",\n$1`)
+	fixed = regexp.MustCompile(`(})\s*\n\s*({)`).ReplaceAllString(fixed, `$1,\n$2`)
+	fixed = regexp.MustCompile(`(\])\s*\n\s*(\[)`).ReplaceAllString(fixed, `$1,\n$2`)
+	fixed = regexp.MustCompile(`(true|false|null|\d+)\s*\n\s*(")`).ReplaceAllString(fixed, `$1,\n$2`)
+
+	// Fix double commas
+	fixed = regexp.MustCompile(`,\s*,`).ReplaceAllString(fixed, ",")
+
+	return strings.TrimSpace(fixed)
+}
+
+// optimizeFormForMobile applies mobile-first optimizations to the form
+func optimizeFormForMobile(form map[string]interface{}) map[string]interface{} {
+	// Ensure root properties for mobile
+	form["widthMode"] = "responsive"
+	form["showQuestionNumbers"] = "off"
+	form["showProgressBar"] = "bottom"
+	form["questionsOrder"] = "initial"
+
+	// Process pages
+	if pages, ok := form["pages"].([]interface{}); ok {
+		for _, page := range pages {
+			if pageMap, ok := page.(map[string]interface{}); ok {
+				optimizePageElements(pageMap)
+			}
+		}
+	}
+
+	return form
+}
+
+// optimizePageElements recursively optimizes form elements for mobile
+func optimizePageElements(element map[string]interface{}) {
+	// Set colCount to 0 for radio and checkbox groups
+	if elemType, ok := element["type"].(string); ok {
+		if elemType == "radiogroup" || elemType == "checkbox" {
+			element["colCount"] = 0
+		}
+		if elemType == "text" {
+			element["maxWidth"] = "100%"
+		}
+		if elemType == "file" {
+			element["sourceType"] = "camera,file-picker"
+		}
+	}
+
+	// Process nested elements
+	if elements, ok := element["elements"].([]interface{}); ok {
+		for _, elem := range elements {
+			if elemMap, ok := elem.(map[string]interface{}); ok {
+				optimizePageElements(elemMap)
+			}
+		}
+	}
+
+	// Process panels
+	if panels, ok := element["panels"].([]interface{}); ok {
+		for _, panel := range panels {
+			if panelMap, ok := panel.(map[string]interface{}); ok {
+				optimizePageElements(panelMap)
+			}
+		}
+	}
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -62,27 +62,21 @@ type OrganizationSettings struct {
 ### 2. `forms`
 Stores form definitions created by each tenant.
 
-```javascript
-{
-  // Document ID: Auto-generated
-  organization_id: string,  // Must equal the user's UID
-  name: string,            // Form name
-  description: string?,    // Optional description
-  definition: {            // SurveyJS form definition
-    title: string,
-    pages: [...],
-    // ... other SurveyJS properties
-  },
-  is_active: boolean,      // Whether form accepts responses
-  settings: {              // Form-specific settings
-    hipaa_compliant: boolean,
-    require_signature: boolean,
-    // ... other settings
-  },
-  created_by: string,      // User UID who created (same as organization_id)
-  created_at: timestamp,   // Creation time
-  updated_by: string,      // User UID who last updated
-  updated_at: timestamp    // Last update time
+```go
+type Form struct {
+	ID             string                 `json:"_id" firestore:"_id"`
+	Title          string                 `json:"title" firestore:"title"`
+	Description    string                 `json:"description,omitempty" firestore:"description,omitempty"`
+	SurveyJSON     map[string]interface{} `json:"surveyJson" firestore:"surveyJson"`
+	CreatedAt      time.Time              `json:"createdAt" firestore:"createdAt"`
+	UpdatedAt      time.Time              `json:"updatedAt" firestore:"updatedAt"`
+	CreatedBy      string                 `json:"createdBy" firestore:"createdBy"`
+	UpdatedBy      string                 `json:"updatedBy" firestore:"updatedBy"`
+	OrganizationID string                 `json:"organizationId" firestore:"organizationId"`
+	Category       string                 `json:"category,omitempty" firestore:"category,omitempty"`
+	Tags           []string               `json:"tags,omitempty" firestore:"tags,omitempty"`
+	IsTemplate     bool                   `json:"isTemplate" firestore:"isTemplate"`
+	Version        int                    `json:"version" firestore:"version"`
 }
 ```
 
@@ -91,21 +85,27 @@ Stores form definitions created by each tenant.
 ### 3. `form_responses`
 Stores submitted form responses with PHI data.
 
-```javascript
-{
-  // Document ID: Auto-generated
-  organization_id: string,  // Must equal the user's UID
-  form_id: string,         // Reference to forms collection
-  data: {                  // Actual form response data (PHI)
-    // Dynamic based on form definition
-  },
-  metadata: {              // Response metadata
-    ip_address: string?,
-    user_agent: string?,
-    submission_duration: number?
-  },
-  submitted_by: string,    // For single-user model, same as organization_id
-  submitted_at: timestamp  // Submission time (immutable)
+```go
+type FormResponse struct {
+	ID                      string                 `json:"id,omitempty" firestore:"id,omitempty"`
+	OrganizationID          string                 `json:"organization" firestore:"organization"`
+	FormID                  string                 `json:"form" firestore:"form"`
+	Data                    map[string]interface{} `json:"response_data" firestore:"data"`
+	Metadata                map[string]interface{} `json:"metadata,omitempty" firestore:"metadata,omitempty"`
+	SubmittedBy             string                 `json:"submitted_by" firestore:"submitted_by"`
+	SubmittedAt             time.Time              `json:"submitted_at" firestore:"submitted_at"`
+	FormTitle               string                 `json:"form_title,omitempty" firestore:"form_title,omitempty"`
+	PatientName             string                 `json:"patient_name,omitempty" firestore:"patient_name,omitempty"`
+	Status                  string                 `json:"status,omitempty" firestore:"status,omitempty"`
+	StartedAt               *time.Time             `json:"started_at,omitempty" firestore:"started_at,omitempty"`
+	CompletionTimeSeconds   *float64               `json:"completion_time_seconds,omitempty" firestore:"completion_time_seconds,omitempty"`
+	Reviewed                bool                   `json:"reviewed,omitempty" firestore:"reviewed,omitempty"`
+	ReviewedBy              string                 `json:"reviewed_by,omitempty" firestore:"reviewed_by,omitempty"`
+	ReviewedAt              *time.Time             `json:"reviewed_at,omitempty" firestore:"reviewed_at,omitempty"`
+	ReviewNotes             string                 `json:"review_notes,omitempty" firestore:"review_notes,omitempty"`
+	UserAgent               string                 `json:"user_agent,omitempty" firestore:"user_agent,omitempty"`
+	IPAddress               string                 `json:"ip_address,omitempty" firestore:"ip_address,omitempty"`
+	SessionID               string                 `json:"session_id,omitempty" firestore:"session_id,omitempty"`
 }
 ```
 
@@ -114,19 +114,21 @@ Stores submitted form responses with PHI data.
 ### 4. `form_templates`
 Stores reusable form templates for each organization.
 
-```javascript
-{
-  // Document ID: Auto-generated
-  organization_id: string,  // Must equal the user's UID
-  name: string,            // Template name
-  description: string?,    // Template description
-  category: string?,       // Template category
-  definition: {            // SurveyJS form definition
-    // Same structure as forms.definition
-  },
-  created_by: string,      // User UID who created
-  created_at: timestamp,   // Creation time
-  updated_at: timestamp    // Last update time
+```go
+type Form struct {
+	ID             string                 `json:"_id" firestore:"_id"`
+	Title          string                 `json:"title" firestore:"title"`
+	Description    string                 `json:"description,omitempty" firestore:"description,omitempty"`
+	SurveyJSON     map[string]interface{} `json:"surveyJson" firestore:"surveyJson"`
+	CreatedAt      time.Time              `json:"createdAt" firestore:"createdAt"`
+	UpdatedAt      time.Time              `json:"updatedAt" firestore:"updatedAt"`
+	CreatedBy      string                 `json:"createdBy" firestore:"createdBy"`
+	UpdatedBy      string                 `json:"updatedBy" firestore:"updatedBy"`
+	OrganizationID string                 `json:"organizationId" firestore:"organizationId"`
+	Category       string                 `json:"category,omitempty" firestore:"category,omitempty"`
+	Tags           []string               `json:"tags,omitempty" firestore:"tags,omitempty"`
+	IsTemplate     bool                   `json:"isTemplate" firestore:"isTemplate"`
+	Version        int                    `json:"version" firestore:"version"`
 }
 ```
 

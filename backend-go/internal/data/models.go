@@ -4,7 +4,7 @@ import "time"
 
 // Form represents the main SurveyJS JSON structure
 type Form struct {
-	ID             string                 `json:"_id" firestore:"_id"`
+	ID             string                 `json:"id" firestore:"_id"`
 	Title          string                 `json:"title" firestore:"title"`
 	Description    string                 `json:"description,omitempty" firestore:"description,omitempty"`
 	SurveyJSON     map[string]interface{} `json:"surveyJson" firestore:"surveyJson"`

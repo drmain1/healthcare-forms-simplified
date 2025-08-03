@@ -136,6 +136,9 @@ export const FormBuilderUI: React.FC<FormBuilderUIProps> = ({
       onFormDescriptionChange('Form automatically generated from PDF upload');
       onFormCategoryChange('intake');
       
+      // Navigate to the form builder with the generated form
+      navigate('/forms/create', { state: { generatedForm: surveyJson } });
+      
       // Switch to the form builder tab
       setActiveTab(1);
       

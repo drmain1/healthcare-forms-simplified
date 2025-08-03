@@ -19,16 +19,19 @@ func NewFirestoreClient(ctx context.Context, projectID string, opts ...option.Cl
 }
 
 // NewFirebaseAuthClient creates a new Firebase Auth client.
-func NewFirebaseAuthClient(ctx context.Context) (*auth.Client, error) {
-	app, err := firebase.NewApp(ctx, nil)
+func NewFirebaseAuthClient(ctx context.Context, projectID string) (*auth.Client, *firebase.App, error) {
+	conf := &firebase.Config{
+		ProjectID: projectID,
+	}
+	app, err := firebase.NewApp(ctx, conf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	client, err := app.Auth(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return client, nil
+	return client, app, nil
 }

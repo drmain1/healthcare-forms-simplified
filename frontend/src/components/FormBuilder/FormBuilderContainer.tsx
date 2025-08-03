@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
 import { ArrowBack as BackIcon } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCreateFormMutation, useUpdateFormMutation, useGetFormQuery } from '../../store/api/formsApi';
 import { SurveyCreator } from 'survey-creator-react';
 import { createMinimalSurveyCreator, createMinimalSurveyModel } from '../../utils/surveyConfigMinimal';
@@ -26,6 +26,7 @@ export interface FormBuilderData {
 export const FormBuilderContainer: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const [creator, setCreator] = useState<SurveyCreator | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
@@ -56,7 +57,15 @@ export const FormBuilderContainer: React.FC = () => {
     surveyCreator.makeNewViewActive('designer');
     
     // Set default or load existing form
-    if (id && id !== 'create' && existingForm) {
+    if (location.state?.generatedForm) {
+      const { generatedForm } = location.state;
+      console.log('Loading generated form:', generatedForm.title);
+      setIsEditing(false);
+      setFormTitle(generatedForm.title);
+      setFormDescription(generatedForm.description);
+      setFormCategory(getFormCategory(generatedForm));
+      surveyCreator.text = JSON.stringify(generatedForm);
+    } else if (id && id !== 'create' && existingForm) {
       console.log('Loading existing form:', existingForm.title);
       setIsEditing(true);
       setFormTitle(existingForm.title);
@@ -126,7 +135,9 @@ export const FormBuilderContainer: React.FC = () => {
           ...formData,
         }).unwrap();
       } else {
-        const newForm = await createForm(formData).unwrap();
+        const result = await createForm(formData);
+        console.log('createForm result:', result);
+        const newForm = (result as any).data;
         // Navigate to edit mode for the new form
         navigate(`/forms/${newForm.id}/edit`, { replace: true });
       }

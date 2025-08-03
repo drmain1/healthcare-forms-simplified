@@ -10,6 +10,8 @@ import (
 	"github.com/gemini/forms-api/internal/api"
 	"github.com/gemini/forms-api/internal/data"
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors" // Import the cors package
 )
 
 func main() {
@@ -35,9 +37,24 @@ func main() {
 	}
 	defer vertexClient.Close()
 
-	gemini := vertexClient.GenerativeModel("gemini-1.5-flash")
+	gemini := vertexClient.GenerativeModel("publishers/google/models/gemini-2.5-pro")
 
-	r := gin.Default()
+	r := gin.New()
+	r.RedirectTrailingSlash = false
+
+	// CORS Middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// Logger and Recovery middleware
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
@@ -47,13 +64,21 @@ func main() {
 	})
 
 	// Initialize Firebase Admin SDK
-	authClient, err := data.NewFirebaseAuthClient(ctx)
+	authClient, firebaseApp, err := data.NewFirebaseAuthClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("Failed to create Firebase Auth client: %v", err)
 	}
 
-	// Public routes
-	r.GET("/forms/fill/:token", api.GetFormByShareToken(firestoreClient))
+	// Public routes (no auth required)
+	r.GET("/forms/:id/fill/:share_token", api.GetFormByShareToken(firestoreClient))
+	r.GET("/forms/:id/fill/:share_token/", api.GetFormByShareToken(firestoreClient))
+
+	// Authentication routes
+	apiAuthRoutes := r.Group("/api/auth")
+	{
+		apiAuthRoutes.POST("/session-login", api.SessionLogin(firebaseApp))
+		apiAuthRoutes.POST("/session-login/", api.SessionLogin(firebaseApp))
+	}
 
 	// Authenticated routes
 	authRequired := r.Group("/api")
@@ -61,10 +86,14 @@ func main() {
 	{
 		// Form routes
 		authRequired.POST("/forms", api.CreateForm(firestoreClient))
+		authRequired.POST("/forms/", api.CreateForm(firestoreClient))
 		authRequired.GET("/forms", api.ListForms(firestoreClient))
+		authRequired.GET("/forms/", api.ListForms(firestoreClient))
 		authRequired.GET("/forms/:id", api.GetForm(firestoreClient))
+		authRequired.GET("/forms/:id/", api.GetForm(firestoreClient))
 		authRequired.PUT("/forms/:id", api.UpdateForm(firestoreClient))
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient))
+		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
 		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(gemini))
 		authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
 		authRequired.GET("/forms/:id/responses/:responseId/pdf", api.GeneratePDF(firestoreClient))
@@ -78,6 +107,7 @@ func main() {
 		authRequired.POST("/responses", api.CreateFormResponse(firestoreClient))
 		authRequired.GET("/responses/:id", api.GetFormResponse(firestoreClient))
 		authRequired.GET("/responses", api.ListFormResponses(firestoreClient))
+		authRequired.GET("/responses/", api.ListFormResponses(firestoreClient))
 
 		// Organization routes
 		authRequired.POST("/organizations", api.CreateOrganization(firestoreClient))

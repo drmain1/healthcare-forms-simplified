@@ -1,0 +1,204 @@
+/* Clinical Summary Styling */
+.clinical-summary {
+    background-color: #f8f9fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    page-break-inside: avoid;
+}
+
+.clinical-summary h2 {
+    color: #2c3e50;
+    font-size: 13pt;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.clinical-summary h2::before {
+    content: "📋";
+    margin-right: 8px;
+}
+
+.summary-content {
+    font-size: 10.5pt;
+    line-height: 1.7;
+    color: #34495e;
+    text-align: justify;
+    font-weight: 425;
+}
+
+/* Form Response Styling */
+.form-responses {
+    margin-top: 30px;
+}
+
+.form-question {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+    border-left: 3px solid transparent;
+    padding-left: 15px;
+    transition: all 0.3s ease;
+}
+
+.form-question:hover {
+    border-left-color: #3498db;
+}
+
+.question-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.question-title {
+    font-weight: 550;
+    color: #2c3e50;
+    font-size: 11pt;
+}
+
+.required-badge {
+    background-color: #e74c3c;
+    color: white;
+    font-size: 8pt;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 10px;
+    font-weight: 600;
+}
+
+.question-answer {
+    color: #555;
+    padding-left: 20px;
+    font-size: 10.5pt;
+    font-weight: 450;
+}
+
+.no-answer {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+/* Blank Form Styling */
+.patient-info-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+.patient-fields {
+    margin-top: 10px;
+}
+
+.field-row {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 15px;
+}
+
+.field {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+}
+
+.field label {
+    font-weight: 550;
+    color: #2c3e50;
+    margin-right: 10px;
+    white-space: nowrap;
+    font-size: 10pt;
+}
+
+.field-line {
+    flex: 1;
+    border-bottom: 1px solid #7f8c8d;
+    height: 20px;
+}
+
+.form-questions .form-question {
+    border: 1px solid #e1e8ed;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.question-number {
+    font-weight: 650;
+    color: #3498db;
+    margin-right: 8px;
+}
+
+.required-marker {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.answer-area {
+    margin-top: 10px;
+    margin-left: 25px;
+}
+
+.text-field {
+    border-bottom: 1px solid #bdc3c7;
+    height: 30px;
+    width: 100%;
+}
+
+.comment-field {
+    border: 1px solid #bdc3c7;
+    height: 80px;
+    width: 100%;
+    border-radius: 4px;
+}
+
+.choice-option {
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+}
+
+.choice-box {
+    font-size: 14pt;
+    margin-right: 10px;
+    color: #7f8c8d;
+}
+
+.rating-scale {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.rating-option {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #bdc3c7;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: #7f8c8d;
+}
+
+.generic-field {
+    border: 1px solid #bdc3c7;
+    height: 40px;
+    width: 100%;
+    border-radius: 4px;
+}
+
+/* Professional touches */
+@media print {
+    .form-question {
+        break-inside: avoid;
+    }
+    
+    .clinical-summary {
+        break-inside: avoid;
+    }
+}

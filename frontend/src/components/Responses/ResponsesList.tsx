@@ -32,8 +32,7 @@ import {
   Warning,
 } from '@mui/icons-material';
 import { useGetFormResponsesQuery, useDeleteResponseMutation } from '../../store/api/responsesApi';
-import { useGetFormQuery } from '../../store/api/formsApi';
-import { generateResponsePdf, generateBlankFormPdf } from '../../utils/pdfExport';
+import { useGetFormQuery, useGenerateBlankFormPdfMutation } from '../../store/api/formsApi';
 
 export const ResponsesList: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
@@ -61,6 +60,7 @@ export const ResponsesList: React.FC = () => {
   });
   
   const [deleteResponse] = useDeleteResponseMutation();
+  const [generateBlankPdf, { isLoading: isGeneratingPdf }] = useGenerateBlankFormPdfMutation();
   
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -87,26 +87,8 @@ export const ResponsesList: React.FC = () => {
   };
   
   const handleExportPdf = (responseId: string) => {
-    // Find the response data
-    const response = responses.find((r: any) => r.id === responseId);
-    if (!response || !formData) {
-      alert('Unable to export PDF. Response or form data not found.');
-      return;
-    }
-    
-    const result = generateResponsePdf(
-      formData.surveyJson,
-      response.response_data,
-      formData.title,
-      response.patient_name,
-      response.submitted_at
-    );
-    
-    if (!result.success) {
-      alert(`Failed to generate PDF: ${result.error}`);
-    } else if (result.warning) {
-      console.warn('PDF generation warning:', result.warning);
-    }
+    // Navigate to response detail page where they can export the PDF
+    navigate(`/forms/${formId}/responses/${responseId}`);
   };
   
   const getStatusIcon = (status: string) => {
@@ -183,14 +165,23 @@ export const ResponsesList: React.FC = () => {
           {formData && (
             <Button
               variant="outlined"
-              startIcon={<GetApp />}
-              onClick={() => {
-                const result = generateBlankFormPdf(
-                  formData.surveyJson,
-                  formData.title
-                );
-                if (!result.success) {
-                  alert(`Failed to generate blank form PDF: ${result.error}`);
+              startIcon={isGeneratingPdf ? <CircularProgress size={16} /> : <GetApp />}
+              disabled={isGeneratingPdf}
+              onClick={async () => {
+                try {
+                  const url = await generateBlankPdf(formId!).unwrap();
+                  
+                  // Create download link
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${formData.title}_Blank_Template.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (error) {
+                  console.error('Failed to generate blank form PDF:', error);
+                  alert('Failed to generate blank form PDF. Please try again.');
                 }
               }}
             >

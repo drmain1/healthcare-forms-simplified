@@ -46,14 +46,14 @@ export const responsesApi = baseApi.injectEndpoints({
 
     // Get single response by ID
     getResponse: builder.query<FormResponse, string>({
-      query: (id) => `/responses/${id}/`,
+      query: (id) => `/responses/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Response', id }],
     }),
 
     // Mark response as reviewed
     markResponseReviewed: builder.mutation<FormResponse, string>({
       query: (id) => ({
-        url: `/responses/${id}/review/`,
+        url: `/responses/${id}/review`,
         method: 'POST',
       }),
       invalidatesTags: (_result, _error, id) => [
@@ -74,7 +74,7 @@ export const responsesApi = baseApi.injectEndpoints({
     // Delete response
     deleteResponse: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/responses/${id}/`,
+        url: `/responses/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: (_result, _error, id) => [

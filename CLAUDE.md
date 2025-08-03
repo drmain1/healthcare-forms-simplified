@@ -29,6 +29,13 @@ npm run build
 firebase deploy --only hosting
 ```
 
+## 🔐 CRITICAL SECURITY REQUIREMENT
+**⚠️ DO NOT DRIFT FROM CHAINGUARD IMAGES!**
+- Primary Dockerfile: `backend-fastapi/Dockerfile` (Chainguard-based)
+- Base images: `cgr.dev/chainguard/wolfi-base:latest` and `cgr.dev/chainguard/python:latest-dev`
+- Required for HIPAA compliance and minimal attack surface
+- Includes WeasyPrint with Arimo fonts for PDF generation
+
 ## Architecture Overview
 
 ### Healthcare Forms Platform - Simplified Version

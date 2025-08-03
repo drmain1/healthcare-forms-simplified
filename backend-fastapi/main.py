@@ -10,6 +10,8 @@ origins = [
     "http://localhost:3001",
     "https://healthcare-forms-v2.web.app",
     "https://healthcare-forms-v2.firebaseapp.com",
+    "https://healthcare-forms-backend-ubaop6yg4q-uc.a.run.app",
+    "http://healthcare-forms-backend-ubaop6yg4q-uc.a.run.app",
 ]
 
 app.add_middleware(

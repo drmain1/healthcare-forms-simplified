@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response, Query
 import os
 import json
 import base64
@@ -21,11 +21,15 @@ import vertexai
 from vertexai.generative_models import GenerativeModel, Part, HarmCategory, HarmBlockThreshold
 from services.auth import get_current_user
 from services.form_mobile_optimizer import form_mobile_optimizer
+from services.pdf_generator import PDFGenerator
 from datetime import datetime, timezone, timedelta
 import secrets
 import hashlib
 
 router = APIRouter()
+
+# Initialize PDF generator
+pdf_generator = PDFGenerator()
 
 # Initialize Vertex AI
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -810,3 +814,94 @@ def get_form_by_share_token(form_id: str, share_token: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/forms/{form_id}/pdf/response/{response_id}")
+async def generate_response_pdf(
+    form_id: str,
+    response_id: str,
+    include_summary: bool = Query(True, description="Include AI-generated clinical summary"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate PDF for a form response with optional AI clinical summary"""
+    try:
+        # Get form and response from Firestore
+        form_doc = db.collection("forms").document(form_id).get()
+        if not form_doc.exists:
+            raise HTTPException(status_code=404, detail="Form not found")
+            
+        response_doc = db.collection("form_responses").document(response_id).get()
+        if not response_doc.exists:
+            raise HTTPException(status_code=404, detail="Response not found")
+            
+        form_data = form_doc.to_dict()
+        response_data = response_doc.to_dict()
+        
+        # Verify permissions
+        if form_data.get("organization_id") != current_user.get("uid"):
+            raise HTTPException(status_code=403, detail="Access denied")
+            
+        # Generate PDF
+        pdf_bytes = pdf_generator.generate_response_pdf(
+            form_schema=form_data.get("surveyJson", {}),
+            response_data=response_data.get("response_data", {}),
+            form_title=form_data.get("title", "Untitled Form"),
+            patient_name=response_data.get("patient_name"),
+            include_summary=include_summary
+        )
+        
+        # Generate filename
+        patient = response_data.get("patient_name", "Anonymous")
+        date = datetime.now().strftime("%Y-%m-%d")
+        filename = f"{patient}_{form_data.get('title', 'Form')}_{date}.pdf"
+        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}.pdf"'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error generating PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF")
+
+@router.post("/forms/{form_id}/pdf/blank")
+async def generate_blank_form_pdf(
+    form_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate blank form PDF"""
+    try:
+        # Get form from Firestore
+        form_doc = db.collection("forms").document(form_id).get()
+        if not form_doc.exists:
+            raise HTTPException(status_code=404, detail="Form not found")
+            
+        form_data = form_doc.to_dict()
+        
+        # Verify permissions
+        if form_data.get("organization_id") != current_user.get("uid"):
+            raise HTTPException(status_code=403, detail="Access denied")
+            
+        # Generate PDF
+        pdf_bytes = pdf_generator.generate_blank_pdf(
+            form_schema=form_data.get("surveyJson", {}),
+            form_title=form_data.get("title", "Untitled Form")
+        )
+        
+        filename = f"{form_data.get('title', 'Form')}_Blank_Template"
+        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}.pdf"'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error generating blank PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF")

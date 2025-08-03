@@ -36,21 +36,24 @@ This document provides comprehensive documentation for the Firestore database st
 ### 1. `organizations`
 Stores tenant/organization information. Document ID matches the user's Firebase UID.
 
-```javascript
-{
-  // Document ID: {userId} (same as Firebase Auth UID)
-  uid: string,              // Same as document ID and user's Firebase UID
-  name: string,             // Organization name
-  email: string,            // Primary contact email
-  phone: string?,           // Optional phone number
-  address: string?,         // Optional physical address
-  settings: {
-    hipaa_compliant: boolean,      // Default: true
-    data_retention_days: number,   // Default: 2555 (7 years)
-    timezone: string              // Default: "UTC"
-  },
-  created_at: timestamp,    // When organization was created
-  updated_at: timestamp     // Last modification time
+```go
+type Organization struct {
+	ID        string               `json:"_id,omitempty" firestore:"_id,omitempty"`
+	UID       string               `json:"uid" firestore:"uid"`
+	Name      string               `json:"name" firestore:"name"`
+	Email     string               `json:"email,omitempty" firestore:"email,omitempty"`
+	Phone     string               `json:"phone,omitempty" firestore:"phone,omitempty"`
+	Address   string               `json:"address,omitempty" firestore:"address,omitempty"`
+	Settings  OrganizationSettings `json:"settings" firestore:"settings"`
+	CreatedAt time.Time            `json:"created_at" firestore:"created_at"`
+	UpdatedAt time.Time            `json:"updated_at" firestore:"updated_at"`
+}
+
+// OrganizationSettings represents the settings for an organization
+type OrganizationSettings struct {
+	HIPAACompliant      bool `json:"hipaa_compliant" firestore:"hipaa_compliant"`
+	DataRetentionDays int  `json:"data_retention_days" firestore:"data_retention_days"`
+	Timezone          string `json:"timezone" firestore:"timezone"`
 }
 ```
 
@@ -288,12 +291,12 @@ Location: `/firestore.indexes.json`
 ### Key Implementation Details
 
 1. **Authentication Flow**
-   ```python
-   # User authenticates with Firebase Auth
-   # Backend receives Firebase ID token
-   # Token is verified using Firebase Admin SDK
-   # User UID is extracted from token
-   # All operations use UID as organization_id
+   ```go
+   // User authenticates with Firebase Auth
+   // Backend receives Firebase ID token in Authorization: Bearer <token> header
+   // Token is verified using Firebase Admin SDK
+   // User UID is extracted from token and set in Gin context as "userID" and "organizationID"
+   // All subsequent operations retrieve UID/organizationID from Gin context
    ```
 
 2. **Organization Auto-Creation**

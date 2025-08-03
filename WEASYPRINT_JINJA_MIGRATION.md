@@ -1,38 +1,36 @@
-# WeasyPrint + Jinja2 PDF Generation Migration Guide
+# WeasyPrint + Jinja2 PDF Generation Implementation Guide
 
 ## Overview
-This document provides a complete implementation guide for migrating from SurveyJS PDF generation to a WeasyPrint + Jinja2 based solution for creating beautiful, flexible PDF forms.
+This document is the source of truth for our server-side PDF generation system using WeasyPrint + Jinja2, which replaced the client-side SurveyJS PDF generation. The new system provides professional medical PDFs with AI-generated clinical summaries.
 
-## Current State Analysis
+## Implementation Status: ✅ COMPLETED
 
-### Existing Implementation
-- **Frontend PDF Generation**: Using `survey-pdf` npm package (v2.1.1)
+### Migration Decision
+We migrated from client-side to server-side PDF generation to provide:
+- **Consistent, professional medical PDFs** for all users
+- **AI-generated clinical summaries** using Vertex AI/Gemini
+- **Better handling of complex forms** and layouts
+- **No browser memory limitations**
+- **Single PDF format** to avoid user confusion (doctors don't need to choose between PDF types)
+
+### Previous Implementation (Removed)
+- **Frontend PDF Generation**: Was using `survey-pdf` npm package
 - **Client-side rendering**: PDFs generated in browser
-- **Files involved**:
-  - `/frontend/src/utils/pdfExport.ts`
-  - `/frontend/src/utils/pdfExportFlattened.ts`
-  - `/frontend/src/components/Responses/ResponseDetail.tsx`
-  - `/frontend/src/components/Responses/ResponsesList.tsx`
-  - `/frontend/src/components/Dashboard/FormsList.tsx`
+- **Removed files**:
+  - `/frontend/src/utils/pdfExport.ts` ❌
+  - `/frontend/src/utils/pdfExportFlattened.ts` ❌
+  - All client-side PDF generation code ❌
 
-### Current Usage Points
-1. **ResponseDetail.tsx**: Line 131 - Single response PDF export
-2. **ResponsesList.tsx**: Lines 97, 188 - Response PDF and blank form PDF
-3. **FormsList.tsx**: Line 514 - Blank form PDF generation
+## Current Implementation Architecture
 
-## Implementation Plan
+### Backend Infrastructure
 
-### Phase 1: Backend Infrastructure Setup
-
-#### 1.1 System Dependencies
+#### System Dependencies
 ```bash
-# Ubuntu/Debian
-sudo apt-get install python3-pip python3-cffi python3-brotli libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libpangocairo-1.0-0
+# Ubuntu/Debian (including Google Cloud Run)
+apt-get install python3-pip python3-cffi python3-brotli libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libpangocairo-1.0-0
 
-# macOS
-brew install cairo pango gdk-pixbuf libffi
-
-# For production Docker container, add to Dockerfile:
+# For production Docker container:
 RUN apt-get update && apt-get install -y \
     python3-pip python3-cffi python3-brotli \
     libpango-1.0-0 libpangoft2-1.0-0 \
@@ -41,600 +39,215 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 ```
 
-#### 1.2 Python Dependencies
-Add to `backend-fastapi/requirements.txt`:
+#### Python Dependencies (✅ Added to requirements.txt)
 ```
 weasyprint==62.3
 Jinja2==3.1.4
 ```
 
-#### 1.3 Create PDF Service
-Create `backend-fastapi/services/pdf_generator.py`:
+### File Structure
+
+```
+backend-fastapi/
+├── services/
+│   └── pdf_generator.py          # Main PDF generation service with AI
+├── templates/pdf/
+│   ├── response_form.html        # Template for filled responses
+│   ├── blank_form.html           # Template for blank forms
+│   └── styles/
+│       ├── base.css              # Base PDF styling
+│       └── medical.css           # Medical-specific styling
+└── routers/
+    └── forms.py                  # Added PDF endpoints
+```
+
+### Key Implementation Features
+
+#### 1. PDF Generator Service (`services/pdf_generator.py`)
+- **AI Clinical Summary Generation**: Uses Vertex AI Gemini model to create professional summaries
+- **SurveyJS Data Transformation**: Converts form schema to template-friendly format
+- **Two PDF Types**:
+  - Response PDFs with patient data and AI summary
+  - Blank form PDFs for printing
+
+#### 2. API Endpoints (Added to `routers/forms.py`)
 ```python
-import os
-from typing import Dict, Any, Optional, List
-from datetime import datetime
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import HTML, CSS
-from weasyprint.text.fonts import FontConfiguration
-import logging
+# Generate PDF for a form response
+POST /api/v1/forms/{form_id}/pdf/response/{response_id}?include_summary=true
 
-logger = logging.getLogger(__name__)
-
-class PDFGenerator:
-    def __init__(self):
-        template_dir = os.path.join(os.path.dirname(__file__), '..', 'templates', 'pdf')
-        self.env = Environment(
-            loader=FileSystemLoader(template_dir),
-            autoescape=select_autoescape(['html', 'xml'])
-        )
-        self.font_config = FontConfiguration()
-        
-    def transform_surveyjs_data(self, form_schema: Dict[str, Any], response_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Transform SurveyJS schema and response data for template rendering"""
-        # Implementation details in actual file
-        pass
-        
-    def generate_response_pdf(self, form_schema: Dict[str, Any], response_data: Dict[str, Any], 
-                            form_title: str, patient_name: Optional[str] = None) -> bytes:
-        """Generate PDF for a filled form response"""
-        template = self.env.get_template('forms/response_form.html')
-        
-        context = {
-            'form_title': form_title,
-            'patient_name': patient_name or 'Anonymous',
-            'submission_date': datetime.now().strftime('%B %d, %Y'),
-            'form_data': self.transform_surveyjs_data(form_schema, response_data),
-            'response_data': response_data
-        }
-        
-        html_string = template.render(context)
-        
-        # Get CSS files
-        base_css = CSS(filename=os.path.join(self.env.loader.searchpath[0], 'styles', 'base.css'))
-        healthcare_css = CSS(filename=os.path.join(self.env.loader.searchpath[0], 'styles', 'healthcare.css'))
-        
-        # Generate PDF
-        html = HTML(string=html_string, base_url=self.env.loader.searchpath[0])
-        pdf_bytes = html.write_pdf(
-            stylesheets=[base_css, healthcare_css],
-            font_config=self.font_config
-        )
-        
-        return pdf_bytes
-        
-    def generate_blank_pdf(self, form_schema: Dict[str, Any], form_title: str) -> bytes:
-        """Generate blank form PDF"""
-        template = self.env.get_template('forms/blank_form.html')
-        
-        context = {
-            'form_title': form_title,
-            'form_data': self.transform_surveyjs_data(form_schema),
-            'generation_date': datetime.now().strftime('%B %d, %Y')
-        }
-        
-        html_string = template.render(context)
-        
-        base_css = CSS(filename=os.path.join(self.env.loader.searchpath[0], 'styles', 'base.css'))
-        healthcare_css = CSS(filename=os.path.join(self.env.loader.searchpath[0], 'styles', 'healthcare.css'))
-        
-        html = HTML(string=html_string, base_url=self.env.loader.searchpath[0])
-        pdf_bytes = html.write_pdf(
-            stylesheets=[base_css, healthcare_css],
-            font_config=self.font_config
-        )
-        
-        return pdf_bytes
+# Generate blank form PDF
+POST /api/v1/forms/{form_id}/pdf/blank
 ```
 
-#### 1.4 Template Directory Structure
-Create the following structure:
-```
-backend-fastapi/templates/pdf/
-├── base.html
-├── components/
-│   ├── text_field.html
-│   ├── radiogroup.html
-│   ├── checkbox.html
-│   ├── dropdown.html
-│   ├── comment.html
-│   ├── boolean.html
-│   ├── rating.html
-│   ├── matrix.html
-│   ├── file.html
-│   ├── signaturepad.html
-│   ├── dateofbirth.html
-│   ├── heightslider.html
-│   ├── weightslider.html
-│   └── bodypaindiagram.html
-├── styles/
-│   ├── base.css
-│   ├── healthcare.css
-│   └── print.css
-└── forms/
-    ├── response_form.html
-    └── blank_form.html
+#### 3. Frontend Integration
+
+**New API Methods** (`store/api/formsApi.ts`):
+```typescript
+generateResponsePdf: builder.mutation<Blob, { 
+  formId: string; 
+  responseId: string; 
+  includeSummary?: boolean 
+}>
+
+generateBlankFormPdf: builder.mutation<Blob, string>
 ```
 
-### Phase 2: API Endpoints
+**Updated Components**:
+- `PdfExportButton.tsx`: Simple button component (no options menu)
+- `ResponseDetail.tsx`: Uses PdfExportButton
+- `ResponsesList.tsx`: Server-side blank form generation
+- `FormsList.tsx`: Server-side PDF for all exports
 
-#### 2.1 Update Forms Router
-Add to `backend-fastapi/routers/forms.py`:
+### AI Clinical Summary Feature
+
+The system automatically generates a clinical summary that includes:
+1. **Chief complaint and key symptoms**
+2. **Red flags or concerning findings**
+3. **Relevant medical history**
+4. **Professional medical language** suitable for physician notes
+
+Example prompt structure:
 ```python
-from fastapi import HTTPException, Depends, Response
-from services.pdf_generator import PDFGenerator
+prompt = f"""You are a medical assistant helping doctors quickly understand patient intake forms.
 
-pdf_generator = PDFGenerator()
+Form: {form_title}
+Patient Responses: {questions_answers}
 
-@router.post("/forms/{form_id}/pdf/response/{response_id}")
-async def generate_response_pdf(
-    form_id: str,
-    response_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
-):
-    """Generate PDF for a form response"""
-    try:
-        # Get form and response from Firestore
-        form_doc = db.collection("forms").document(form_id).get()
-        if not form_doc.exists:
-            raise HTTPException(status_code=404, detail="Form not found")
-            
-        response_doc = db.collection("form_responses").document(response_id).get()
-        if not response_doc.exists:
-            raise HTTPException(status_code=404, detail="Response not found")
-            
-        form_data = form_doc.to_dict()
-        response_data = response_doc.to_dict()
-        
-        # Verify permissions
-        if form_data.get("organization_id") != current_user.get("organization_id"):
-            raise HTTPException(status_code=403, detail="Access denied")
-            
-        # Generate PDF
-        pdf_bytes = pdf_generator.generate_response_pdf(
-            form_schema=form_data.get("surveyJson", {}),
-            response_data=response_data.get("response_data", {}),
-            form_title=form_data.get("title", "Untitled Form"),
-            patient_name=response_data.get("patient_name")
-        )
-        
-        # Generate filename
-        patient = response_data.get("patient_name", "Anonymous")
-        date = datetime.now().strftime("%Y-%m-%d")
-        filename = f"{patient}_{form_data.get('title', 'Form')}_{date}.pdf"
-        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}.pdf"'
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating PDF: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate PDF")
-
-@router.post("/forms/{form_id}/pdf/blank")
-async def generate_blank_form_pdf(
-    form_id: str,
-    current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
-):
-    """Generate blank form PDF"""
-    try:
-        # Get form from Firestore
-        form_doc = db.collection("forms").document(form_id).get()
-        if not form_doc.exists:
-            raise HTTPException(status_code=404, detail="Form not found")
-            
-        form_data = form_doc.to_dict()
-        
-        # Verify permissions
-        if form_data.get("organization_id") != current_user.get("organization_id"):
-            raise HTTPException(status_code=403, detail="Access denied")
-            
-        # Generate PDF
-        pdf_bytes = pdf_generator.generate_blank_pdf(
-            form_schema=form_data.get("surveyJson", {}),
-            form_title=form_data.get("title", "Untitled Form")
-        )
-        
-        filename = f"{form_data.get('title', 'Form')}_Blank_Template"
-        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}.pdf"'
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating blank PDF: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate PDF")
+Please provide a concise clinical summary (2-3 paragraphs) that:
+1. Highlights the chief complaint and key symptoms
+2. Notes any red flags or concerning findings
+3. Summarizes relevant medical history
+4. Is written in professional medical language suitable for physician notes
+"""
 ```
 
-### Phase 3: Frontend Updates
+### PDF Templates
 
-#### 3.1 Add API Methods
-Update `frontend/src/store/api/formsApi.ts`:
-```typescript
-export const formsApi = createApi({
-  // ... existing code ...
-  endpoints: (builder) => ({
-    // ... existing endpoints ...
-    
-    generateResponsePdf: builder.mutation<Blob, { formId: string; responseId: string }>({
-      query: ({ formId, responseId }) => ({
-        url: `/forms/${formId}/pdf/response/${responseId}`,
-        method: 'POST',
-        responseHandler: async (response) => {
-          if (!response.ok) {
-            throw new Error('Failed to generate PDF');
-          }
-          return response.blob();
-        },
-      }),
-    }),
-    
-    generateBlankFormPdf: builder.mutation<Blob, string>({
-      query: (formId) => ({
-        url: `/forms/${formId}/pdf/blank`,
-        method: 'POST',
-        responseHandler: async (response) => {
-          if (!response.ok) {
-            throw new Error('Failed to generate PDF');
-          }
-          return response.blob();
-        },
-      }),
-    }),
-  }),
-});
+#### Response Form Template (`response_form.html`)
+- Patient information header
+- Optional AI-generated clinical summary section
+- Complete form responses
+- Professional medical styling
+- Page numbers and generation timestamp
 
-export const { useGenerateResponsePdfMutation, useGenerateBlankFormPdfMutation } = formsApi;
-```
+#### Blank Form Template (`blank_form.html`)
+- Form title and metadata
+- Patient information fields
+- All questions with appropriate input areas
+- Print-optimized layout
 
-#### 3.2 Update Components
+### CSS Styling
 
-**ResponseDetail.tsx** changes:
-```typescript
-import { useGenerateResponsePdfMutation } from '../../store/api/formsApi';
+#### Base CSS (`base.css`)
+- Page setup (letter size, margins)
+- Header/footer positioning
+- Typography and spacing
+- Print-specific rules
 
-// Inside component:
-const [generatePdf, { isLoading: isGeneratingPdf }] = useGenerateResponsePdfMutation();
+#### Medical CSS (`medical.css`)
+- Clinical summary styling
+- Form question/answer formatting
+- Professional medical document appearance
+- Responsive tables for matrix questions
+- Signature boxes and special fields
 
-// Replace onClick handler (around line 130):
-onClick={async () => {
-  try {
-    const blob = await generatePdf({ 
-      formId: formId!, 
-      responseId: responseId! 
-    }).unwrap();
-    
-    // Create download link
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${response.patient_name || 'Anonymous'}_${form.title}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error('Failed to generate PDF:', error);
-    // Show error message to user
-  }
-}}
-```
+## Production Deployment Checklist
 
-### Phase 4: Template Examples
+### 1. Backend Deployment
+- [ ] Install system dependencies in Docker/Cloud Run
+- [ ] Update `requirements.txt` with WeasyPrint dependencies
+- [ ] Deploy PDF templates and CSS files
+- [ ] Ensure Vertex AI credentials are configured
+- [ ] Test PDF generation endpoints
 
-#### 4.1 Base Template (`templates/pdf/base.html`):
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{% block title %}{{ form_title }}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <header>
-        <div class="header-content">
-            <h1>{{ form_title }}</h1>
-            {% block header_info %}{% endblock %}
-        </div>
-    </header>
-    
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-    
-    <footer>
-        <div class="footer-content">
-            <span>Page <span class="page-number"></span> of <span class="total-pages"></span></span>
-            <span>Generated on {{ generation_date|default(submission_date) }}</span>
-        </div>
-    </footer>
-</body>
-</html>
-```
+### 2. Frontend Deployment
+- [ ] Remove all references to old PDF utilities
+- [ ] Deploy updated components
+- [ ] Test PDF downloads in production
 
-#### 4.2 Base CSS (`templates/pdf/styles/base.css`):
-```css
-@page {
-    size: letter;
-    margin: 0.75in 0.5in;
-    
-    @top-center {
-        content: element(header);
-    }
-    
-    @bottom-center {
-        content: element(footer);
-    }
-}
+### 3. Monitoring
+- [ ] Monitor PDF generation performance
+- [ ] Track AI summary generation success/failures
+- [ ] Watch for memory usage during PDF generation
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+## Important Architecture Decisions
 
-body {
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    font-size: 11pt;
-    line-height: 1.5;
-    color: #333;
-}
+### 1. No Fallback to Client-Side
+We intentionally removed all client-side PDF generation to ensure consistency. All PDFs go through the server.
 
-header {
-    position: running(header);
-    border-bottom: 2px solid #1976d2;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
+### 2. Always Include AI Summary
+The AI summary is always generated (no toggle) to provide maximum value to doctors.
 
-footer {
-    position: running(footer);
-    border-top: 1px solid #ccc;
-    padding-top: 10px;
-    font-size: 9pt;
-    color: #666;
-    display: flex;
-    justify-content: space-between;
-}
+### 3. Synchronous Generation
+PDFs are generated synchronously on request rather than queued, providing immediate feedback to users.
 
-.page-number::after {
-    content: counter(page);
-}
+### 4. Error Handling
+If PDF generation fails, users see a clear error message. No silent failures or fallbacks.
 
-.total-pages::after {
-    content: counter(pages);
-}
+## Performance Considerations
 
-/* Form element styles */
-.form-section {
-    margin-bottom: 20px;
-    page-break-inside: avoid;
-}
+### Memory Usage
+- WeasyPrint loads entire PDF in memory
+- Large forms (100+ questions) may require increased Cloud Run memory
+- Current setup handles typical medical forms without issues
 
-.form-question {
-    margin-bottom: 15px;
-}
+### Generation Time
+- Typical form: 2-4 seconds (including AI summary)
+- Large forms: 5-10 seconds
+- Network latency adds 1-2 seconds
 
-.question-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
+### Optimization Tips
+1. Cache generated PDFs for unchanged responses
+2. Use Cloud CDN for frequently accessed blank forms
+3. Consider background generation for very large forms
 
-.question-answer {
-    padding-left: 20px;
-    color: #555;
-}
+## Security Considerations
 
-/* Responsive tables for matrix questions */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0;
-}
+1. **Template Injection**: Jinja2 autoescape is enabled
+2. **File Access**: Templates are included in deployment, not user-accessible
+3. **AI Prompt Injection**: Medical context limits potential misuse
+4. **Authentication**: All PDF endpoints require user authentication
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
+## Future Enhancements
 
-th {
-    background-color: #f5f5f5;
-    font-weight: bold;
-}
+1. **Custom Templates**: Allow organizations to upload branded templates
+2. **Batch Generation**: Generate multiple PDFs in one request
+3. **Email Integration**: Send PDFs directly to physicians
+4. **Digital Signatures**: Add cryptographic signatures for compliance
 
-/* Signature styling */
-.signature-box {
-    border: 1px solid #333;
-    height: 60px;
-    margin: 10px 0;
-    position: relative;
-}
+## Troubleshooting
 
-.signature-label {
-    position: absolute;
-    bottom: -20px;
-    left: 0;
-    font-size: 9pt;
-    color: #666;
-}
-```
+### Common Issues
 
-### Phase 5: Migration Strategy
+1. **"Failed to generate PDF" error**
+   - Check WeasyPrint system dependencies
+   - Verify Vertex AI credentials
+   - Check Cloud Run memory limits
 
-#### 5.1 Feature Flag Implementation
-Add to frontend environment variables:
-```typescript
-// .env
-REACT_APP_USE_SERVER_PDF=false
+2. **Missing styles in PDF**
+   - Ensure CSS files are deployed
+   - Check template paths in pdf_generator.py
 
-// In components:
-const useServerPdf = process.env.REACT_APP_USE_SERVER_PDF === 'true';
-```
+3. **AI summary not appearing**
+   - Verify Vertex AI quota
+   - Check prompt formatting
+   - Review AI model response
 
-#### 5.2 Gradual Rollout
-1. Deploy backend changes first
-2. Test with internal users using feature flag
-3. Monitor performance and quality
-4. Gradually increase percentage of users
-5. Remove old code after full migration
-
-### Phase 6: Cleanup Tasks
-
-#### 6.1 Remove Dependencies
+### Debug Commands
 ```bash
-# Remove from package.json
-npm uninstall survey-pdf
+# Test WeasyPrint installation
+python -c "import weasyprint; print(weasyprint.__version__)"
 
-# Delete files:
-rm frontend/src/utils/pdfExport.ts
-rm frontend/src/utils/pdfExportFlattened.ts
+# Check system dependencies
+apt list --installed | grep -E "pango|cairo"
+
+# Test template rendering
+python backend-fastapi/services/pdf_generator.py
 ```
 
-#### 6.2 Update Imports
-Remove all imports of the old PDF utilities from:
-- `ResponseDetail.tsx`
-- `ResponsesList.tsx`
-- `FormsList.tsx`
+## References
 
-## Dependencies and Second-Order Effects Analysis
-
-### System Dependencies
-1. **WeasyPrint System Requirements**:
-   - Cairo, Pango, and related libraries
-   - Impacts: Docker image size will increase (~100MB)
-   - Mitigation: Use multi-stage Docker builds
-
-2. **Font Dependencies**:
-   - Liberation fonts for consistent rendering
-   - Impacts: May need custom fonts for branding
-   - Mitigation: Include fonts in Docker image
-
-### Performance Impacts
-1. **Server Load**:
-   - PDF generation moves from client to server
-   - Impacts: Increased CPU/memory usage on backend
-   - Mitigation: Implement caching, queue for batch jobs
-
-2. **Response Times**:
-   - Network latency for PDF download
-   - Impacts: Slower than client-side for small PDFs
-   - Mitigation: Show progress indicators, optimize templates
-
-3. **Concurrent Requests**:
-   - Multiple users generating PDFs simultaneously
-   - Impacts: Potential server overload
-   - Mitigation: Rate limiting, background job queue
-
-### Frontend Changes
-1. **Loading States**:
-   - Need proper UX during generation
-   - Impacts: UI components need updates
-   - Already addressed in implementation
-
-2. **Error Handling**:
-   - Network failures, timeouts
-   - Impacts: Need robust error messages
-   - Mitigation: Retry logic, user feedback
-
-### Backend Architecture
-1. **Memory Usage**:
-   - WeasyPrint loads entire PDF in memory
-   - Impacts: Large forms may cause issues
-   - Mitigation: Streaming responses, memory limits
-
-2. **Template Management**:
-   - New template directory structure
-   - Impacts: Deployment complexity
-   - Mitigation: Include in Docker image
-
-### Security Considerations
-1. **Template Injection**:
-   - Jinja2 autoescape must be enabled
-   - Impacts: XSS vulnerabilities if misconfigured
-   - Already addressed with select_autoescape
-
-2. **File Access**:
-   - PDF generation has file system access
-   - Impacts: Potential security risk
-   - Mitigation: Proper file permissions, sandboxing
-
-### Deployment Considerations
-1. **Docker Image Size**:
-   - Increase of ~150MB for dependencies
-   - Impacts: Slower deployments
-   - Mitigation: Layer caching, multi-stage builds
-
-2. **Cloud Run Compatibility**:
-   - WeasyPrint works well in Cloud Run
-   - Impacts: May need to adjust memory limits
-   - Mitigation: Monitor and adjust resources
-
-### Monitoring and Logging
-1. **New Metrics Needed**:
-   - PDF generation time
-   - Memory usage during generation
-   - Error rates
-   - Queue depth (if implemented)
-
-2. **Logging Updates**:
-   - Add PDF-specific logging
-   - Track template rendering issues
-   - Monitor resource usage
-
-### Rollback Plan
-1. Keep old code in place initially
-2. Use feature flags for gradual rollout
-3. Maintain both endpoints temporarily
-4. Have quick rollback procedure ready
-
-### Testing Requirements
-1. **Unit Tests**:
-   - Test PDF service methods
-   - Test data transformation logic
-   - Mock WeasyPrint for faster tests
-
-2. **Integration Tests**:
-   - Test full PDF generation flow
-   - Verify all question types render
-   - Test with large forms
-
-3. **Performance Tests**:
-   - Load testing for concurrent requests
-   - Memory usage profiling
-   - Response time benchmarks
-
-## Success Criteria
-1. All question types render correctly
-2. PDFs are visually appealing and professional
-3. Generation time < 5 seconds for typical forms
-4. No memory issues with forms up to 100 questions
-5. Zero data loss during migration
-6. Positive user feedback on PDF quality
-
-## Timeline
-- Week 1: Backend implementation and templates
-- Week 2: Frontend migration and testing
-- Week 3: Gradual rollout and monitoring
-- Week 4: Full deployment and cleanup
-
-## Notes for Implementation
-1. Start with a simple form to test the pipeline
-2. Implement one question type at a time
-3. Test PDF generation locally before deploying
-4. Keep the old system running in parallel initially
-5. Monitor resource usage closely during rollout
+- [WeasyPrint Documentation](https://weasyprint.org/)
+- [Jinja2 Template Documentation](https://jinja.palletsprojects.com/)
+- [Vertex AI Gemini API](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+- [Cloud Run PDF Generation Best Practices](https://cloud.google.com/run/docs/tutorials/gcloud)

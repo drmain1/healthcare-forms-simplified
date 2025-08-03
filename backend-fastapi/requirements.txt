@@ -3,6 +3,9 @@ uvicorn[standard]
 pydantic
 google-cloud-firestore
 firebase-admin
-google-cloud-aiplatform
+google-cloud-aiplatform==1.106.0
 gunicorn
 python-jose[cryptography]
+xhtml2pdf
+Jinja2==3.1.4
+setuptools>=70.0.0

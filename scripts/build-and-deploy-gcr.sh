@@ -20,12 +20,12 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Starting build and deployment to GCR and Cloud Run...${NC}"
 
-# Step 1: Build the image for AMD64 platform
-echo -e "${YELLOW}Building Docker image for AMD64 platform...${NC}"
+# Step 1: Build the image for AMD64 platform using Chainguard
+echo -e "${YELLOW}Building Docker image for AMD64 platform with Chainguard...${NC}"
 docker build --platform linux/amd64 \
-  -f backend-fastapi/Dockerfile.cloudrun \
+  -f backend-fastapi/Dockerfile \
   -t ${GCR_IMAGE} \
-  .
+  backend-fastapi/
 
 # Step 2: Configure Docker for GCR (if not already done)
 echo -e "${YELLOW}Configuring Docker authentication for GCR...${NC}"

@@ -45,10 +45,9 @@ import {
   GetApp,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useGetFormsQuery, useDeleteFormMutation, useGetFormQuery } from '../../store/api/formsApi';
+import { useGetFormsQuery, useDeleteFormMutation, useGetFormQuery, useGenerateBlankFormPdfMutation } from '../../store/api/formsApi';
 import { Survey } from 'survey-react-ui';
 import { createSurveyModel } from '../../utils/surveyConfig';
-import { generateBlankFormPdf } from '../../utils/pdfExport';
 
 
 const statusColors = {
@@ -82,6 +81,7 @@ export const FormsList: React.FC = () => {
 
   // Delete form mutation
   const [deleteForm, { isLoading: isDeleting }] = useDeleteFormMutation();
+  const [generateBlankPdf, { isLoading: isGeneratingPdf }] = useGenerateBlankFormPdfMutation();
 
   // Get full form data for preview
   const { data: fullFormData, isLoading: isLoadingFullForm } = useGetFormQuery(previewFormId || '', {
@@ -510,15 +510,23 @@ export const FormsList: React.FC = () => {
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => {
-                          const result = generateBlankFormPdf(
-                            form.surveyJson,
-                            form.title
-                          );
-                          if (!result.success) {
+                        onClick={async () => {
+                          try {
+                            const url = await generateBlankPdf(form.id).unwrap();
+                            
+                            // Create download link
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${form.title}_Blank_Template.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          } catch (error) {
+                            console.error('Failed to generate PDF:', error);
                             setSnackbar({
                               open: true,
-                              message: `Failed to generate PDF: ${result.error}`,
+                              message: 'Failed to generate PDF. Please try again.',
                               severity: 'error'
                             });
                           }

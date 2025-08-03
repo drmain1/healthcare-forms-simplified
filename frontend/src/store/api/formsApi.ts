@@ -169,6 +169,44 @@ export const formsApi = baseApi.injectEndpoints({
       query: () => '/forms/recent_activity/',
       providesTags: ['Form', 'Analytics'],
     }),
+
+    // PDF generation endpoints
+    generateResponsePdf: builder.mutation<string, { formId: string; responseId: string; includeSummary?: boolean }>({
+      queryFn: async (arg, _queryApi, _extraOptions, baseQuery) => {
+        const { formId, responseId, includeSummary = true } = arg;
+        const response = await baseQuery({
+          url: `/forms/${formId}/pdf/response/${responseId}?include_summary=${includeSummary}`,
+          method: 'POST',
+          responseHandler: (res: Response) => res.blob(),
+        });
+
+        if (response.error) {
+          return { error: { status: 'CUSTOM_ERROR', error: 'Failed to generate PDF' } };
+        }
+
+        const blob = response.data as Blob;
+        const url = window.URL.createObjectURL(blob);
+        return { data: url };
+      },
+    }),
+
+    generateBlankFormPdf: builder.mutation<string, string>({
+       queryFn: async (formId, _queryApi, _extraOptions, baseQuery) => {
+        const response = await baseQuery({
+          url: `/forms/${formId}/pdf/blank`,
+          method: 'POST',
+          responseHandler: (res: Response) => res.blob(),
+        });
+
+        if (response.error) {
+          return { error: { status: 'CUSTOM_ERROR', error: 'Failed to generate PDF' } };
+        }
+
+        const blob = response.data as Blob;
+        const url = window.URL.createObjectURL(blob);
+        return { data: url };
+      },
+    }),
   }),
 });
 
@@ -190,4 +228,6 @@ export const {
   useDeactivateShareLinkMutation,
   useGetDashboardStatsQuery,
   useGetRecentActivityQuery,
+  useGenerateResponsePdfMutation,
+  useGenerateBlankFormPdfMutation,
 } = formsApi;

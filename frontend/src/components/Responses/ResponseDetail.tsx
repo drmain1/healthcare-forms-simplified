@@ -29,7 +29,7 @@ import { Model } from 'survey-core';
 import 'survey-core/survey-core.css';
 import { useGetResponseQuery, useMarkResponseReviewedMutation } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
-import { generateResponsePdf } from '../../utils/pdfExport';
+import { PdfExportButton } from './PdfExportButton';
 
 export const ResponseDetail: React.FC = () => {
   const { formId, responseId } = useParams<{ formId: string; responseId: string }>();
@@ -124,28 +124,12 @@ export const ResponseDetail: React.FC = () => {
           <Typography variant="h4" fontWeight="bold">
             Response Detail
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<GetApp />}
-            onClick={() => {
-              const result = generateResponsePdf(
-                form.surveyJson,
-                response.response_data,
-                form.title,
-                response.patient_name,
-                response.submitted_at
-              );
-              
-              if (!result.success) {
-                alert(`Failed to generate PDF: ${result.error}`);
-              } else if (result.warning) {
-                console.warn('PDF generation warning:', result.warning);
-                // Optionally show a notification to the user
-              }
-            }}
-          >
-            Export PDF
-          </Button>
+          <PdfExportButton
+            formId={formId!}
+            responseId={responseId!}
+            form={form}
+            response={response}
+          />
         </Box>
         
         <Typography variant="h6" color="text.secondary">

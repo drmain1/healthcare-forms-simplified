@@ -1,5 +1,12 @@
 # 🚀 Quick Deploy Cheatsheet
 
+## 🔐 SECURITY REQUIREMENT: CHAINGUARD IMAGES ONLY
+**⚠️ CRITICAL: DO NOT DRIFT FROM CHAINGUARD IMAGES!**
+- We use Chainguard images for HIPAA compliance and security
+- Primary Dockerfile: `backend-fastapi/Dockerfile` (CHAINGUARD BASED!)
+- Base image: `cgr.dev/chainguard/wolfi-base:latest`
+- Build image: `cgr.dev/chainguard/python:latest-dev`
+
 ## Deploy Frontend to Firebase (After Making Changes)
 ```bash
 cd frontend
@@ -86,7 +93,21 @@ Backend already configured for localhost:3000. If using different port, need to 
 
 ## Files You Need
 
-1. **Dockerfile**: `backend-fastapi/Dockerfile.cloudrun`
+1. **Dockerfile**: `backend-fastapi/Dockerfile` (CHAINGUARD BASED!)
 2. **Deploy Script**: `scripts/build-and-deploy-gcr.sh`
 
 That's it! Just run the deploy script after making changes.
+
+## 🔒 Security & Dependencies
+
+### WeasyPrint PDF Generation
+- ✅ Working with Chainguard images
+- System dependencies: Pango, Cairo, GLib, Harfbuzz, Fontconfig, GDK-Pixbuf
+- Google Fonts: Noto Fonts (via `font-noto` package) included
+- Non-root user: `nonroot` (UID 1001)
+
+### Container Security
+- ✅ Chainguard wolfi-base (minimal attack surface)
+- ✅ Multi-stage build (dev tools removed from production)
+- ✅ No package manager in production image
+- ✅ HIPAA-compliant security posture

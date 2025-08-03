@@ -146,6 +146,7 @@ def list_responses(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/responses/{response_id}", response_model=FormResponse)
+@router.get("/responses/{response_id}/", response_model=FormResponse, include_in_schema=False)
 def get_response(response_id: str, user: dict = Depends(get_current_user)):
     try:
         doc = db.collection('form_responses').document(response_id).get()
@@ -179,6 +180,49 @@ def get_response(response_id: str, user: dict = Depends(get_current_user)):
             response_data['user_agent'] = metadata.get('user_agent')
             
         return FormResponse(**response_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/responses/{response_id}/review", response_model=FormResponse)
+@router.post("/responses/{response_id}/review/", response_model=FormResponse, include_in_schema=False)
+def mark_response_reviewed(response_id: str, user: dict = Depends(get_current_user)):
+    """Mark a response as reviewed"""
+    try:
+        doc_ref = db.collection('form_responses').document(response_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Response not found")
+        
+        # Update the reviewed status
+        doc_ref.update({
+            'reviewed': True,
+            'reviewed_at': datetime.now(timezone.utc),
+            'reviewed_by': user['uid']
+        })
+        
+        # Get the updated document
+        updated_doc = doc_ref.get()
+        response_data = updated_doc.to_dict()
+        response_data["id"] = updated_doc.id
+        
+        # Map Firestore 'data' field to 'response_data' for frontend
+        if 'data' in response_data:
+            response_data['response_data'] = response_data.pop('data')
+        
+        # Ensure required fields are set
+        if 'submitted_by' not in response_data:
+            response_data['submitted_by'] = response_data.get('organization_id', user['uid'])
+            
+        if 'submitted_at' not in response_data:
+            response_data['submitted_at'] = response_data.get('created_at', datetime.now(timezone.utc))
+            
+        if 'started_at' not in response_data:
+            response_data['started_at'] = response_data.get('submitted_at', datetime.now(timezone.utc))
+        
+        return FormResponse(**response_data)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

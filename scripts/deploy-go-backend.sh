@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Deploy Go Backend with Public Form Fixes to Google Cloud Run
-# This script builds and deploys the Go backend with the authentication fixes
-# Using Alpine multi-stage build for minimal image size
+# Deploy Go Backend to Google Cloud Run
+# This script builds and deploys the Go backend using Google Distroless
+# for maximum security and minimal image size (~20MB)
 
 set -e
 
@@ -19,12 +19,12 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Starting Go backend deployment with Alpine multi-stage build...${NC}"
+echo -e "${YELLOW}Starting Go backend deployment with Google Distroless...${NC}"
 
-# Step 1: Build the image for AMD64 platform using Alpine multi-stage Dockerfile
-echo -e "${YELLOW}Building Docker image with Alpine multi-stage build...${NC}"
+# Step 1: Build the image for AMD64 platform using Distroless
+echo -e "${YELLOW}Building Docker image with Google Distroless (ultra-secure, ~20MB)...${NC}"
 docker build --platform linux/amd64 \
-  -f backend-go/Dockerfile.alpine \
+  -f backend-go/Dockerfile \
   -t ${GCR_IMAGE} \
   backend-go
 

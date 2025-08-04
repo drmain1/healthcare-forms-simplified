@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -88,6 +89,8 @@ func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 		formID := c.Query("formId")
 		orgID, _ := c.Get("organizationID")
 
+		log.Printf("ListFormResponses: Fetching responses for organizationID: %v", orgID)
+
 		var responses []data.FormResponse
 		q := client.Collection("form_responses").Where("organizationId", "==", orgID.(string))
 		if formID != "" {
@@ -114,7 +117,12 @@ func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 			responses = append(responses, response)
 		}
 
-		c.JSON(http.StatusOK, responses)
+		log.Printf("ListFormResponses: Found %d responses for organizationID: %v", len(responses), orgID)
+
+		c.JSON(http.StatusOK, gin.H{
+			"count":     len(responses),
+			"results":   responses,
+		})
 	}
 }
 
@@ -132,6 +140,8 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 
+		log.Printf("Public form submission received for form %s with token %s", requestBody.FormID, requestBody.ShareToken)
+
 		// Validate share token
 		shareLinksRef := client.Collection("share_links")
 		query := shareLinksRef.Where("form_id", "==", requestBody.FormID).
@@ -146,6 +156,7 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 
 		shareLink := docs[0]
 		shareData := shareLink.Data()
+		log.Printf("Share link data: %v", shareData)
 
 		// Check if link has expired
 		if expiresAt, ok := shareData["expires_at"].(time.Time); ok {
@@ -181,7 +192,9 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 		if org, ok := shareData["organizationId"].(string); ok && org != "" {
 			// Use organization from share link if available
 			orgID = org
+			log.Printf("Organization ID found in share link: %s", orgID)
 		} else {
+			log.Printf("Organization ID not found in share link, falling back to form document.")
 			// Fallback: Get organization from the form document
 			formDoc, err := client.Collection("forms").Doc(requestBody.FormID).Get(c.Request.Context())
 			if err != nil {
@@ -191,7 +204,9 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			formData := formDoc.Data()
 			if formOrgID, ok := formData["organizationId"].(string); ok {
 				orgID = formOrgID
+				log.Printf("Organization ID found in form document: %s", orgID)
 			} else {
+				log.Printf("Organization ID not found in form document.")
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to determine organization"})
 				return
 			}

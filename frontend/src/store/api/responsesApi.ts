@@ -25,7 +25,13 @@ export const responsesApi = baseApi.injectEndpoints({
           ordering: params.ordering || '-submitted_at',
         },
       }),
-      providesTags: ['Response'],
+      providesTags: (result, _error, _params) =>
+        result && result.results
+          ? [
+              ...result.results.map(({ id }) => ({ type: 'Response' as const, id })),
+              { type: 'Response', id: 'LIST' },
+            ]
+          : [{ type: 'Response', id: 'LIST' }],
     }),
 
     // Get responses for a specific form
@@ -41,7 +47,13 @@ export const responsesApi = baseApi.injectEndpoints({
           ordering: params.ordering || '-submitted_at',
         },
       }),
-      providesTags: ['Response'],
+      providesTags: (result, _error, { formId }) =>
+        result && result.results
+          ? [
+              ...result.results.map(({ id }) => ({ type: 'Response' as const, id })),
+              { type: 'Response', id: `LIST-${formId}` },
+            ]
+          : [{ type: 'Response', id: `LIST-${formId}` }],
     }),
 
     // Get single response by ID

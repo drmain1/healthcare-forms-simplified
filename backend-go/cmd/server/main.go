@@ -41,6 +41,9 @@ func main() {
 	gemini := vertexClient.GenerativeModel("publishers/google/models/gemini-2.5-pro")
 
 	r := gin.New()
+	// Per Gin documentation, this is required when running behind a proxy
+	// to ensure correct client IP is read.
+	r.SetTrustedProxies(nil)
 	r.RedirectTrailingSlash = false
 
 	// CORS Middleware

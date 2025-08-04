@@ -55,6 +55,6 @@ func SessionLogin(firebaseApp *firebase.App) gin.HandlerFunc {
 
 		// Set the session cookie in the response
 		c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, isSecure, true)
-		c.JSON(http.StatusOK, gin.H{"status": "success"})
+		c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
 	}
 }

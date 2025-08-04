@@ -116,7 +116,7 @@ export const Dashboard: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Chip 
-                      label={response.status.replace('_', ' ')} 
+                      label={response.status ? response.status.replace('_', ' ') : ''} 
                       size="small" 
                       color={getStatusColor(response.status)}
                       variant="outlined"

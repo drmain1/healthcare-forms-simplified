@@ -74,5 +74,6 @@ type ShareLink struct {
 	OrganizationID string    `json:"organization_id" firestore:"organization_id"`
 	CreatedBy      string    `json:"created_by" firestore:"created_by"`
 	CreatedAt      time.Time `json:"created_at" firestore:"created_at"`
+	PasswordHash   string    `json:"-" firestore:"password_hash,omitempty"`
 }
 

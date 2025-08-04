@@ -130,7 +130,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Form sharing endpoints
     createShareLink: builder.mutation<any, { formId: string; shareSettings: any }>({
       query: ({ formId, shareSettings }) => ({
-        url: `/forms/${formId}/create_share_link/`,
+        url: `/forms/${formId}/share-links`,
         method: 'POST',
         body: shareSettings,
       }),
@@ -138,25 +138,26 @@ export const formsApi = baseApi.injectEndpoints({
     }),
 
     getShareLinks: builder.query<any[], string>({
-      query: (formId) => `/forms/${formId}/share_links/`,
+      query: (formId) => `/forms/${formId}/share-links`,
       providesTags: ['Form'],
     }),
 
     deleteShareLink: builder.mutation<void, { formId: string; shareLinkId: string }>({
       query: ({ formId, shareLinkId }) => ({
-        url: `/forms/${formId}/share_links/${shareLinkId}/`,
+        url: `/forms/${formId}/share-links/${shareLinkId}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Form'],
     }),
 
-    deactivateShareLink: builder.mutation<any, string>({
-      query: (shareId) => ({
-        url: `/form-shares/${shareId}/deactivate/`,
-        method: 'POST',
-      }),
-      invalidatesTags: ['Form'],
-    }),
+    // NOT IMPLEMENTED IN GO BACKEND YET
+    // deactivateShareLink: builder.mutation<any, string>({
+    //   query: (shareId) => ({
+    //     url: `/form-shares/${shareId}/deactivate/`,
+    //     method: 'POST',
+    //   }),
+    //   invalidatesTags: ['Form'],
+    // }),
 
     // Dashboard endpoints
     getDashboardStats: builder.query<any, void>({
@@ -224,7 +225,7 @@ export const {
   useCreateShareLinkMutation,
   useGetShareLinksQuery,
   useDeleteShareLinkMutation,
-  useDeactivateShareLinkMutation,
+  // useDeactivateShareLinkMutation, // NOT IMPLEMENTED IN GO BACKEND YET
   useGetDashboardStatsQuery,
   useGetRecentActivityQuery,
   useGenerateResponsePdfMutation,

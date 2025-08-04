@@ -103,8 +103,10 @@ export const FormSendSimplified: React.FC = () => {
       }).unwrap();
       
       console.log('Share link created:', result);
+      // Extract share token from share_path which is in format: /forms/{formId}/fill/{shareToken}
+      const shareToken = result.share_path?.split('/').pop() || '';
       // Construct full URL from relative path
-      const fullShareUrl = `${window.location.origin}${result.share_path}`;
+      const fullShareUrl = `${window.location.origin}/forms/${formIdFromUrl}/fill/${shareToken}`;
       // Copy to clipboard
       await navigator.clipboard.writeText(fullShareUrl);
       setCopiedLink(fullShareUrl);
@@ -329,8 +331,10 @@ export const FormSendSimplified: React.FC = () => {
                 </Typography>
                 <List sx={{ bgcolor: 'grey.50', borderRadius: 2, p: 1 }}>
                   {shareLinks.map((link: any) => {
+                    // Extract share token from share_path which is in format: /forms/{formId}/fill/{shareToken}
+                    const shareToken = link.share_path?.split('/').pop() || '';
                     // Construct full URL from relative path
-                    const fullShareUrl = `${window.location.origin}${link.share_path}`;
+                    const fullShareUrl = `${window.location.origin}/forms/${formIdFromUrl}/fill/${shareToken}`;
                     return (
                     <ListItem 
                       key={link.id} 

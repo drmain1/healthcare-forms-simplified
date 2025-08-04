@@ -1,0 +1,2 @@
+GCP_PROJECT_ID: "healthcare-forms-v2"
+CORS_ALLOWED_ORIGINS: "http://localhost:3000,https://healthcare-forms-v2.web.app,https://healthcare-forms-v2.firebaseapp.com"

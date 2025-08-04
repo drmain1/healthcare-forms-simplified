@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
@@ -43,8 +44,17 @@ func SessionLogin(firebaseApp *firebase.App) gin.HandlerFunc {
 			return
 		}
 
+		// Get cookie domain from environment variable, default to localhost for development
+		cookieDomain := os.Getenv("COOKIE_DOMAIN")
+		if cookieDomain == "" {
+			cookieDomain = "localhost"
+		}
+
+		// Set secure flag based on environment (true in production)
+		isSecure := gin.Mode() == gin.ReleaseMode
+
 		// Set the session cookie in the response
-		c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", "localhost", false, true)
+		c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, isSecure, true)
 		c.JSON(http.StatusOK, gin.H{"status": "success"})
 	}
 }

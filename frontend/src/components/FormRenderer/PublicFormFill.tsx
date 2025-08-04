@@ -64,7 +64,7 @@ export const PublicFormFill: React.FC = () => {
   useEffect(() => {
     const loadForm = async () => {
       if (!formId || !shareToken) {
-        setError('Invalid form link');
+        setError('Invalid form link. The URL is missing required parameters.');
         setLoading(false);
         return;
       }

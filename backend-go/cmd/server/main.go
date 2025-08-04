@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/vertexai/genai"
 	"github.com/gemini/forms-api/internal/api"
@@ -43,8 +44,12 @@ func main() {
 	r.RedirectTrailingSlash = false
 
 	// CORS Middleware
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		corsOrigins = "http://localhost:3000"
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     strings.Split(corsOrigins, ";"),
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -72,6 +77,7 @@ func main() {
 	// Public routes (no auth required)
 	r.GET("/forms/:id/fill/:share_token", api.GetFormByShareToken(firestoreClient))
 	r.GET("/forms/:id/fill/:share_token/", api.GetFormByShareToken(firestoreClient))
+	r.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
 
 	// Authentication routes
 	apiAuthRoutes := r.Group("/api/auth")
@@ -115,6 +121,10 @@ func main() {
 	}
 
 	// Start the server
-	log.Println("Starting server on :8080")
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting server on port %s", port)
+	r.Run(":" + port)
 }

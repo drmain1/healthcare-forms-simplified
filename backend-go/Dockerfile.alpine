@@ -1,33 +1,39 @@
-# Stage 1: Build the Go binary
+# Use the official Golang image to create a build artifact.
+# This is the "builder" stage.
 FROM golang:1.24-alpine AS builder
 
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy module files and download dependencies
+# Copy go mod and sum files
 COPY go.mod go.sum ./
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
-# Copy the rest of the source code
+# Copy the source code
 COPY . .
 
-# Build the application, creating a static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags "-s -w" -o /app/main cmd/server/main.go
+# Build the Go app
+# -o /app/main: output the executable to /app/main
+# -ldflags "-w -s": strip debug information to reduce binary size
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags "-w -s" -o /app/main ./cmd/server
 
-# Stage 2: Create the final image with Alpine and Chromium
+# Use a minimal image to run the compiled binary.
+# This is the "runner" stage.
 FROM alpine:latest
 
-# Install Chromium and its dependencies
-# --no-cache is used to avoid storing the package index and reduce image size
-RUN apk add --no-cache chromium
+# Add ca-certificates for HTTPS calls
+RUN apk --no-cache add ca-certificates
 
-WORKDIR /app
+# Set the Current Working Directory inside the container
+WORKDIR /root/
 
-# Copy the Go binary from the builder stage
-COPY --from=builder /app/main /app/main
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/main .
 
-# Create a non-root user
-RUN addgroup -S nonroot && adduser -S -G nonroot nonroot
-USER nonroot
+# Expose port 8080 to the outside world
+EXPOSE 8080
 
-# Set the entrypoint
-ENTRYPOINT ["/app/main"]
+# Command to run the executable
+CMD ["./main"]

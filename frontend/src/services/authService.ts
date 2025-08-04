@@ -23,7 +23,7 @@ export const authService = {
    * Exchanges a Firebase ID token for a short-lived session JWT.
    */
   async sessionLogin(idToken: string): Promise<string> {
-    const response = await axios.post(`${API_URL}/auth/session-login/`, { idToken });
+    const response = await axios.post(`${API_URL}/auth/session-login`, { idToken });
     const { access_token } = response.data;
     if (!access_token) {
       throw new Error('Session token not received from backend');

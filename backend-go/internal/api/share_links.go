@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/gemini/forms-api/internal/data"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/api/iterator"
 )
 
@@ -56,6 +57,20 @@ func CreateShareLink(client *firestore.Client) gin.HandlerFunc {
 		}
 		shareToken := hex.EncodeToString(tokenBytes)
 
+		// Hash the password if provided
+		var hashedPassword string
+		if shareLinkRequest.RequirePassword && shareLinkRequest.Password != "" {
+			bytes, err := bcrypt.GenerateFromPassword([]byte(shareLinkRequest.Password), 14)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+				return
+			}
+			hashedPassword = string(bytes)
+		} else if shareLinkRequest.RequirePassword {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "password is required but not provided"})
+			return
+		}
+
 		shareLink := data.ShareLink{
 			FormID:         formID,
 			ShareToken:     shareToken,
@@ -65,14 +80,13 @@ func CreateShareLink(client *firestore.Client) gin.HandlerFunc {
 			CreatedBy:      userID.(string),
 			CreatedAt:      time.Now().UTC(),
 			MaxResponses:   shareLinkRequest.MaxResponses,
+			PasswordHash:   hashedPassword, // Store the hashed password
 		}
 
 		// Set expiration if specified
 		if shareLinkRequest.ExpiresInDays > 0 {
 			shareLink.ExpiresAt = time.Now().UTC().AddDate(0, 0, shareLinkRequest.ExpiresInDays)
 		}
-
-		// TODO: Add password hashing if RequirePassword is true
 
 		docRef, _, err := client.Collection("share_links").Add(c.Request.Context(), shareLink)
 		if err != nil {

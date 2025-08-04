@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,6 +19,12 @@ func CreateFormResponse(client *firestore.Client) gin.HandlerFunc {
 		var response data.FormResponse
 		if err := c.ShouldBindJSON(&response); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Basic validation: ensure data is not empty
+		if len(response.Data) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "form data cannot be empty"})
 			return
 		}
 
@@ -108,5 +115,88 @@ func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, responses)
+	}
+}
+
+// CreatePublicFormResponse creates a form response from a public share link
+func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var requestBody struct {
+			FormID       string                 `json:"form_id" binding:"required"`
+			ShareToken   string                 `json:"share_token" binding:"required"`
+			ResponseData map[string]interface{} `json:"response_data" binding:"required"`
+		}
+
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Validate share token
+		shareLinksRef := client.Collection("share_links")
+		query := shareLinksRef.Where("form_id", "==", requestBody.FormID).
+			Where("share_token", "==", requestBody.ShareToken).
+			Where("is_active", "==", true)
+
+		docs, err := query.Documents(c.Request.Context()).GetAll()
+		if err != nil || len(docs) == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("Invalid or expired share link for form %s with token %s", requestBody.FormID, requestBody.ShareToken)})
+			return
+		}
+
+		shareLink := docs[0]
+		shareData := shareLink.Data()
+
+		// Check if link has expired
+		if expiresAt, ok := shareData["expires_at"].(time.Time); ok {
+			if time.Now().After(expiresAt) {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Share link has expired"})
+				return
+			}
+		}
+
+		// Check max responses if configured
+		if maxResponses, ok := shareData["max_responses"].(int64); ok && maxResponses > 0 {
+			currentResponses := int64(0)
+			if responseCount, ok := shareData["response_count"].(int64); ok {
+				currentResponses = responseCount
+			}
+			if currentResponses >= maxResponses {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Share link has reached maximum responses"})
+				return
+			}
+
+			// Increment response count
+			_, err = shareLink.Ref.Update(c.Request.Context(), []firestore.Update{
+				{Path: "response_count", Value: currentResponses + 1},
+			})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update share link"})
+				return
+			}
+		}
+
+		// Create the form response
+		response := data.FormResponse{
+			FormID:         requestBody.FormID,
+			Data:           requestBody.ResponseData,
+			SubmittedAt:    time.Now().UTC(),
+			SubmittedBy:    "public",
+			OrganizationID: shareData["organization_id"].(string),
+		}
+
+		// Add to Firestore
+		docRef, _, err := client.Collection("form_responses").Add(c.Request.Context(), response)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create form response"})
+			return
+		}
+
+		response.ID = docRef.ID
+
+		c.JSON(http.StatusCreated, gin.H{
+			"id":      response.ID,
+			"message": "Form submitted successfully",
+		})
 	}
 }

@@ -317,7 +317,7 @@ func ProcessPDFWithVertex(genaiClient *genai.GenerativeModel) gin.HandlerFunc {
 			return
 		}
 
-		log.Printf("Raw response from Gemini (first 500 chars): %s", rawText[:min(500, len(rawText))])
+		
 
 		// Clean and extract JSON from response
 		jsonString := extractJSONFromResponse(rawText)

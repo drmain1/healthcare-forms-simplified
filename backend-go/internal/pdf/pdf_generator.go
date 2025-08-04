@@ -1,13 +1,31 @@
 package pdf
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
+	"log"
 	"time"
 
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 )
+
+// GenerateFromTemplate creates a PDF from an HTML template and data.
+func GenerateFromTemplate(ctx context.Context, templatePath string, data interface{}) ([]byte, error) {
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return GenerateFromHTML(ctx, buf.String())
+}
 
 // GenerateFromHTML creates a PDF from a raw HTML string using a headless browser.
 func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
@@ -26,10 +44,21 @@ func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
 	var pdfBuffer []byte
 
 	// The data URL prefix is necessary to load the HTML content directly.
-	dataURL := fmt.Sprintf("data:text/html,%s", htmlContent)
+	// dataURL := fmt.Sprintf("data:text/html,%s", htmlContent)
+
+	log.Printf("Generating PDF from HTML content...\nHTML: %s", htmlContent)
 
 	err := chromedp.Run(browserCtx,
-		chromedp.Navigate(dataURL),
+		chromedp.Navigate("about:blank"),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			frameTree, err := page.GetFrameTree().Do(ctx)
+			if err != nil {
+				return err
+			}
+			return page.SetDocumentContent(frameTree.Frame.ID, htmlContent).Do(ctx)
+		}),
+		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.Sleep(2*time.Second),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			buf, _, err := page.PrintToPDF().WithPrintBackground(true).Do(ctx)
 			if err != nil {

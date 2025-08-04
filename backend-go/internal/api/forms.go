@@ -12,6 +12,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/vertexai/genai"
 	"github.com/gemini/forms-api/internal/data"
+	"github.com/gemini/forms-api/internal/pdf"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -191,32 +192,6 @@ func DeleteForm(client *firestore.Client) gin.HandlerFunc {
 	}
 }
 
-// GenerateBlankPDF generates a blank PDF for a given form, ensuring it belongs to the correct organization.
-func GenerateBlankPDF(client *firestore.Client) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		formID := c.Param("id")
-		orgID, _ := c.Get("organizationID")
-
-		formDoc, err := client.Collection("forms").Doc(formID).Get(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "form not found"})
-			return
-		}
-		var form data.Form
-		if err := formDoc.DataTo(&form); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse form data"})
-			return
-		}
-
-		if form.OrganizationID != orgID.(string) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to access this form"})
-			return
-		}
-
-		// ... (rest of the function remains the same)
-	}
-}
-
 // GeneratePDF generates a PDF for a form response, ensuring it belongs to the correct organization.
 func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -253,6 +228,44 @@ func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 		}
 		if response.OrganizationID != orgID.(string) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to access this response"})
+			return
+		}
+
+		pdfBytes, err := pdf.GenerateFromTemplate(c.Request.Context(), "templates/form_response_professional.html", gin.H{
+			"Title":          form.Title,
+			"PatientName":    response.PatientName,
+			"SubmissionDate": response.SubmittedAt.Format("January 2, 2006"),
+			"Data":           response.Data,
+			"CurrentDate":    time.Now().Format("January 2, 2006"),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PDF"})
+			return
+		}
+
+		c.Data(http.StatusOK, "application/pdf", pdfBytes)
+	}
+}
+
+// GenerateBlankPDF generates a blank PDF for a given form, ensuring it belongs to the correct organization.
+func GenerateBlankPDF(client *firestore.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		formID := c.Param("id")
+		orgID, _ := c.Get("organizationID")
+
+		formDoc, err := client.Collection("forms").Doc(formID).Get(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "form not found"})
+			return
+		}
+		var form data.Form
+		if err := formDoc.DataTo(&form); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse form data"})
+			return
+		}
+
+		if form.OrganizationID != orgID.(string) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to access this form"})
 			return
 		}
 

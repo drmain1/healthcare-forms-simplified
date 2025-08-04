@@ -105,7 +105,7 @@ func main() {
 		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
 		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(gemini))
 		authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
-		authRequired.GET("/forms/:id/responses/:responseId/pdf", api.GeneratePDF(firestoreClient))
+		authRequired.GET("/forms/:id/pdf/response/:responseId", api.GeneratePDF(firestoreClient))
 
 		// Share link routes
 		authRequired.POST("/forms/:id/share-links", api.CreateShareLink(firestoreClient))

@@ -194,7 +194,7 @@ export const ResponseDetail: React.FC = () => {
               </Typography>
               <Chip
                 icon={getStatusIcon(response.status) || undefined}
-                label={response.status.replace('_', ' ').charAt(0).toUpperCase() + response.status.slice(1).replace('_', ' ')}
+                label={response.status ? response.status.replace('_', ' ').charAt(0).toUpperCase() + response.status.slice(1).replace('_', ' ') : ''}
                 size="small"
                 color={getStatusColor(response.status) as any}
                 sx={{ mt: 1 }}

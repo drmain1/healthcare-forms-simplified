@@ -176,7 +176,7 @@ export const formsApi = baseApi.injectEndpoints({
         const { formId, responseId, includeSummary = true } = arg;
         const response = await baseQuery({
           url: `/forms/${formId}/pdf/response/${responseId}?include_summary=${includeSummary}`,
-          method: 'POST',
+          method: 'GET',
           responseHandler: (res: Response) => res.blob(),
         });
 
@@ -194,7 +194,7 @@ export const formsApi = baseApi.injectEndpoints({
        queryFn: async (formId, _queryApi, _extraOptions, baseQuery) => {
         const response = await baseQuery({
           url: `/forms/${formId}/pdf/blank`,
-          method: 'POST',
+          method: 'GET',
           responseHandler: (res: Response) => res.blob(),
         });
 

@@ -48,7 +48,9 @@ gcloud run deploy ${SERVICE_NAME} \
   --cpu 1 \
   --max-instances 10 \
   --min-instances 0 \
-  --set-env-vars="GCP_PROJECT_ID=${PROJECT_ID},CORS_ALLOWED_ORIGINS=https://healthcare-forms-v2.web.app,http://localhost:3000,COOKIE_DOMAIN=healthcare-forms-v2.web.app" \
+  --set-env-vars="GCP_PROJECT_ID=${PROJECT_ID}" \
+  --set-env-vars="CORS_ALLOWED_ORIGINS=https://healthcare-forms-v2.web.app;http://localhost:3000" \
+  --set-env-vars="COOKIE_DOMAIN=healthcare-forms-v2.web.app" \
   --timeout 300 \
   --quiet
 

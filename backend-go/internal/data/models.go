@@ -22,7 +22,7 @@ type Form struct {
 // FormResponse represents a single submission of a form
 type FormResponse struct {
 	ID                      string                 `json:"id,omitempty" firestore:"id,omitempty"`
-	OrganizationID          string                 `json:"organization" firestore:"organization"`
+	OrganizationID          string                 `json:"organizationId" firestore:"organizationId"`
 	FormID                  string                 `json:"form" firestore:"form"`
 	Data                    map[string]interface{} `json:"response_data" firestore:"data"`
 	Metadata                map[string]interface{} `json:"metadata,omitempty" firestore:"metadata,omitempty"`
@@ -71,7 +71,7 @@ type ShareLink struct {
 	MaxResponses   int       `json:"max_responses,omitempty" firestore:"max_responses,omitempty"`
 	IsActive       bool      `json:"is_active" firestore:"is_active"`
 	ResponseCount  int       `json:"response_count" firestore:"response_count"`
-	OrganizationID string    `json:"organization_id" firestore:"organization_id"`
+	OrganizationID string    `json:"organizationId" firestore:"organizationId"`
 	CreatedBy      string    `json:"created_by" firestore:"created_by"`
 	CreatedAt      time.Time `json:"created_at" firestore:"created_at"`
 	PasswordHash   string    `json:"-" firestore:"password_hash,omitempty"`

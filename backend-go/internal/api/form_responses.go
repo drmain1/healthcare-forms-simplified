@@ -91,7 +91,7 @@ func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 		var responses []data.FormResponse
 		q := client.Collection("form_responses").Where("organizationId", "==", orgID.(string))
 		if formID != "" {
-			q = q.Where("formId", "==", formID)
+			q = q.Where("form", "==", formID)
 		}
 
 		iter := q.Documents(c.Request.Context())
@@ -176,13 +176,34 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			}
 		}
 
+		// Get organization ID with fallback logic
+		orgID := ""
+		if org, ok := shareData["organizationId"].(string); ok && org != "" {
+			// Use organization from share link if available
+			orgID = org
+		} else {
+			// Fallback: Get organization from the form document
+			formDoc, err := client.Collection("forms").Doc(requestBody.FormID).Get(c.Request.Context())
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get form details"})
+				return
+			}
+			formData := formDoc.Data()
+			if formOrgID, ok := formData["organizationId"].(string); ok {
+				orgID = formOrgID
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to determine organization"})
+				return
+			}
+		}
+
 		// Create the form response
 		response := data.FormResponse{
 			FormID:         requestBody.FormID,
 			Data:           requestBody.ResponseData,
 			SubmittedAt:    time.Now().UTC(),
 			SubmittedBy:    "public",
-			OrganizationID: shareData["organization_id"].(string),
+			OrganizationID: orgID,
 		}
 
 		// Add to Firestore

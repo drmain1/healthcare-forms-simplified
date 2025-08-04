@@ -153,7 +153,21 @@ func UpdateForm(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"status": "form updated"})
+		// Retrieve the updated form to return it
+		updatedDoc, err := client.Collection("forms").Doc(formID).Get(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated form"})
+			return
+		}
+
+		var updatedForm data.Form
+		if err := updatedDoc.DataTo(&updatedForm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse updated form data"})
+			return
+		}
+		updatedForm.ID = updatedDoc.Ref.ID
+
+		c.JSON(http.StatusOK, updatedForm)
 	}
 }
 
@@ -269,7 +283,16 @@ func GenerateBlankPDF(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 
-		// ... (rest of the function remains the same)
+		pdfBytes, err := pdf.GenerateFromTemplate(c.Request.Context(), "templates/blank_form.html", gin.H{
+			"Title":       form.Title,
+			"CurrentDate": time.Now().Format("January 2, 2006"),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate blank PDF"})
+			return
+		}
+
+		c.Data(http.StatusOK, "application/pdf", pdfBytes)
 	}
 }
 
@@ -504,7 +527,7 @@ func fixCommonJSONErrors(jsonString string) string {
 
 	// Remove JavaScript-style comments
 	fixed = regexp.MustCompile(`//.*$`).ReplaceAllString(fixed, "")
-	fixed = regexp.MustCompile(`/\*[\s\S]*?\*/`).ReplaceAllString(fixed, "")
+	fixed = regexp.MustCompile(`/\[\s\S]*?\*/`).ReplaceAllString(fixed, "")
 
 	// Remove trailing commas before closing brackets/braces
 	fixed = regexp.MustCompile(`,\s*([}\]])`).ReplaceAllString(fixed, "$1")
@@ -514,7 +537,7 @@ func fixCommonJSONErrors(jsonString string) string {
 	fixed = regexp.MustCompile(`([}\]])\s*\n\s*"`).ReplaceAllString(fixed, `$1,\n"`)
 	fixed = regexp.MustCompile(`"\s*\n\s*([{\[])`).ReplaceAllString(fixed, `",\n$1`)
 	fixed = regexp.MustCompile(`(})\s*\n\s*({)`).ReplaceAllString(fixed, `$1,\n$2`)
-	fixed = regexp.MustCompile(`(\])\s*\n\s*(\[)`).ReplaceAllString(fixed, `$1,\n$2`)
+	fixed = regexp.MustCompile(`(])\s*\n\s*(\[)`).ReplaceAllString(fixed, `$1,\n$2`)
 	fixed = regexp.MustCompile(`(true|false|null|\d+)\s*\n\s*(")`).ReplaceAllString(fixed, `$1,\n$2`)
 
 	// Fix double commas

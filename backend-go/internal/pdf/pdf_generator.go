@@ -1,6 +1,14 @@
 package pdf
 
 import (
+	"context"
+	"fmt"
+)
+
+// PDF generation temporarily disabled - will be replaced with Gotenberg service
+
+/*
+import (
 	"bytes"
 	"context"
 	"fmt"
@@ -43,10 +51,7 @@ func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
 
 	var pdfBuffer []byte
 
-	// The data URL prefix is necessary to load the HTML content directly.
-	// dataURL := fmt.Sprintf("data:text/html,%s", htmlContent)
-
-	log.Printf("Generating PDF from HTML content...\nHTML: %s", htmlContent)
+	log.Printf("Generating PDF from HTML content...")
 
 	err := chromedp.Run(browserCtx,
 		chromedp.Navigate("about:blank"),
@@ -58,7 +63,7 @@ func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
 			return page.SetDocumentContent(frameTree.Frame.ID, htmlContent).Do(ctx)
 		}),
 		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.Sleep(2*time.Second),
+		chromedp.Sleep(2*time.Second), // Give fonts time to load
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			buf, _, err := page.PrintToPDF().WithPrintBackground(true).Do(ctx)
 			if err != nil {
@@ -74,4 +79,14 @@ func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
 	}
 
 	return pdfBuffer, nil
+}
+*/
+
+// Temporary placeholder functions until Gotenberg is implemented
+func GenerateFromTemplate(ctx context.Context, templatePath string, data interface{}) ([]byte, error) {
+	return nil, fmt.Errorf("PDF generation temporarily disabled - Gotenberg integration pending")
+}
+
+func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
+	return nil, fmt.Errorf("PDF generation temporarily disabled - Gotenberg integration pending")
 }

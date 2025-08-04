@@ -62,7 +62,7 @@ export const ResponsesList: React.FC = () => {
   const [deleteResponse] = useDeleteResponseMutation();
   const [generateBlankPdf, { isLoading: isGeneratingPdf }] = useGenerateBlankFormPdfMutation();
   
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
   
@@ -91,7 +91,8 @@ export const ResponsesList: React.FC = () => {
     navigate(`/forms/${formId}/responses/${responseId}`);
   };
   
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | undefined) => {
+    if (!status) return null;
     switch (status) {
       case 'completed':
       case 'submitted':
@@ -105,7 +106,8 @@ export const ResponsesList: React.FC = () => {
     }
   };
   
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return 'default';
     switch (status) {
       case 'completed':
       case 'submitted':
@@ -264,7 +266,7 @@ export const ResponsesList: React.FC = () => {
                   <TableCell>
                     <Chip
                       icon={getStatusIcon(response.status) || undefined}
-                      label={response.status.replace('_', ' ').charAt(0).toUpperCase() + response.status.slice(1).replace('_', ' ')}
+                      label={response.status ? response.status.replace('_', ' ').charAt(0).toUpperCase() + response.status.slice(1).replace('_', ' ') : 'Unknown'}
                       size="small"
                       color={getStatusColor(response.status) as any}
                       variant="outlined"

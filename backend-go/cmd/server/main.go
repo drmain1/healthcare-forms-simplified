@@ -53,7 +53,7 @@ func main() {
 	}
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Split(corsOrigins, ";"),
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -101,11 +101,14 @@ func main() {
 		authRequired.GET("/forms/:id", api.GetForm(firestoreClient))
 		authRequired.GET("/forms/:id/", api.GetForm(firestoreClient))
 		authRequired.PUT("/forms/:id", api.UpdateForm(firestoreClient))
+		authRequired.PATCH("/forms/:id", api.UpdateForm(firestoreClient))
+		authRequired.PATCH("/forms/:id/", api.UpdateForm(firestoreClient))
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient))
 		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
 		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(gemini))
-		authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
-		authRequired.GET("/forms/:id/pdf/response/:responseId", api.GeneratePDF(firestoreClient))
+		// PDF routes temporarily disabled - will be replaced with Gotenberg service
+		// authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
+		// authRequired.GET("/forms/:id/pdf/response/:responseId", api.GeneratePDF(firestoreClient))
 
 		// Share link routes
 		authRequired.POST("/forms/:id/share-links", api.CreateShareLink(firestoreClient))

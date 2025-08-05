@@ -106,6 +106,8 @@ func main() {
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient))
 		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
 		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(gemini))
+		// New HTML to PDF endpoint using Gotenberg
+		authRequired.POST("/forms/:id/export-html-to-pdf", api.ExportHTMLToPDF(firestoreClient))
 		// PDF routes temporarily disabled - will be replaced with Gotenberg service
 		// authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
 		// authRequired.GET("/forms/:id/pdf/response/:responseId", api.GeneratePDF(firestoreClient))

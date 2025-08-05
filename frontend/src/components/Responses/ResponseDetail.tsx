@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -27,25 +27,25 @@ import {
 import { Survey } from 'survey-react-ui';
 import { Model } from 'survey-core';
 import 'survey-core/survey-core.css';
-import { useGetResponseQuery, useMarkResponseReviewedMutation } from '../../store/api/responsesApi';
+import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
 
 export const ResponseDetail: React.FC = () => {
+  const surveyContainerRef = useRef<HTMLDivElement>(null);
   const { formId, responseId } = useParams<{ formId: string; responseId: string }>();
   const navigate = useNavigate();
   
   // API queries
   const { data: response, isLoading: responseLoading, error: responseError } = useGetResponseQuery(responseId || '');
   const { data: form, isLoading: formLoading } = useGetFormQuery(formId || '');
-  const [markReviewed] = useMarkResponseReviewedMutation();
   
   useEffect(() => {
     // Mark as reviewed when viewing
     if (response && response.status !== 'reviewed') {
-      markReviewed(responseId || '');
+      // markReviewed(responseId || '');
     }
-  }, [response, responseId, markReviewed]);
+  }, [response, responseId]);
   
   if (responseLoading || formLoading) {
     return (
@@ -129,6 +129,7 @@ export const ResponseDetail: React.FC = () => {
             responseId={responseId!}
             form={form}
             response={response}
+            getHtmlContent={() => surveyContainerRef.current?.innerHTML || ''}
           />
         </Box>
         
@@ -236,7 +237,7 @@ export const ResponseDetail: React.FC = () => {
         <Divider sx={{ mb: 3 }} />
         
         {/* Render the survey in display mode with response data */}
-        <Box sx={{ 
+        <Box ref={surveyContainerRef} sx={{ 
           '& .sd-root-modern': {
             backgroundColor: 'transparent',
           },

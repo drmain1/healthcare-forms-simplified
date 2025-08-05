@@ -63,16 +63,16 @@ export const responsesApi = baseApi.injectEndpoints({
     }),
 
     // Mark response as reviewed
-    markResponseReviewed: builder.mutation<FormResponse, string>({
-      query: (id) => ({
-        url: `/responses/${id}/review`,
-        method: 'POST',
-      }),
-      invalidatesTags: (_result, _error, id) => [
-        { type: 'Response', id },
-        'Response',
-      ],
-    }),
+    // markResponseReviewed: builder.mutation<FormResponse, string>({
+    //   query: (id) => ({
+    //     url: `/responses/${id}/review`,
+    //     method: 'POST',
+    //   }),
+    //   invalidatesTags: (_result, _error, id) => [
+    //     { type: 'Response', id },
+    //     'Response',
+    //   ],
+    // }),
 
     // Export response as PDF
     exportResponsePdf: builder.mutation<Blob, string>({
@@ -107,7 +107,7 @@ export const {
   useGetResponsesQuery,
   useGetFormResponsesQuery,
   useGetResponseQuery,
-  useMarkResponseReviewedMutation,
+  // useMarkResponseReviewedMutation,
   useExportResponsePdfMutation,
   useDeleteResponseMutation,
   useGetResponseAnalyticsQuery,

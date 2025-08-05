@@ -82,11 +82,18 @@ func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
 }
 */
 
-// Temporary placeholder functions until Gotenberg is implemented
+// GenerateFromTemplate creates a PDF from an HTML template and data.
 func GenerateFromTemplate(ctx context.Context, templatePath string, data interface{}) ([]byte, error) {
-	return nil, fmt.Errorf("PDF generation temporarily disabled - Gotenberg integration pending")
+	// This function is no longer used, as the HTML is generated in the caller.
+	return nil, fmt.Errorf("GenerateFromTemplate is deprecated, use GenerateFromHTML")
 }
 
+// GenerateFromHTML creates a PDF from a raw HTML string using the Gotenberg service.
 func GenerateFromHTML(ctx context.Context, htmlContent string) ([]byte, error) {
-	return nil, fmt.Errorf("PDF generation temporarily disabled - Gotenberg integration pending")
+	client, err := NewGotenbergClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Gotenberg client: %w", err)
+	}
+
+	return client.GeneratePDFFromHTML(ctx, htmlContent)
 }

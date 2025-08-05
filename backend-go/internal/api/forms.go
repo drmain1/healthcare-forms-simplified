@@ -1,8 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"regexp"
@@ -245,13 +248,28 @@ func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 
-		pdfBytes, err := pdf.GenerateFromTemplate(c.Request.Context(), "templates/form_response_professional.html", gin.H{
+		// Read the HTML template from the embedded filesystem
+		htmlTemplate, err := template.ParseFiles("templates/form_response_professional.html")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse email template"})
+			return
+		}
+
+		// Create a buffer to store the executed template
+		var tpl bytes.Buffer
+		if err := htmlTemplate.Execute(&tpl, gin.H{
 			"Title":          form.Title,
 			"PatientName":    response.PatientName,
 			"SubmissionDate": response.SubmittedAt.Format("January 2, 2006"),
 			"Data":           response.Data,
 			"CurrentDate":    time.Now().Format("January 2, 2006"),
-		})
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute email template"})
+			return
+		}
+
+		// Generate the PDF from the HTML
+		pdfBytes, err := pdf.GenerateFromHTML(c.Request.Context(), tpl.String())
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PDF"})
 			return
@@ -606,4 +624,54 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// ExportHTMLToPDF converts HTML content to PDF using Gotenberg
+func ExportHTMLToPDF(firestoreClient *firestore.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get form ID from URL
+		formID := c.Param("id")
+		if formID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Form ID is required"})
+			return
+		}
+
+		// Parse request body
+		var req struct {
+			HTML     string `json:"html" binding:"required"`
+			Filename string `json:"filename"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Create Gotenberg client
+		gotenbergClient, err := pdf.NewGotenbergClient(c.Request.Context())
+		if err != nil {
+			log.Printf("Failed to create Gotenberg client: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "PDF service unavailable"})
+			return
+		}
+
+		// Convert HTML to PDF
+		pdfBytes, err := gotenbergClient.GeneratePDFFromHTML(c.Request.Context(), req.HTML)
+		if err != nil {
+			log.Printf("Failed to generate PDF: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDF"})
+			return
+		}
+
+		// Set appropriate headers
+		filename := req.Filename
+		if filename == "" {
+			filename = "form-response.pdf"
+		}
+		c.Header("Content-Type", "application/pdf")
+		c.Header("Content-Disposition", "attachment; filename=\""+filename+"\"")
+		c.Header("Content-Length", fmt.Sprintf("%d", len(pdfBytes)))
+
+		// Send PDF
+		c.Data(http.StatusOK, "application/pdf", pdfBytes)
+	}
 }

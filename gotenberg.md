@@ -57,8 +57,8 @@ This URL points to the internal, secure endpoint of the `gotenberg` service.
 
 ### Current Issues - CRITICAL
 
-#### Issue Summary (August 4, 2025)
-The PDF export functionality is completely broken with multiple authentication and authorization failures:
+#### Issue Summary (August 5, 2025)
+The PDF export functionality has progressed but still has critical issues:
 
 1. **401 - Session Login Failure**:
    - **Error**: `POST /api/auth/session-login` returns 401 with "INSUFFICIENT_PERMISSION"
@@ -87,28 +87,47 @@ The PDF export functionality is completely broken with multiple authentication a
    - **Root Cause**: This endpoint is not implemented in the Go backend
    - **Impact**: Frontend review functionality is broken
 
-3. **500 - Gotenberg Access Forbidden**:
-   - **Error**: PDF export fails with 500 error
-   - **Root Cause**: Gotenberg service returns 403 Forbidden when backend tries to access it
-   - **Log Evidence**:
-     ```
-     2025/08/05 03:31:11 Failed to generate PDF: Gotenberg API returned non-200 status code: 403, body: 
-     <h1>Error: Forbidden</h1>
-     <h2>Your client does not have permission to get URL <code>/forms/chromium/convert/html</code> from this server.</h2>
-     ```
-   - **Impact**: PDF generation is completely non-functional
+3. **500 - Gotenberg Access Forbidden** (RESOLVED):
+   - **Previous Error**: PDF export failed with 500 error
+   - **Fix Applied**: Fixed compilation errors and authentication
+   - **Status**: ✅ Backend now successfully connects to Gotenberg
 
-4. **Fixed Issue - Frontend Authentication**:
-   - **Previous Issue**: PdfExportButton was using `localStorage.getItem('authToken')`
-   - **Fix Applied**: Changed to use `firebaseAuth.getIdToken()`
-   - **Status**: ✅ Fixed in code but not yet deployed
+4. **PDF Content Issues** (NEW - August 5):
+   - **Current Problem**: PDF generates but lacks actual question text
+   - **Symptoms**:
+     - HTML capture is 239KB but contains no question text
+     - Question titles show as "question1", "question2" etc. instead of actual text
+     - No answer values are captured
+   - **Debug Evidence**:
+     ```
+     Number of question titles found: 7
+     Question 1 text: question1
+     Question 2 text: question2
+     ...
+     Contains any question text? false
+     ```
+   - **Root Cause**: SurveyJS is rendering question names/IDs instead of titles
+   - **Impact**: PDFs are generated but show only structure without content
+
+5. **Attempted Fixes (August 5)**:
+   - ✅ Added 1-second delay before HTML capture
+   - ✅ Force survey re-render before capture
+   - ✅ Added comprehensive CSS styling (170+ lines)
+   - ✅ Set up onAfterRenderSurvey event handler
+   - ❌ Still capturing question IDs instead of actual text
 
 ### Root Cause Analysis
 
-1. **Service Account Permissions**:
+1. **SurveyJS Display Mode Issue**:
+   - Survey is rendering in display mode but showing question names instead of titles
+   - Possible causes:
+     - Survey JSON might be missing title properties
+     - Display mode might be rendering differently than expected
+     - Question text might be stored in a different property
+
+2. **Service Account Permissions** (for session login):
    - The `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com` service account likely lacks:
      - Firebase Admin SDK permissions for session cookie management
-     - Cloud Run Invoker role for the Gotenberg service
 
 2. **IAM Configuration Required**:
    ```bash
@@ -131,23 +150,25 @@ The PDF export functionality is completely broken with multiple authentication a
 
 ### Immediate Actions Needed
 
-1. **Fix Service Account Permissions**:
-   - Grant Firebase Admin role to `go-backend-sa`
-   - Verify Cloud Run invoker role for Gotenberg service
-   - Check if Gotenberg service is configured to accept requests from the backend
+1. **Fix SurveyJS Question Rendering** (PRIORITY):
+   - Investigate why question titles show as IDs ("question1") instead of actual text
+   - Check the survey JSON structure in the form data
+   - Verify the correct property is being used for question titles
+   - Test with a simple hardcoded survey to isolate the issue
 
-2. **Deploy Frontend Fix**:
-   - The authentication fix in PdfExportButton needs to be deployed
-   - Build and deploy frontend with the corrected `firebaseAuth.getIdToken()` usage
+2. **Fix Service Account Permissions** (for session login):
+   - Grant Firebase Admin role to `go-backend-sa`
+   - This will resolve the 401 session login errors
 
 3. **Implement Missing Endpoint**:
    - Add `/api/responses/:id/review` endpoint to the Go backend
    - Or update frontend to stop calling this non-existent endpoint
 
-4. **Verify Gotenberg Service**:
-   - Check if Gotenberg service is running and accessible
-   - Verify IAM bindings are correct
-   - Test direct access from backend to Gotenberg
+4. **Debug Suggestions for Tomorrow**:
+   - Log the actual survey JSON to see what properties exist
+   - Try rendering survey without display mode to see if text appears
+   - Check if question titles are in `title` vs `name` vs another property
+   - Test with survey.getAllQuestions() to inspect question objects
 
 ### Testing Commands for GCP Agent
 

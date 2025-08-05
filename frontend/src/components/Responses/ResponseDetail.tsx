@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -33,6 +33,8 @@ import { PdfExportButton } from './PdfExportButton';
 
 export const ResponseDetail: React.FC = () => {
   const surveyContainerRef = useRef<HTMLDivElement>(null);
+  const surveyModelRef = useRef<Model | null>(null);
+  const [isSurveyRendered, setIsSurveyRendered] = useState(false);
   const { formId, responseId } = useParams<{ formId: string; responseId: string }>();
   const navigate = useNavigate();
   
@@ -46,6 +48,30 @@ export const ResponseDetail: React.FC = () => {
       // markReviewed(responseId || '');
     }
   }, [response, responseId]);
+  
+  // Set up render completion handler - must be before any returns
+  useEffect(() => {
+    if (form && response) {
+      const model = new Model(form.surveyJson);
+      model.mode = 'display';
+      model.data = response.response_data;
+      surveyModelRef.current = model;
+      
+      model.onAfterRenderSurvey.add(() => {
+        console.log('Survey fully rendered!');
+        setIsSurveyRendered(true);
+        // Log what we see after render
+        setTimeout(() => {
+          const container = surveyContainerRef.current;
+          if (container) {
+            console.log('After render check:');
+            console.log('Has question text?', container.innerHTML.includes('?'));
+            console.log('First question element:', container.querySelector('.sd-question__title')?.textContent);
+          }
+        }, 100);
+      });
+    }
+  }, [form, response]);
   
   if (responseLoading || formLoading) {
     return (
@@ -104,9 +130,12 @@ export const ResponseDetail: React.FC = () => {
   };
   
   // Create a read-only survey instance with the response data
-  const surveyModel = new Model(form.surveyJson);
-  surveyModel.mode = 'display';
-  surveyModel.data = response.response_data;
+  const surveyModel = surveyModelRef.current || new Model(form.surveyJson);
+  if (!surveyModelRef.current) {
+    surveyModel.mode = 'display';
+    surveyModel.data = response.response_data;
+    surveyModelRef.current = surveyModel;
+  }
   
   return (
     <Box>
@@ -130,6 +159,8 @@ export const ResponseDetail: React.FC = () => {
             form={form}
             response={response}
             getHtmlContent={() => surveyContainerRef.current?.innerHTML || ''}
+            surveyModel={surveyModelRef.current}
+            isSurveyRendered={isSurveyRendered}
           />
         </Box>
         

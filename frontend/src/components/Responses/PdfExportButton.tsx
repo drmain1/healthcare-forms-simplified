@@ -15,6 +15,8 @@ interface PdfExportButtonProps {
   form: any;
   response: any;
   getHtmlContent: () => string;
+  surveyModel?: any;
+  isSurveyRendered?: boolean;
 }
 
 export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
@@ -22,7 +24,9 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
   responseId,
   form,
   response,
-  getHtmlContent
+  getHtmlContent,
+  surveyModel,
+  isSurveyRendered
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +34,45 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
   const handleExportPdf = async () => {
     setIsLoading(true);
     try {
+      // Solution 3: Force survey re-render if we have the model
+      if (surveyModel && !isSurveyRendered) {
+        console.log('Forcing survey re-render...');
+        surveyModel.render();
+      }
+      
+      // Solution 1: Add delay to ensure rendering is complete
+      console.log('Waiting for render completion...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try to find the survey container directly
+      const surveyContainer = document.querySelector('.sd-root-modern');
+      if (surveyContainer) {
+        console.log('Found survey container directly');
+        console.log('Survey container has text?', surveyContainer.textContent?.includes('?'));
+      }
+      
       // Get the HTML content from the parent component
       const htmlContent = getHtmlContent();
+      
+      // Debug logging to understand what's being captured
+      console.log('=== PDF Export Debug Info ===');
+      console.log('Captured HTML length:', htmlContent.length);
+      console.log('Contains .sd-question?', htmlContent.includes('sd-question'));
+      console.log('Contains .sd-question__title?', htmlContent.includes('sd-question__title'));
+      console.log('Contains any question text?', htmlContent.includes('?')); // Most questions end with ?
+      
+      // Look for any text content in question titles
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      const questionTitles = tempDiv.querySelectorAll('.sd-question__title');
+      console.log('Number of question titles found:', questionTitles.length);
+      questionTitles.forEach((title, index) => {
+        console.log(`Question ${index + 1} text:`, title.textContent);
+      });
+      
+      console.log('First 500 chars:', htmlContent.substring(0, 500));
+      console.log('Last 500 chars:', htmlContent.substring(htmlContent.length - 500));
+      console.log('=============================');
       
       if (!htmlContent) {
         setError('Unable to capture form content. Please try again.');
@@ -39,24 +80,51 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
         return;
       }
 
-      // Wrap the HTML content with proper styling
+      // Solution 4: Inline all CSS from the document
+      const getAllCssText = () => {
+        let cssText = '';
+        for (const styleSheet of Array.from(document.styleSheets)) {
+          try {
+            if (styleSheet.cssRules) {
+              for (const rule of Array.from(styleSheet.cssRules)) {
+                cssText += rule.cssText;
+              }
+            }
+          } catch (e) {
+            console.warn('Cannot read CSS rules from stylesheet', e);
+          }
+        }
+        return cssText;
+      };
+
+      const allCss = getAllCssText();
+      
       const styledHtml = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="UTF-8">
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 20px;
-              max-width: 800px;
-              margin: 0 auto;
+            ${allCss}
+            /* Additional print-specific styles */
+            body {
+              background-color: #fff !important; /* Ensure background is white */
             }
-            .sd-root-modern { background-color: transparent; }
+            @media print {
+              .sd-question {
+                page-break-inside: avoid;
+              }
+              /* Hide any buttons or interactive elements that shouldn't be in the PDF */
+              .no-print, .MuiButton-root {
+                display: none !important;
+              }
+            }
           </style>
         </head>
         <body>
-          ${htmlContent}
+          <div class="sd-root-modern">
+            ${htmlContent}
+          </div>
         </body>
         </html>
       `;

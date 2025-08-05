@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PDF Capture</title>
+    <script src="https://unpkg.com/survey-core@2.1.1/survey.core.min.js"></script>
+    <script src="https://unpkg.com/survey-react-ui@2.1.1/survey-react-ui.min.js"></script>
+    <link href="https://unpkg.com/survey-core@2.1.1/survey.core.min.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+    <div id="surveyContainer"></div>
+    <button onclick="captureHtml()">Capture HTML</button>
+    <button onclick="captureHtmlDelayed()">Capture HTML (with delay)</button>
+    <button onclick="captureHtmlAfterRender()">Capture HTML (after render event)</button>
+    
+    <h3>Captured HTML:</h3>
+    <textarea id="output" style="width: 100%; height: 300px;"></textarea>
+
+    <script>
+        const surveyJson = {
+            "questions": [
+                {
+                    "type": "text",
+                    "name": "question1",
+                    "title": "What is your name?"
+                },
+                {
+                    "type": "checkbox",
+                    "name": "question2",
+                    "title": "Select all that apply:",
+                    "choices": ["Item 1", "Item 2", "Item 3"]
+                },
+                {
+                    "type": "radiogroup",
+                    "name": "question3",
+                    "title": "Choose one:",
+                    "choices": ["Yes", "No", "Maybe"]
+                }
+            ]
+        };
+
+        const survey = new Survey.Model(surveyJson);
+        survey.mode = "display";
+        survey.data = {
+            "question1": "John Doe",
+            "question2": ["Item 1", "Item 3"],
+            "question3": "Yes"
+        };
+
+        // Track render completion
+        let isFullyRendered = false;
+        survey.onAfterRenderSurvey.add((sender, options) => {
+            console.log("Survey fully rendered!");
+            isFullyRendered = true;
+        });
+
+        // Render survey
+        survey.render("surveyContainer");
+
+        function captureHtml() {
+            const container = document.getElementById("surveyContainer");
+            const html = container.innerHTML;
+            document.getElementById("output").value = html;
+            console.log("Immediate capture - Length:", html.length);
+            console.log("Contains question text:", html.includes("What is your name"));
+            console.log("Contains answer:", html.includes("John Doe"));
+        }
+
+        function captureHtmlDelayed() {
+            setTimeout(() => {
+                const container = document.getElementById("surveyContainer");
+                const html = container.innerHTML;
+                document.getElementById("output").value = html;
+                console.log("Delayed capture - Length:", html.length);
+                console.log("Contains question text:", html.includes("What is your name"));
+                console.log("Contains answer:", html.includes("John Doe"));
+            }, 1000);
+        }
+
+        function captureHtmlAfterRender() {
+            if (isFullyRendered) {
+                const container = document.getElementById("surveyContainer");
+                const html = container.innerHTML;
+                document.getElementById("output").value = html;
+                console.log("After render capture - Length:", html.length);
+                console.log("Contains question text:", html.includes("What is your name"));
+                console.log("Contains answer:", html.includes("John Doe"));
+            } else {
+                console.log("Survey not fully rendered yet!");
+            }
+        }
+    </script>
+</body>
+</html>

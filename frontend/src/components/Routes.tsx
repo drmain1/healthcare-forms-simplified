@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './Common/Layout';
-import { Dashboard } from './Dashboard/Dashboard';
+import { MinimalDashboard } from './Dashboard/MinimalDashboard';
 import { FormsList } from './Dashboard/FormsList';
 import { FormBuilder } from './FormBuilder/FormBuilder';
 import { FormSendSimplified } from './Dashboard/FormSendSimplified';
@@ -49,7 +49,7 @@ export const AppRoutes: React.FC = () => {
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<MinimalDashboard />} />
         <Route path="forms" element={<FormsList />} />
         <Route path="forms/create" element={<FormBuilder />} />
         <Route path="forms/:id/edit" element={<FormBuilder />} />

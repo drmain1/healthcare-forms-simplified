@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGetResponsesQuery } from '../../store/api/responsesApi';
+import { useGetResponsesQuery, useDeleteResponseMutation } from '../../store/api/responsesApi';
 import {
   Calendar,
   Clock,
   User,
   FileText,
   Eye,
+  Trash2,
+  RefreshCw,
   TrendingUp,
   Activity,
   CheckCircle,
@@ -45,9 +47,10 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, icon, trend, colo
 interface ResponseCardProps {
   response: any;
   onView: () => void;
+  onDelete: () => void;
 }
 
-const ResponseCard: React.FC<ResponseCardProps> = ({ response, onView }) => {
+const ResponseCard: React.FC<ResponseCardProps> = ({ response, onView, onDelete }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -92,15 +95,28 @@ const ResponseCard: React.FC<ResponseCardProps> = ({ response, onView }) => {
               {response.form_title || response.form}
             </p>
           </div>
-          <button 
-            className="tw-p-2 tw-rounded-lg tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-50 tw-transition-colors tw-opacity-0 group-hover:tw-opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView();
-            }}
-          >
-            <Eye className="tw-w-4 tw-h-4" />
-          </button>
+          <div className="tw-flex tw-gap-1">
+            <button 
+              className="tw-p-2 tw-rounded-lg tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-50 tw-transition-colors tw-opacity-0 group-hover:tw-opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView();
+              }}
+              title="View Response"
+            >
+              <Eye className="tw-w-4 tw-h-4" />
+            </button>
+            <button 
+              className="tw-p-2 tw-rounded-lg tw-text-red-400 hover:tw-text-red-600 hover:tw-bg-red-50 tw-transition-colors tw-opacity-0 group-hover:tw-opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              title="Delete Response"
+            >
+              <Trash2 className="tw-w-4 tw-h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="tw-flex tw-items-center tw-justify-between tw-text-xs">
@@ -152,13 +168,32 @@ const SkeletonCard: React.FC = () => (
 export const MinimalDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   
-  const { data: responsesData, isLoading, error } = useGetResponsesQuery({ 
-    page_size: 20, 
+  const { data: responsesData, isLoading, error, refetch } = useGetResponsesQuery({ 
+    page_size: 50, 
     ordering: '-submitted_at' 
   });
   
+  const [deleteResponse, { isLoading: isDeleting }] = useDeleteResponseMutation();
+  
   const responses = responsesData?.results || [];
+  
+  const handleDelete = async (responseId: string) => {
+    setDeleteConfirm({ open: true, id: responseId });
+  };
+  
+  const confirmDelete = async () => {
+    if (deleteConfirm.id) {
+      try {
+        await deleteResponse(deleteConfirm.id).unwrap();
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete response:', error);
+      }
+    }
+    setDeleteConfirm({ open: false, id: null });
+  };
   
   const metrics = useMemo(() => {
     const total = responses.length;
@@ -280,6 +315,7 @@ export const MinimalDashboard: React.FC = () => {
                 <ResponseCard 
                   response={response}
                   onView={() => navigate(`/forms/${response.form}/responses/${response.id}`)}
+                  onDelete={() => handleDelete(response.id)}
                 />
               </div>
             ))
@@ -290,6 +326,40 @@ export const MinimalDashboard: React.FC = () => {
             </div>
           )}
         </div>
+        
+        {/* Refresh Button */}
+        <button
+          onClick={() => refetch()}
+          className="tw-fixed tw-bottom-6 tw-right-6 tw-p-4 tw-bg-gray-900 tw-text-white tw-rounded-full tw-shadow-lg hover:tw-bg-gray-800 tw-transition-colors"
+          title="Refresh Data"
+        >
+          <RefreshCw className="tw-w-5 tw-h-5" />
+        </button>
+        
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.open && (
+          <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center tw-z-50">
+            <div className="tw-bg-white tw-rounded-xl tw-p-6 tw-max-w-sm tw-w-full tw-mx-4">
+              <h3 className="tw-text-lg tw-font-medium tw-text-gray-900 tw-mb-2">Confirm Delete</h3>
+              <p className="tw-text-sm tw-text-gray-500 tw-mb-6">Are you sure you want to delete this response? This action cannot be undone.</p>
+              <div className="tw-flex tw-gap-3 tw-justify-end">
+                <button
+                  onClick={() => setDeleteConfirm({ open: false, id: null })}
+                  className="tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-gray-700 tw-bg-gray-100 tw-rounded-lg hover:tw-bg-gray-200 tw-transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-bg-red-600 tw-rounded-lg hover:tw-bg-red-700 tw-transition-colors disabled:tw-opacity-50"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

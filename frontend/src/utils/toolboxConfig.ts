@@ -322,5 +322,517 @@ export const healthcareToolboxItems = [
       name: 'pain_areas',
       title: 'Please mark areas where you experience pain'
     }
+  },
+  {
+    name: 'visual-analog-pain-assessment',
+    title: 'Complete Pain Assessment (VAS)',
+    iconName: 'icon-panel',
+    json: {
+      type: 'panel',
+      title: 'Visual Analog Scale & Pain Assessment',
+      description: 'Comprehensive pain assessment with intensity and frequency measurements',
+      elements: [
+        {
+          type: 'panel',
+          name: 'pain_intensity_section',
+          title: 'Section 1 - Pain Intensity',
+          description: 'For each area below, please describe your present pain level (0 = no pain, 10 = worst pain imaginable) and indicate pain frequency.',
+          elements: [
+            {
+              type: 'html',
+              name: 'pain_intensity_header',
+              html: '<div style="display: grid; grid-template-columns: 1fr 1fr; font-weight: bold; text-align: center; margin-bottom: 10px;"><div>Pain Intensity</div><div>Pain Frequency</div></div>'
+            },
+            // Neck Pain
+            {
+              type: 'panel',
+              name: 'neck_pain_panel',
+              title: 'Neck',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_neck_pain',
+                  title: 'Do you have neck pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'neck_pain_details',
+                  visibleIf: '{has_neck_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'neck_pain_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'neck_pain_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Headaches
+            {
+              type: 'panel',
+              name: 'headaches_panel',
+              title: 'Headaches',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_headaches',
+                  title: 'Do you have headaches?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'headaches_details',
+                  visibleIf: '{has_headaches} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'headaches_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'headaches_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Back Areas
+            {
+              type: 'panel',
+              name: 'back_pain_panel',
+              title: 'Back Pain',
+              elements: [
+                // Upper Back
+                {
+                  type: 'panel',
+                  name: 'upper_back_panel',
+                  title: 'Upper Back',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_upper_back_pain',
+                      title: 'Do you have upper back pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'upper_back_details',
+                      visibleIf: '{has_upper_back_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'rating',
+                          name: 'upper_back_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'upper_back_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                // Mid Back
+                {
+                  type: 'panel',
+                  name: 'mid_back_panel',
+                  title: 'Mid Back',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_mid_back_pain',
+                      title: 'Do you have mid back pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'mid_back_details',
+                      visibleIf: '{has_mid_back_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'rating',
+                          name: 'mid_back_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'mid_back_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                // Low Back
+                {
+                  type: 'panel',
+                  name: 'low_back_panel',
+                  title: 'Low Back',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_low_back_pain',
+                      title: 'Do you have low back pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'low_back_details',
+                      visibleIf: '{has_low_back_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'rating',
+                          name: 'low_back_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'low_back_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Extremities with Laterality
+            {
+              type: 'panel',
+              name: 'extremities_panel',
+              title: 'Extremities',
+              elements: [
+                // Shoulders
+                {
+                  type: 'panel',
+                  name: 'shoulders_panel',
+                  title: 'Shoulder(s)',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_shoulder_pain',
+                      title: 'Do you have shoulder pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'shoulder_details',
+                      visibleIf: '{has_shoulder_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'checkbox',
+                          name: 'shoulder_side',
+                          title: 'Which side(s)?',
+                          choices: ['Left', 'Right']
+                        },
+                        {
+                          type: 'rating',
+                          name: 'shoulder_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'shoulder_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                // Hips
+                {
+                  type: 'panel',
+                  name: 'hips_panel',
+                  title: 'Hip(s)',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_hip_pain',
+                      title: 'Do you have hip pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'hip_details',
+                      visibleIf: '{has_hip_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'checkbox',
+                          name: 'hip_side',
+                          title: 'Which side(s)?',
+                          choices: ['Left', 'Right']
+                        },
+                        {
+                          type: 'rating',
+                          name: 'hip_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'hip_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                // Arms
+                {
+                  type: 'panel',
+                  name: 'arms_panel',
+                  title: 'Arm(s)',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_arm_pain',
+                      title: 'Do you have arm pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'arm_details',
+                      visibleIf: '{has_arm_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'checkbox',
+                          name: 'arm_side',
+                          title: 'Which side(s)?',
+                          choices: ['Left', 'Right']
+                        },
+                        {
+                          type: 'rating',
+                          name: 'arm_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'arm_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                // Legs
+                {
+                  type: 'panel',
+                  name: 'legs_panel',
+                  title: 'Leg(s)',
+                  elements: [
+                    {
+                      type: 'radiogroup',
+                      name: 'has_leg_pain',
+                      title: 'Do you have leg pain?',
+                      choices: ['Yes', 'No'],
+                      colCount: 0
+                    },
+                    {
+                      type: 'panel',
+                      name: 'leg_details',
+                      visibleIf: '{has_leg_pain} = "Yes"',
+                      elements: [
+                        {
+                          type: 'checkbox',
+                          name: 'leg_side',
+                          title: 'Which side(s)?',
+                          choices: ['Left', 'Right']
+                        },
+                        {
+                          type: 'rating',
+                          name: 'leg_intensity',
+                          title: 'Pain Severity (0-10)',
+                          rateMin: 0,
+                          rateMax: 10,
+                          rateStep: 1,
+                          minRateDescription: 'No Pain',
+                          maxRateDescription: 'Worst Pain'
+                        },
+                        {
+                          type: 'radiogroup',
+                          name: 'leg_frequency',
+                          title: 'Frequency',
+                          choices: [
+                            'Occasional (0-25%)',
+                            'Intermittent (25-50%)',
+                            'Frequent (50-75%)',
+                            'Constant (75-100%)'
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Other Pain Area
+            {
+              type: 'panel',
+              name: 'other_pain_panel',
+              title: 'Other Area',
+              elements: [
+                {
+                  type: 'text',
+                  name: 'other_area_specify',
+                  title: 'Please specify other pain area (if applicable):'
+                },
+                {
+                  type: 'panel',
+                  name: 'other_pain_details',
+                  visibleIf: '{other_area_specify} notempty',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'other_side',
+                      title: 'Side (if applicable):',
+                      choices: ['Left', 'Right', 'Central']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'other_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'other_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          type: 'panel',
+          name: 'pain_location_section',
+          title: 'Section 2 - Pain Location & Type',
+          description: 'Please mark the location of your pain on the body diagram below.',
+          elements: [
+            {
+              type: 'bodypaindiagram',
+              name: 'pain_location_diagram',
+              title: 'Click or tap on the body areas where you experience pain'
+            }
+          ]
+        }
+      ]
+    }
   }
 ];

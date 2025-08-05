@@ -263,6 +263,1099 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   
   creator.toolbox.addItem(bodyPainDiagram);
   
+  // Add Visual Analog Scale & Pain Assessment
+  const visualAnalogPainAssessment = {
+    name: 'visual-analog-pain-assessment',
+    title: 'Complete Pain Assessment (VAS)',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    json: {
+      type: 'panel',
+      title: 'Visual Analog Scale & Pain Assessment',
+      description: 'Comprehensive pain assessment with intensity and frequency measurements',
+      elements: [
+        {
+          type: 'panel',
+          name: 'pain_intensity_section',
+          title: 'Section 1 - Pain Intensity',
+          description: 'For each area below, please describe your present pain level (0 = no pain, 10 = worst pain imaginable) and indicate pain frequency.',
+          elements: [
+            {
+              type: 'html',
+              name: 'pain_intensity_header',
+              html: '<div style="display: grid; grid-template-columns: 1fr 1fr; font-weight: bold; text-align: center; margin-bottom: 10px;"><div>Pain Intensity</div><div>Pain Frequency</div></div>'
+            },
+            // Neck Pain
+            {
+              type: 'panel',
+              name: 'neck_pain_panel',
+              title: 'Neck',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_neck_pain',
+                  title: 'Do you have neck pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'neck_pain_details',
+                  visibleIf: '{has_neck_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'neck_pain_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'neck_pain_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Headaches
+            {
+              type: 'panel',
+              name: 'headaches_panel',
+              title: 'Headaches',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_headaches',
+                  title: 'Do you have headaches?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'headaches_details',
+                  visibleIf: '{has_headaches} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'headaches_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'headaches_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Low Back
+            {
+              type: 'panel',
+              name: 'low_back_panel',
+              title: 'Low Back',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_low_back_pain',
+                  title: 'Do you have low back pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'low_back_details',
+                  visibleIf: '{has_low_back_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'low_back_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'low_back_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Mid Back
+            {
+              type: 'panel',
+              name: 'mid_back_panel',
+              title: 'Mid Back',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_mid_back_pain',
+                  title: 'Do you have mid back pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'mid_back_details',
+                  visibleIf: '{has_mid_back_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'mid_back_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'mid_back_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Upper Back
+            {
+              type: 'panel',
+              name: 'upper_back_panel',
+              title: 'Upper Back',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_upper_back_pain',
+                  title: 'Do you have upper back pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'upper_back_details',
+                  visibleIf: '{has_upper_back_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'rating',
+                      name: 'upper_back_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'upper_back_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Shoulders
+            {
+              type: 'panel',
+              name: 'shoulders_panel',
+              title: 'Shoulder(s)',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_shoulder_pain',
+                  title: 'Do you have shoulder pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'shoulder_details',
+                  visibleIf: '{has_shoulder_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'shoulder_side',
+                      title: 'Which side(s)?',
+                      choices: ['Left', 'Right']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'shoulder_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'shoulder_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Hips
+            {
+              type: 'panel',
+              name: 'hips_panel',
+              title: 'Hip(s)',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_hip_pain',
+                  title: 'Do you have hip pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'hip_details',
+                  visibleIf: '{has_hip_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'hip_side',
+                      title: 'Which side(s)?',
+                      choices: ['Left', 'Right']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'hip_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'hip_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Arms
+            {
+              type: 'panel',
+              name: 'arms_panel',
+              title: 'Arm(s)',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_arm_pain',
+                  title: 'Do you have arm pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'arm_details',
+                  visibleIf: '{has_arm_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'arm_side',
+                      title: 'Which side(s)?',
+                      choices: ['Left', 'Right']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'arm_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'arm_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Legs
+            {
+              type: 'panel',
+              name: 'legs_panel',
+              title: 'Leg(s)',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_leg_pain',
+                  title: 'Do you have leg pain?',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'leg_details',
+                  visibleIf: '{has_leg_pain} = "Yes"',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'leg_side',
+                      title: 'Which side(s)?',
+                      choices: ['Left', 'Right']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'leg_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'leg_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            // Other Pain Area
+            {
+              type: 'panel',
+              name: 'other_pain_panel',
+              title: 'Other Area',
+              elements: [
+                {
+                  type: 'text',
+                  name: 'other_area_specify',
+                  title: 'Please specify other pain area (if applicable):'
+                },
+                {
+                  type: 'panel',
+                  name: 'other_pain_details',
+                  visibleIf: '{other_area_specify} notempty',
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'other_side',
+                      title: 'Side (if applicable):',
+                      choices: ['Left', 'Right', 'Central']
+                    },
+                    {
+                      type: 'rating',
+                      name: 'other_intensity',
+                      title: 'Pain Severity (0-10)',
+                      rateMin: 0,
+                      rateMax: 10,
+                      rateStep: 1,
+                      minRateDescription: 'No Pain',
+                      maxRateDescription: 'Worst Pain'
+                    },
+                    {
+                      type: 'radiogroup',
+                      name: 'other_frequency',
+                      title: 'Frequency',
+                      choices: [
+                        'Occasional (0-25%)',
+                        'Intermittent (25-50%)',
+                        'Frequent (50-75%)',
+                        'Constant (75-100%)'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          type: 'panel',
+          name: 'pain_location_section',
+          title: 'Section 2 - Pain Location & Type',
+          description: 'Please mark the location of your pain on the body diagram below.',
+          elements: [
+            {
+              type: 'bodypaindiagram',
+              name: 'pain_location_diagram',
+              title: 'Click or tap on the body areas where you experience pain'
+            }
+          ]
+        }
+      ]
+    }
+  };
+  
+  creator.toolbox.addItem(visualAnalogPainAssessment);
+  
+  // Add Oswestry Disability Index with Automated Scoring
+  const oswestryDisabilityIndex = {
+    name: 'oswestry-disability-index',
+    title: 'Oswestry Disability Index (ODI)',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    json: {
+      type: 'panel',
+      title: 'Oswestry Low Back Pain Disability Index',
+      description: 'Please answer each section by selecting ONLY the ONE CHOICE that most applies to you RIGHT NOW.',
+      elements: [
+        // Patient Information
+        {
+          type: 'panel',
+          name: 'patient_info_panel',
+          elements: [
+            {
+              type: 'text',
+              name: 'patient_name',
+              title: 'Name',
+              startWithNewLine: false
+            },
+            {
+              type: 'text',
+              name: 'assessment_date',
+              title: 'Date',
+              inputType: 'date',
+              startWithNewLine: false,
+              defaultValue: new Date().toISOString().split('T')[0]
+            }
+          ]
+        },
+        // Section 1 - Pain Intensity
+        {
+          type: 'panel',
+          name: 'section1_panel',
+          title: 'SECTION 1 - Pain Intensity',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_pain_intensity',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'The pain comes and goes and is very mild.' },
+                { value: 1, text: 'The pain is mild and does not vary much.' },
+                { value: 2, text: 'The pain comes and goes and is moderate.' },
+                { value: 3, text: 'The pain is moderate and does not vary much.' },
+                { value: 4, text: 'The pain comes and goes and is severe.' },
+                { value: 5, text: 'The pain is severe and does not vary much.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 2 - Personal Care
+        {
+          type: 'panel',
+          name: 'section2_panel',
+          title: 'SECTION 2 - Personal Care (Washing, Dressing, etc.)',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_personal_care',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I would not have to change my way of washing or dressing in order to avoid pain.' },
+                { value: 1, text: 'I do not normally change my way of washing or dressing even though it causes some pain.' },
+                { value: 2, text: 'Washing and dressing increases the pain, but I manage not to change my way of doing it.' },
+                { value: 3, text: 'Washing and dressing increases the pain and I find it necessary to change my way of doing it.' },
+                { value: 4, text: 'Because of the pain, I am unable to do some washing and dressing without help.' },
+                { value: 5, text: 'Because of the pain, I am unable to do any washing and dressing without help.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 3 - Lifting
+        {
+          type: 'panel',
+          name: 'section3_panel',
+          title: 'SECTION 3 - Lifting',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_lifting',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I can lift heavy weights without extra pain.' },
+                { value: 1, text: 'I can lift heavy weights, but it causes extra pain.' },
+                { value: 2, text: 'Pain prevents me from lifting heavy weights off the floor, but I can if they are conveniently positioned.' },
+                { value: 3, text: 'Pain prevents me from lifting heavy weights, but I can manage light to medium weights if conveniently positioned.' },
+                { value: 4, text: 'I can lift only very light weights.' },
+                { value: 5, text: 'I cannot lift or carry anything at all.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 4 - Walking
+        {
+          type: 'panel',
+          name: 'section4_panel',
+          title: 'SECTION 4 - Walking',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_walking',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'Pain does not prevent me walking any distance.' },
+                { value: 1, text: 'Pain prevents me walking more than 1 mile.' },
+                { value: 2, text: 'Pain prevents me walking more than ½ mile.' },
+                { value: 3, text: 'Pain prevents me walking more than ¼ mile.' },
+                { value: 4, text: 'I can only walk using a cane or crutches.' },
+                { value: 5, text: 'I am in bed most of the time and have to crawl to the toilet.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 5 - Sitting
+        {
+          type: 'panel',
+          name: 'section5_panel',
+          title: 'SECTION 5 - Sitting',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_sitting',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I can sit in any chair as long as I like without pain.' },
+                { value: 1, text: 'I can only sit in my favorite chair as long as I like.' },
+                { value: 2, text: 'Pain prevents me from sitting for more than 1 hour.' },
+                { value: 3, text: 'Pain prevents me from sitting for more than ½ hour.' },
+                { value: 4, text: 'Pain prevents me from sitting for more than 10 minutes.' },
+                { value: 5, text: 'Pain prevents me from sitting at all.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 6 - Standing
+        {
+          type: 'panel',
+          name: 'section6_panel',
+          title: 'SECTION 6 - Standing',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_standing',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I can stand as long as I want without extra pain.' },
+                { value: 1, text: 'I have some pain while standing, but it does not increase with time.' },
+                { value: 2, text: 'I cannot stand for longer than 1 hour without increasing pain.' },
+                { value: 3, text: 'I cannot stand for longer than ½ hour without increasing pain.' },
+                { value: 4, text: 'I cannot stand for longer than 10 minutes without increasing pain.' },
+                { value: 5, text: 'I avoid standing because it increases the pain straight away.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 7 - Sleeping
+        {
+          type: 'panel',
+          name: 'section7_panel',
+          title: 'SECTION 7 - Sleeping',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_sleeping',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I get no pain in bed.' },
+                { value: 1, text: 'I get pain in bed, but it does not prevent me from sleeping well.' },
+                { value: 2, text: 'Because of pain, my normal night\'s sleep is reduced by less than one quarter.' },
+                { value: 3, text: 'Because of pain, my normal night\'s sleep is reduced by less than one half.' },
+                { value: 4, text: 'Because of pain, my normal night\'s sleep is reduced by less than three quarters.' },
+                { value: 5, text: 'Pain prevents me from sleeping at all.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 8 - Social Life
+        {
+          type: 'panel',
+          name: 'section8_panel',
+          title: 'SECTION 8 - Social Life',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_social_life',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'My social life is normal and gives me no pain.' },
+                { value: 1, text: 'My social life is normal, but increases the degree of my pain.' },
+                { value: 2, text: 'Pain has no significant effect on my social life apart from limiting energetic interests (e.g., dancing).' },
+                { value: 3, text: 'Pain has restricted my social life and I do not go out very often.' },
+                { value: 4, text: 'Pain has restricted my social life to my home.' },
+                { value: 5, text: 'I hardly have any social life because of the pain.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 9 - Traveling
+        {
+          type: 'panel',
+          name: 'section9_panel',
+          title: 'SECTION 9 - Traveling',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_traveling',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'I get no pain while traveling.' },
+                { value: 1, text: 'I get some pain while traveling, but none of my usual forms of travel make it worse.' },
+                { value: 2, text: 'I get some pain while traveling, but it does not compel me to seek alternative forms of travel.' },
+                { value: 3, text: 'I get extra pain while traveling which compels me to seek alternative forms of travel.' },
+                { value: 4, text: 'Pain restricts all forms of travel.' },
+                { value: 5, text: 'Pain prevents all forms of travel except that done lying down.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Section 10 - Employment/Homemaking
+        {
+          type: 'panel',
+          name: 'section10_panel',
+          title: 'SECTION 10 - Employment/Homemaking',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'odi_employment',
+              titleLocation: 'hidden',
+              choices: [
+                { value: 0, text: 'My normal work/homemaking activities do not cause pain.' },
+                { value: 1, text: 'My normal work/homemaking activities increase my pain, but I can still perform all that is required.' },
+                { value: 2, text: 'I can perform most of my work/homemaking duties, but pain prevents me from performing more physically stressful activities.' },
+                { value: 3, text: 'Pain prevents me from doing anything but light duties.' },
+                { value: 4, text: 'Pain prevents me from doing even light duties.' },
+                { value: 5, text: 'Pain prevents me from performing any job or homemaking chores.' }
+              ],
+              colCount: 1,
+              isRequired: false
+            }
+          ]
+        },
+        // Comments Section
+        {
+          type: 'comment',
+          name: 'odi_comments',
+          title: 'Additional Comments:',
+          rows: 4
+        },
+        // Scoring Section with Auto-calculation
+        {
+          type: 'panel',
+          name: 'odi_scoring_panel',
+          title: 'ODI Score Results',
+          elements: [
+            {
+              type: 'expression',
+              name: 'odi_total_score',
+              title: 'Total Score:',
+              expression: '(iif({odi_pain_intensity} notempty, {odi_pain_intensity}, 0) + iif({odi_personal_care} notempty, {odi_personal_care}, 0) + iif({odi_lifting} notempty, {odi_lifting}, 0) + iif({odi_walking} notempty, {odi_walking}, 0) + iif({odi_sitting} notempty, {odi_sitting}, 0) + iif({odi_standing} notempty, {odi_standing}, 0) + iif({odi_sleeping} notempty, {odi_sleeping}, 0) + iif({odi_social_life} notempty, {odi_social_life}, 0) + iif({odi_traveling} notempty, {odi_traveling}, 0) + iif({odi_employment} notempty, {odi_employment}, 0))',
+              displayStyle: 'decimal',
+              currency: 'none'
+            },
+            {
+              type: 'expression',
+              name: 'odi_sections_completed',
+              title: 'Sections Completed:',
+              expression: '(iif({odi_pain_intensity} notempty, 1, 0) + iif({odi_personal_care} notempty, 1, 0) + iif({odi_lifting} notempty, 1, 0) + iif({odi_walking} notempty, 1, 0) + iif({odi_sitting} notempty, 1, 0) + iif({odi_standing} notempty, 1, 0) + iif({odi_sleeping} notempty, 1, 0) + iif({odi_social_life} notempty, 1, 0) + iif({odi_traveling} notempty, 1, 0) + iif({odi_employment} notempty, 1, 0))',
+              displayStyle: 'decimal'
+            },
+            {
+              type: 'expression',
+              name: 'odi_disability_percentage',
+              title: 'Disability Percentage:',
+              expression: 'iif({odi_sections_completed} > 0, round(({odi_total_score} / ({odi_sections_completed} * 5)) * 100, 1), 0)',
+              displayStyle: 'decimal',
+              format: '{0}%'
+            },
+            {
+              type: 'expression',
+              name: 'odi_interpretation',
+              title: 'Interpretation:',
+              expression: 'iif({odi_disability_percentage} <= 20, "Minimal Disability", iif({odi_disability_percentage} <= 40, "Moderate Disability", iif({odi_disability_percentage} <= 60, "Severe Disability", iif({odi_disability_percentage} <= 80, "Crippled", "Bed-bound or Exaggerating"))))',
+              displayStyle: 'text'
+            },
+            {
+              type: 'html',
+              name: 'odi_interpretation_guide',
+              html: '<div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px;"><h4>Score Interpretation Guide:</h4><ul style="list-style-type: none; padding-left: 0;"><li>• <strong>0-20%:</strong> Minimal disability - Can cope with most activities</li><li>• <strong>21-40%:</strong> Moderate disability - More pain and difficulty with sitting, lifting, and standing</li><li>• <strong>41-60%:</strong> Severe disability - Pain is a primary problem, affecting daily life</li><li>• <strong>61-80%:</strong> Crippled - Back pain impinges on all aspects of life</li><li>• <strong>81-100%:</strong> Bed-bound or exaggerating symptoms</li></ul></div>'
+            },
+            {
+              type: 'signaturepad',
+              name: 'odi_patient_signature',
+              title: 'Patient Signature:'
+            }
+          ]
+        }
+      ],
+      triggers: [
+        {
+          type: 'runexpression',
+          expression: '{odi_pain_intensity} notempty or {odi_personal_care} notempty or {odi_lifting} notempty or {odi_walking} notempty or {odi_sitting} notempty or {odi_standing} notempty or {odi_sleeping} notempty or {odi_social_life} notempty or {odi_traveling} notempty or {odi_employment} notempty',
+          runExpression: 'true'
+        }
+      ]
+    }
+  };
+  
+  creator.toolbox.addItem(oswestryDisabilityIndex);
+  
+  // Add Neck Disability Index with Automated Scoring
+  const neckDisabilityIndex = {
+    name: 'neck-disability-index',
+    title: 'Neck Disability Index (NDI)',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    json: {
+      type: 'panel',
+      title: 'Neck Disability Index Questionnaire',
+      description: 'Please answer each section by selecting ONLY the ONE CHOICE that most applies to you RIGHT NOW.',
+      elements: [
+        // Patient Information
+        {
+          type: 'panel',
+          name: 'ndi_header_info',
+          elements: [
+            {
+              type: 'text',
+              name: 'ndi_patient_name',
+              title: 'Name',
+              startWithNewLine: false,
+              isRequired: false
+            },
+            {
+              type: 'text',
+              name: 'ndi_form_date',
+              title: 'Date',
+              inputType: 'date',
+              startWithNewLine: false,
+              defaultValue: new Date().toISOString().split('T')[0],
+              isRequired: false
+            }
+          ]
+        },
+        // Section 1 - Pain Intensity
+        {
+          type: 'radiogroup',
+          name: 'ndi_pain_intensity',
+          title: 'SECTION 1 - Pain Intensity',
+          choices: [
+            { value: 0, text: 'I have no pain at the moment.' },
+            { value: 1, text: 'The pain is very mild at the moment.' },
+            { value: 2, text: 'The pain is moderate at the moment.' },
+            { value: 3, text: 'The pain is fairly severe at the moment.' },
+            { value: 4, text: 'The pain is very severe at the moment.' },
+            { value: 5, text: 'The pain is the worst imaginable at the moment.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 2 - Personal Care
+        {
+          type: 'radiogroup',
+          name: 'ndi_personal_care',
+          title: 'SECTION 2 - Personal Care (Washing, Dressing, etc.)',
+          choices: [
+            { value: 0, text: 'I can look after myself normally without causing extra pain.' },
+            { value: 1, text: 'I can look after myself normally, but it causes extra pain.' },
+            { value: 2, text: 'It is painful to look after myself and I am slow and careful.' },
+            { value: 3, text: 'I need some help, but manage most of my personal care.' },
+            { value: 4, text: 'I need help every day in most aspects of self-care.' },
+            { value: 5, text: 'I do not get dressed, I wash with difficulty and stay in bed.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 3 - Lifting
+        {
+          type: 'radiogroup',
+          name: 'ndi_lifting',
+          title: 'SECTION 3 - Lifting',
+          choices: [
+            { value: 0, text: 'I can lift heavy weights without extra pain.' },
+            { value: 1, text: 'I can lift heavy weights, but it gives extra pain.' },
+            { value: 2, text: 'Pain prevents me from lifting heavy weights off the floor, but I can manage if they are conveniently positioned, for example, on a table.' },
+            { value: 3, text: 'Pain prevents me from lifting heavy weights, but I can manage light to medium weights if they are conveniently positioned.' },
+            { value: 4, text: 'I can lift very light weights.' },
+            { value: 5, text: 'I cannot lift or carry anything at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 4 - Reading
+        {
+          type: 'radiogroup',
+          name: 'ndi_reading',
+          title: 'SECTION 4 - Reading',
+          choices: [
+            { value: 0, text: 'I can read as much as I want to with no pain in my neck.' },
+            { value: 1, text: 'I can read as much as I want to with slight pain in my neck.' },
+            { value: 2, text: 'I can read as much as I want to with moderate pain in my neck.' },
+            { value: 3, text: 'I cannot read as much as I want because of moderate pain in my neck.' },
+            { value: 4, text: 'I cannot read as much as I want because of severe pain in my neck.' },
+            { value: 5, text: 'I cannot read at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 5 - Headaches
+        {
+          type: 'radiogroup',
+          name: 'ndi_headaches',
+          title: 'SECTION 5 - Headaches',
+          choices: [
+            { value: 0, text: 'I have no headaches at all.' },
+            { value: 1, text: 'I have slight headaches which come infrequently.' },
+            { value: 2, text: 'I have moderate headaches which come infrequently.' },
+            { value: 3, text: 'I have moderate headaches which come frequently.' },
+            { value: 4, text: 'I have severe headaches which come frequently.' },
+            { value: 5, text: 'I have headaches almost all the time.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 6 - Concentration
+        {
+          type: 'radiogroup',
+          name: 'ndi_concentration',
+          title: 'SECTION 6 - Concentration',
+          choices: [
+            { value: 0, text: 'I can concentrate fully when I want to with no difficulty.' },
+            { value: 1, text: 'I can concentrate fully when I want to with slight difficulty.' },
+            { value: 2, text: 'I have a fair degree of difficulty in concentrating when I want to.' },
+            { value: 3, text: 'I have a lot of difficulty in concentrating when I want to.' },
+            { value: 4, text: 'I have a great deal of difficulty in concentrating when I want to.' },
+            { value: 5, text: 'I cannot concentrate at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 7 - Work
+        {
+          type: 'radiogroup',
+          name: 'ndi_work',
+          title: 'SECTION 7 - Work',
+          choices: [
+            { value: 0, text: 'I can do as much work as I want to.' },
+            { value: 1, text: 'I can only do my usual work, but no more.' },
+            { value: 2, text: 'I can do most of my usual work, but no more.' },
+            { value: 3, text: 'I cannot do my usual work.' },
+            { value: 4, text: 'I can hardly do any work at all.' },
+            { value: 5, text: 'I cannot do any work at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 8 - Driving
+        {
+          type: 'radiogroup',
+          name: 'ndi_driving',
+          title: 'SECTION 8 - Driving',
+          choices: [
+            { value: 0, text: 'I can drive my car without any neck pain.' },
+            { value: 1, text: 'I can drive my car as long as I want with slight pain in my neck.' },
+            { value: 2, text: 'I can drive my car as long as I want with moderate pain in my neck.' },
+            { value: 3, text: 'I cannot drive my car as long as I want because of moderate pain in my neck.' },
+            { value: 4, text: 'I can hardly drive at all because of severe pain in my neck.' },
+            { value: 5, text: 'I cannot drive my car at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 9 - Recreation
+        {
+          type: 'radiogroup',
+          name: 'ndi_recreation',
+          title: 'SECTION 9 - Recreation',
+          choices: [
+            { value: 0, text: 'I am able to engage in all of my recreational activities with no neck pain at all.' },
+            { value: 1, text: 'I am able to engage in all of my recreational activities with some pain in my neck.' },
+            { value: 2, text: 'I am able to engage in most, but not all of my recreational activities because of pain in my neck.' },
+            { value: 3, text: 'I am able to engage in a few of my recreational activities because of pain in my neck.' },
+            { value: 4, text: 'I can hardly do any recreational activities because of pain in my neck.' },
+            { value: 5, text: 'I cannot do any recreational activities at all.' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Section 10 - Sleeping
+        {
+          type: 'radiogroup',
+          name: 'ndi_sleeping',
+          title: 'SECTION 10 - Sleeping',
+          choices: [
+            { value: 0, text: 'I have no trouble sleeping.' },
+            { value: 1, text: 'My sleep is slightly disturbed (less than 1 hour sleepless).' },
+            { value: 2, text: 'My sleep is mildly disturbed (1-2 hours sleepless).' },
+            { value: 3, text: 'My sleep is moderately disturbed (2-3 hours sleepless).' },
+            { value: 4, text: 'My sleep is greatly disturbed (3-5 hours sleepless).' },
+            { value: 5, text: 'My sleep is completely disturbed (5-7 hours sleepless).' }
+          ],
+          colCount: 1,
+          isRequired: false
+        },
+        // Comments Section
+        {
+          type: 'comment',
+          name: 'ndi_comments',
+          title: 'Additional Comments:',
+          rows: 4
+        },
+        // Scoring Section with Auto-calculation
+        {
+          type: 'panel',
+          name: 'ndi_scoring_panel',
+          title: 'NDI Score Results',
+          elements: [
+            {
+              type: 'expression',
+              name: 'ndi_total_score',
+              title: 'Total Score:',
+              expression: '(iif({ndi_pain_intensity} notempty, {ndi_pain_intensity}, 0) + iif({ndi_personal_care} notempty, {ndi_personal_care}, 0) + iif({ndi_lifting} notempty, {ndi_lifting}, 0) + iif({ndi_reading} notempty, {ndi_reading}, 0) + iif({ndi_headaches} notempty, {ndi_headaches}, 0) + iif({ndi_concentration} notempty, {ndi_concentration}, 0) + iif({ndi_work} notempty, {ndi_work}, 0) + iif({ndi_driving} notempty, {ndi_driving}, 0) + iif({ndi_recreation} notempty, {ndi_recreation}, 0) + iif({ndi_sleeping} notempty, {ndi_sleeping}, 0))',
+              displayStyle: 'decimal',
+              currency: 'none'
+            },
+            {
+              type: 'expression',
+              name: 'ndi_sections_completed',
+              title: 'Sections Completed:',
+              expression: '(iif({ndi_pain_intensity} notempty, 1, 0) + iif({ndi_personal_care} notempty, 1, 0) + iif({ndi_lifting} notempty, 1, 0) + iif({ndi_reading} notempty, 1, 0) + iif({ndi_headaches} notempty, 1, 0) + iif({ndi_concentration} notempty, 1, 0) + iif({ndi_work} notempty, 1, 0) + iif({ndi_driving} notempty, 1, 0) + iif({ndi_recreation} notempty, 1, 0) + iif({ndi_sleeping} notempty, 1, 0))',
+              displayStyle: 'decimal'
+            },
+            {
+              type: 'expression',
+              name: 'ndi_disability_percentage',
+              title: 'Disability Percentage:',
+              expression: 'iif({ndi_sections_completed} > 0, round(({ndi_total_score} / ({ndi_sections_completed} * 5)) * 100, 1), 0)',
+              displayStyle: 'decimal',
+              format: '{0}%'
+            },
+            {
+              type: 'expression',
+              name: 'ndi_interpretation',
+              title: 'Interpretation:',
+              expression: 'iif({ndi_disability_percentage} <= 8, "No Disability", iif({ndi_disability_percentage} <= 28, "Mild Disability", iif({ndi_disability_percentage} <= 48, "Moderate Disability", iif({ndi_disability_percentage} <= 68, "Severe Disability", "Complete Disability"))))',
+              displayStyle: 'text'
+            },
+            {
+              type: 'html',
+              name: 'ndi_interpretation_guide',
+              html: '<div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px;"><h4>NDI Score Interpretation Guide:</h4><ul style="list-style-type: none; padding-left: 0;"><li>• <strong>0-8%:</strong> No disability - Patients can cope with most living activities</li><li>• <strong>10-28%:</strong> Mild disability - Pain and difficulty with sitting, lifting, and standing. Travel and social life are more difficult</li><li>• <strong>30-48%:</strong> Moderate disability - Pain is the main problem. Patients experience more problems with sitting, standing, and traveling</li><li>• <strong>50-68%:</strong> Severe disability - Pain impairs all aspects of life. Positive intervention is required</li><li>• <strong>70-100%:</strong> Complete disability - Patients are either bed-bound or exaggerating their symptoms</li></ul><p style="margin-top: 10px; font-size: 0.9em; color: #666;">Reference: Vernon, Mior. JMPT 1991; 14(7): 409-15</p></div>'
+            },
+            {
+              type: 'signaturepad',
+              name: 'ndi_patient_signature',
+              title: 'Patient Signature:'
+            }
+          ]
+        }
+      ],
+      triggers: [
+        {
+          type: 'runexpression',
+          expression: '{ndi_pain_intensity} notempty or {ndi_personal_care} notempty or {ndi_lifting} notempty or {ndi_reading} notempty or {ndi_headaches} notempty or {ndi_concentration} notempty or {ndi_work} notempty or {ndi_driving} notempty or {ndi_recreation} notempty or {ndi_sleeping} notempty',
+          runExpression: 'true'
+        }
+      ]
+    }
+  };
+  
+  creator.toolbox.addItem(neckDisabilityIndex);
+  
   // Add Date of Birth with Age Calculator
   const dateOfBirthComponent = {
     name: 'date-of-birth',

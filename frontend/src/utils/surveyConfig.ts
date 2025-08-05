@@ -740,7 +740,7 @@ export const createSurveyCreator = (): SurveyCreator => {
   const creatorOptions: ICreatorOptions = {
     autoSaveEnabled: false,
     showLogicTab: true,
-    showJSONEditorTab: false, // Hide JSON editor - we have our own preview
+    showJSONEditorTab: true, // Show JSON editor for development
     showTestSurveyTab: false, // Hide test/preview - we have our own preview button
     showSidebar: true, // Updated from showPropertyGrid for V2
     showSurveyTitle: false, // We'll handle this in our custom UI

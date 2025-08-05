@@ -18,7 +18,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   // Basic creator options - keep it simple
   const creatorOptions: ICreatorOptions = {
     showLogicTab: true,
-    showJSONEditorTab: false,
+    showJSONEditorTab: true,
     showTestSurveyTab: true,
     showSidebar: true,
     showSurveyTitle: true,
@@ -586,7 +586,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
 export const createCleanSurveyCreator = (): SurveyCreator => {
   const creatorOptions: ICreatorOptions = {
     showLogicTab: true,
-    showJSONEditorTab: false,
+    showJSONEditorTab: true,
     showTestSurveyTab: true,
     showSidebar: true,
     showToolbox: true

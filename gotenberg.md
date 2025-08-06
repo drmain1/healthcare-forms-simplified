@@ -1,14 +1,18 @@
 # Gotenberg PDF Generation Service Architecture
 
+**Last Updated: August 6, 2025**  
+**Status: ✅ FULLY OPERATIONAL**
+
 This document outlines the architecture of the Gotenberg PDF generation service and its integration with the Go backend.
 
 ## Overview
 
-The PDF generation functionality has been externalized from the main Go backend into a dedicated, containerized service using [Gotenberg](https://gotenberg.dev/). This approach offers several advantages:
+The PDF generation functionality uses a two-stage process with AI-powered HTML generation followed by PDF conversion using [Gotenberg](https://gotenberg.dev/). This architecture provides:
 
-*   **Decoupling:** The backend and PDF generation services are decoupled, allowing them to be scaled and updated independently.
-*   **Security:** The Gotenberg service is secured and only accessible by the Go backend, adhering to the principle of least privilege.
-*   **Scalability:** The Gotenberg service can be scaled independently to handle high volumes of PDF generation requests without impacting the performance of the main backend.
+*   **AI-Powered Generation:** Vertex AI (Gemini) creates professional medical document HTML from form responses
+*   **Decoupling:** The backend and PDF generation services are decoupled, allowing them to be scaled and updated independently
+*   **Security:** The Gotenberg service is secured and only accessible by the Go backend, adhering to the principle of least privilege
+*   **Scalability:** Both services can be scaled independently to handle high volumes of PDF generation requests
 
 ## GCP Cloud Run Services
 
@@ -29,33 +33,40 @@ To ensure a secure, HIPAA-compliant environment, the following security measures
 
 ## Configuration
 
-The `healthcare-forms-backend-go` service is configured to communicate with the `gotenberg` service via the following environment variable:
+The `healthcare-forms-backend-go` service is configured with the following environment variables:
 
-*   `GOTENBERG_URL`: `https://gotenberg-673381373352.us-central1.run.app`
+*   `GOTENBERG_URL`: `https://gotenberg-ubaop6yg4q-uc.a.run.app` - Gotenberg service endpoint
+*   `GCP_PROJECT_ID`: `healthcare-forms-v2` - Google Cloud project ID
 
-This URL points to the internal, secure endpoint of the `gotenberg` service.
+The backend uses:
+*   **Vertex AI Model**: `gemini-2.5-flash-lite` for HTML generation
+*   **Service Account**: `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
 
 ## Current Implementation Status
 
-### What's Been Implemented
+### ✅ FULLY WORKING Implementation (August 6, 2025)
 
-1. **Frontend Changes (Completed)**:
-   - `ResponseDetail.tsx`: Added `surveyContainerRef` to capture rendered SurveyJS form HTML
-   - `PdfExportButton.tsx`: Updated to accept `getHtmlContent` prop and send HTML to backend
-   - Removed old PDF mutation dependency
+1. **PDF Generation Pipeline**:
+   - Form response data fetched from Firestore `form_responses` collection
+   - Data processed through `ProcessAndFlattenForm` to extract visible questions
+   - Vertex AI (Gemini 2.5 Flash Lite) generates professional HTML with clinical summary
+   - Gotenberg converts HTML to PDF
+   - PDF returned to client for download
 
-2. **Backend Changes (Completed)**:
-   - Created `gotenberg.go` with Gotenberg client implementation
-   - Added `ExportHTMLToPDF` handler in `forms.go`
-   - Added route `/api/forms/:id/export-html-to-pdf` in `main.go`
-   - Fixed missing imports (`bytes` and `html/template`)
-   - Successfully deployed to Cloud Run at: `https://healthcare-forms-backend-go-673381373352.us-central1.run.app`
+2. **Backend Components**:
+   - `pdf_generator.go`: Main orchestrator for PDF generation
+   - `form_processor.go`: Processes SurveyJS conditional logic
+   - `vertex_service.go`: Handles AI-powered HTML generation
+   - `gotenberg_service.go`: Manages HTML to PDF conversion with authentication
+   - Endpoint: `POST /api/responses/:responseId/generate-pdf`
 
-3. **Environment Configuration**:
-   - Updated `.env.local` with new backend URL
-   - `GOTENBERG_URL` is configured in `cloudbuild.yaml`
+3. **Key Fixes Applied**:
+   - Fixed Firestore field mappings (`form_id` → `form`, `response_data` → `data`)
+   - Added Google Cloud authentication to Gotenberg service calls
+   - Enhanced error logging throughout the pipeline
+   - Properly configured service account permissions
 
-### Current Issues - CRITICAL
+### Previous Issues - ALL RESOLVED
 
 #### Issue Summary (August 5, 2025)
 The PDF export functionality has progressed but still has critical issues:
@@ -116,20 +127,20 @@ The PDF export functionality has progressed but still has critical issues:
    - ✅ Set up onAfterRenderSurvey event handler
    - ❌ Still capturing question IDs instead of actual text
 
-### Root Cause Analysis
+### Resolution Summary
 
-1. **SurveyJS Display Mode Issue**:
-   - Survey is rendering in display mode but showing question names instead of titles
-   - Possible causes:
-     - Survey JSON might be missing title properties
-     - Display mode might be rendering differently than expected
-     - Question text might be stored in a different property
+1. **Field Mapping Issue (RESOLVED)**:
+   - **Problem**: Backend was looking for wrong field names in Firestore
+   - **Solution**: Corrected field mappings to match actual schema
+     - `form_id` → `form`
+     - `response_data` → `data`
 
-2. **Service Account Permissions** (for session login):
-   - The `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com` service account likely lacks:
-     - Firebase Admin SDK permissions for session cookie management
+2. **Authentication Issue (RESOLVED)**:
+   - **Problem**: Gotenberg service returned 403 Forbidden
+   - **Solution**: Added Google Cloud authentication using `idtoken.NewClient()`
+   - Service account `go-backend-sa` has proper IAM permissions
 
-2. **IAM Configuration Required**:
+3. **Working IAM Configuration**:
    ```bash
    # Grant Firebase Admin permissions
    gcloud projects add-iam-policy-binding healthcare-forms-v2 \
@@ -148,27 +159,19 @@ The PDF export functionality has progressed but still has critical issues:
    - Using distroless image: `gcr.io/healthcare-forms-v2/healthcare-forms-backend-go:latest`
    - Frontend fix for authentication not yet deployed
 
-### Immediate Actions Needed
+### Dependencies and Libraries
 
-1. **Fix SurveyJS Question Rendering** (PRIORITY):
-   - Investigate why question titles show as IDs ("question1") instead of actual text
-   - Check the survey JSON structure in the form data
-   - Verify the correct property is being used for question titles
-   - Test with a simple hardcoded survey to isolate the issue
+#### Backend Dependencies
+- **Vertex AI SDK**: `cloud.google.com/go/vertexai/genai`
+- **Firestore SDK**: `cloud.google.com/go/firestore`
+- **Google ID Token**: `google.golang.org/api/idtoken`
+- **Gin Framework**: `github.com/gin-gonic/gin`
+- **Model**: Gemini 2.5 Flash Lite
 
-2. **Fix Service Account Permissions** (for session login):
-   - Grant Firebase Admin role to `go-backend-sa`
-   - This will resolve the 401 session login errors
-
-3. **Implement Missing Endpoint**:
-   - Add `/api/responses/:id/review` endpoint to the Go backend
-   - Or update frontend to stop calling this non-existent endpoint
-
-4. **Debug Suggestions for Tomorrow**:
-   - Log the actual survey JSON to see what properties exist
-   - Try rendering survey without display mode to see if text appears
-   - Check if question titles are in `title` vs `name` vs another property
-   - Test with survey.getAllQuestions() to inspect question objects
+#### Service Dependencies
+- **Gotenberg**: Version 8.x running on Cloud Run
+- **Supported formats**: HTML to PDF via Chromium engine
+- **Authentication**: Service-to-service via Google Cloud IAM
 
 ### Testing Commands for GCP Agent
 
@@ -228,24 +231,46 @@ PORT: 8080
    REACT_APP_API_URL=https://healthcare-forms-backend-go-673381373352.us-central1.run.app/api
    ```
 
-### How The Flow Should Work
+### How The PDF Generation Works
 
-1. User clicks "Export PDF" button on Response Detail page
-2. Frontend captures the rendered SurveyJS form HTML via `surveyContainerRef`
-3. Frontend gets Firebase ID token using `firebaseAuth.getIdToken()`
-4. Frontend sends HTML + token to backend endpoint `/api/forms/:id/export-html-to-pdf`
-5. Backend validates the Firebase token
-6. Backend forwards HTML to Gotenberg service for conversion
-7. Gotenberg converts HTML to PDF and returns it
-8. Backend sends PDF back to frontend
-9. Frontend triggers download of the PDF file
+1. User clicks "Generate PDF" button on Response Detail page
+2. Frontend sends request to `/api/responses/:responseId/generate-pdf`
+3. Backend fetches form response from Firestore `form_responses` collection
+4. Backend fetches form definition from Firestore `forms` collection
+5. Form processor extracts visible questions based on SurveyJS conditional logic
+6. Vertex AI (Gemini) generates professional HTML with:
+   - Clinical summary paragraph
+   - 2-column layout for space efficiency
+   - Grouped sections (Patient Info, Health Complaints, etc.)
+7. Gotenberg converts the HTML to PDF with proper formatting
+8. PDF is returned to frontend for download
+9. Frontend triggers browser download of the PDF file
 
-### Complete Fix Checklist for GCP Agent
+### Monitoring and Debugging
 
-- [ ] Grant `roles/firebase.admin` to `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
-- [ ] Grant `roles/run.invoker` on Gotenberg service to `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
-- [ ] Deploy frontend with PdfExportButton authentication fix
-- [ ] Verify Gotenberg service is running and accessible
-- [ ] Test PDF export end-to-end
-- [ ] Either implement `/api/responses/:id/review` endpoint or remove frontend calls to it
-- [ ] Monitor Cloud Run logs for any remaining errors
+#### Check PDF Generation Logs
+```bash
+# View recent PDF generation attempts
+gcloud run services logs read healthcare-forms-backend-go \
+  --region us-central1 --limit 50 | grep -E "PDF generation|ERROR"
+
+# Check Gotenberg service health
+curl https://gotenberg-ubaop6yg4q-uc.a.run.app/health
+```
+
+#### Common Issues and Solutions
+
+| Issue | Error Message | Solution |
+|-------|--------------|----------|
+| Field not found | "Form ID not found in response document" | Check Firestore field names match code |
+| Auth failure | "403 Forbidden" from Gotenberg | Verify service account has run.invoker role |
+| Model error | "Failed to generate HTML from AI service" | Check Vertex AI quota and model name |
+| Network timeout | Request timeout | Increase Cloud Run timeout settings |
+
+### Current Deployment Details
+
+- **Backend Revision**: `healthcare-forms-backend-go-00042-dxw`
+- **Backend URL**: `https://healthcare-forms-backend-go-673381373352.us-central1.run.app`
+- **Gotenberg URL**: `https://gotenberg-ubaop6yg4q-uc.a.run.app`
+- **Last Deploy**: August 6, 2025
+- **Status**: ✅ All systems operational

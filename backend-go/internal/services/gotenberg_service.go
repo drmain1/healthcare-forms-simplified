@@ -3,11 +3,14 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	
+	"google.golang.org/api/idtoken"
 )
 
 // GotenbergService provides methods for interacting with a Gotenberg instance.
@@ -53,7 +56,13 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{}
+	// Create an authenticated client for Cloud Run service-to-service communication
+	ctx := context.Background()
+	client, err := idtoken.NewClient(ctx, s.url)
+	if err != nil {
+		// Fallback to regular HTTP client (for local development)
+		client = &http.Client{}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request to gotenberg: %w", err)

@@ -41,9 +41,16 @@ func (s *VertexAIService) GeneratePDFHTML(ctx context.Context, questions []Visib
 		2.  **Layout:** Use a 2-column CSS grid for the main content area to save space. 
 		3.  **Styling:** Include a <style> tag in the <head>. Use a professional, clean design with a serif font like "Times New Roman". Use the "@page" rule to set the paper size to 'Letter' and margins to '0.75in'.
 		4.  **Page Breaks:** Use "page-break-inside: avoid;" on containers for question-answer pairs to prevent them from splitting across pages.
-		5.  **Grouping:** Group related items under clear <h2> subheadings (e.g., "Patient Information", "Health Complaints", "Consent & Policies").
+		5.  **Grouping:** Group related items under clear <h2> subheadings (e.g., "Patient Information", "Health Complaints", "Consent & Policies", "Signatures & Consent").
 		6.  **Data:** For each question, clearly display the question's title and its corresponding answer.
-		7.  **Output:** The entire output must be a single, valid, self-contained HTML file. Do not include any markdown or other text outside of the HTML.
+		7.  **SIGNATURES - CRITICAL:** 
+		    - For any question where "isSignature": true, embed the signature as an image
+		    - Use the "signatureData" field which contains a base64 data URL
+		    - Embed signatures using: <img src="[signatureData value]" style="max-width: 200px; height: auto; border: 1px solid #ddd; padding: 5px; background: white;" alt="Signature">
+		    - Display the signature title above the image
+		    - Group all signatures in a "Signatures & Consent" section at the end of the document
+		    - If signatureData is empty, show "No signature provided" in italics
+		8.  **Output:** The entire output must be a single, valid, self-contained HTML file. Do not include any markdown or other text outside of the HTML.
 
 		**Patient Data (JSON):**
 		%s

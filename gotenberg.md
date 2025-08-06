@@ -269,8 +269,154 @@ curl https://gotenberg-ubaop6yg4q-uc.a.run.app/health
 
 ### Current Deployment Details
 
-- **Backend Revision**: `healthcare-forms-backend-go-00042-dxw`
+- **Backend Revision**: `healthcare-forms-backend-go-00047-qwx`
 - **Backend URL**: `https://healthcare-forms-backend-go-673381373352.us-central1.run.app`
 - **Gotenberg URL**: `https://gotenberg-ubaop6yg4q-uc.a.run.app`
 - **Last Deploy**: August 6, 2025
 - **Status**: ✅ All systems operational
+
+## Signature Support (Added August 6, 2025)
+
+### Overview
+The PDF generation pipeline now fully supports SurveyJS signature pad fields, embedding them as images in the generated PDFs. This is critical for medical forms requiring multiple signatures (patient, guardian, witness, etc.).
+
+### How Signatures Work
+
+1. **Data Capture**: SurveyJS signature pads generate base64-encoded data URLs
+   - Format: `data:image/png;base64,iVBORw0KGgoAAAANS...`
+   - Typical size: 10-50KB per signature
+
+2. **Storage**: Signatures stored in Firestore `form_responses` collection
+   - Field: `data` (map[string]interface{})
+   - No special handling needed - stored as regular string values
+
+3. **Processing Pipeline**:
+   ```
+   Frontend (SurveyJS) → Base64 Data URL
+   ↓
+   Backend API → Firestore Storage
+   ↓
+   PDF Generation Request
+   ↓
+   form_processor.go → Preserves signature data
+   ↓
+   vertex_service.go → Embeds as <img> tags
+   ↓
+   Gotenberg → Renders images in PDF
+   ```
+
+### Implementation Details
+
+#### Backend Components
+
+1. **form_processor.go** (Updated)
+   ```go
+   type VisibleQuestion struct {
+       Name          string      `json:"name"`
+       Title         string      `json:"title"`
+       Answer        interface{} `json:"answer"`
+       QuestionType  string      `json:"questionType"`
+       IsSignature   bool        `json:"isSignature,omitempty"`
+       SignatureData string      `json:"signatureData,omitempty"`
+   }
+   ```
+   - Detects signature pad questions by type
+   - Preserves base64 data in `SignatureData` field
+   - Validates data URL format
+   - Handles empty signatures gracefully
+
+2. **vertex_service.go** (Updated)
+   - AI prompt enhanced to recognize signature fields
+   - Embeds signatures as: `<img src="data:image/png;base64,..." style="max-width: 200px; height: auto;">`
+   - Groups all signatures in "Signatures & Consent" section
+   - Shows "No signature provided" for missing signatures
+
+#### Frontend Components
+
+1. **signatureValidation.ts** (New)
+   - Validates signature data before submission
+   - Detects empty signatures (blank canvas)
+   - Size-based validation (real signatures > 1000 chars)
+   - Provides validation messages for required signatures
+
+2. **PublicFormFill.tsx** (Updated)
+   - Integrates signature validation
+   - Cleans empty signatures before submission
+   - Shows proper error messages
+
+### Multiple Signatures Support
+
+Medical forms often require multiple signatures:
+- Patient signature
+- Guardian/caregiver signature
+- Witness signature
+- Terms acceptance signature
+
+The system handles unlimited signatures per form, each:
+- Validated independently
+- Displayed with proper labels
+- Grouped in PDF output
+- Sized appropriately (max-width: 200px)
+
+### Performance Considerations
+
+**PDF Generation Time**: ~35 seconds total
+- Firestore fetch: ~1 second
+- Form processing: <1 second
+- Vertex AI HTML generation: ~22 seconds
+- Gotenberg PDF conversion: ~13 seconds
+
+**Cloud Run Compute Cost**:
+- Full 35 seconds billed (includes wait time)
+- ~$0.0007 per PDF at current rates
+- Consider async processing for high volume
+
+### Environment Variables
+
+Required environment variables for Cloud Run deployment:
+```yaml
+GCP_PROJECT_ID: healthcare-forms-v2
+GOTENBERG_URL: https://gotenberg-ubaop6yg4q-uc.a.run.app
+CORS_ALLOWED_ORIGINS: http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com
+```
+
+### Testing Signatures
+
+1. Create a form with signature pad fields:
+   ```javascript
+   {
+     type: 'signaturepad',
+     name: 'patient_signature',
+     title: 'Patient Signature',
+     isRequired: true
+   }
+   ```
+
+2. Fill and submit the form with signatures
+
+3. Generate PDF - signatures appear as embedded images
+
+### Troubleshooting Signatures
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Signatures show as "[No Signature]" | Empty or invalid base64 data | Check frontend validation is working |
+| PDF generation fails | Malformed base64 data | Validate data URL format |
+| Signatures too large/small in PDF | CSS styling issue | Adjust max-width in vertex_service.go prompt |
+| CORS errors on PDF export | Missing CORS origins | Update CORS_ALLOWED_ORIGINS env var |
+
+### Dependencies
+
+- **SurveyJS**: Provides signature pad component
+- **Gotenberg**: Supports base64 data URLs in HTML
+- **Vertex AI**: Generates HTML with embedded images
+- **No additional libraries required** - works with existing stack
+
+### Future Enhancements
+
+Consider for optimization:
+1. Compress signature images before storage
+2. Implement signature image caching
+3. Add signature verification/timestamps
+4. Support for drawing tablets
+5. Async PDF generation for better UX

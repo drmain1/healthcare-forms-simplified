@@ -21,10 +21,13 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 gcloud run deploy healthcare-forms-backend-go \
   --source . \
   --region us-central1 \
-  --set-env-vars "GCP_PROJECT_ID=healthcare-forms-v2"
+  --set-env-vars "GCP_PROJECT_ID=healthcare-forms-v2,GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app"
 
 # Run tests
 go test ./...
+go test -v ./...              # verbose output
+go test -race ./...           # with race detection
+go test ./internal/api        # specific package
 
 # Format code
 go fmt ./...
@@ -34,7 +37,7 @@ go fmt ./...
 ```bash
 cd frontend
 
-# Install dependencies (note: legacy peer deps required for SurveyJS)
+# Install dependencies (IMPORTANT: legacy peer deps required for SurveyJS)
 npm install --legacy-peer-deps
 
 # Development server
@@ -47,9 +50,13 @@ npm run build
 npm test
 npm test -- --coverage        # with coverage
 npm test -- --watchAll=false  # single run
+npm test -- src/components/Auth/Login.test.tsx  # specific test file
+npm test -- --testNamePattern="should render"   # pattern matching
 
-# Lint
+# Lint and analysis
 npm run lint
+npm run analyze               # build and serve for analysis
+npm run bundle-size          # check bundle sizes
 
 # Firebase deployment
 firebase deploy --only hosting --project healthcare-forms-v2
@@ -57,26 +64,29 @@ firebase deploy --only hosting --project healthcare-forms-v2
 
 ## Architecture Overview
 
-### Dual Backend System
+### Dual Backend System (Migration in Progress)
 The platform currently has TWO backend implementations in transition:
 
 1. **Go Backend** (`backend-go/`) - NEW, actively deployed
    - Cloud Run: `healthcare-forms-backend-go-673381373352.us-central1.run.app`
-   - Uses Gin framework
+   - Uses Gin framework with CORS middleware
    - Vertex AI integration for PDF generation
    - Gotenberg service for HTML to PDF conversion
+   - Service Account: `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
 
 2. **FastAPI Backend** (`backend-fastapi/`) - LEGACY, being phased out
    - Python-based, original implementation
    - Reference for API structure during migration
+   - NOT actively maintained
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
 - **State Management**: Redux Toolkit with RTK Query
 - **Form Engine**: SurveyJS (requires license key in env)
 - **Authentication**: Firebase Auth with Google Sign-In
-- **UI Components**: Material-UI (MUI)
+- **UI Components**: Material-UI (MUI) + Tailwind CSS
 - **Encryption**: Client-side PHI encryption using CryptoJS
+- **Mobile**: Enhanced mobile UI with dedicated styles
 
 ### Database Structure (Firestore)
 ```
@@ -93,6 +103,7 @@ healthcare-forms-v2/
 - **Service Account**: `backend-go/healthcare-forms-v2-credentials.json` (gitignored)
 - **Frontend ENV**: `frontend/.env.local` (contains Firebase config and API URLs)
 - **Firebase Config**: `firebase.json` (hosting rewrites to Cloud Run)
+- **Go Module**: `github.com/gemini/forms-api` (Go 1.24)
 
 ## Known Issues & Gotchas
 
@@ -148,13 +159,16 @@ client.Collection("form_responses").Doc(responseId)
 
 ### Vertex AI (Gemini)
 - Model: `gemini-2.5-flash-lite`
-- Used for PDF HTML generation
+- Used for PDF HTML generation with clinical summaries
 - Service: `backend-go/internal/services/vertex_ai_service.go`
+- Processes form responses into professional medical documents
 
 ### Gotenberg Service
-- Converts HTML to PDF
+- External service for HTML to PDF conversion
+- URL: `https://gotenberg-ubaop6yg4q-uc.a.run.app`
 - Service: `backend-go/internal/services/gotenberg_service.go`
-- External service dependency
+- Secured with IAM (only accessible by backend service account)
+- Deployed as separate Cloud Run service
 
 ## API Endpoints (Go Backend)
 
@@ -170,7 +184,7 @@ client.Collection("form_responses").Doc(responseId)
 - `POST /api/forms/:id/share-links` - Create share link
 
 ### Responses
-- `GET /api/responses/` - List responses (note: not form_responses)
+- `GET /api/responses/` - List responses (note: maps to form_responses collection)
 - `POST /api/responses/` - Create response
 - `GET /api/responses/:id` - Get response
 - `POST /api/responses/:responseId/generate-pdf` - Generate PDF
@@ -178,6 +192,9 @@ client.Collection("form_responses").Doc(responseId)
 ### Public
 - `GET /forms/:id/fill/:share_token` - Get public form
 - `POST /responses/public` - Submit public response
+
+### Health
+- `GET /health` - Service health check
 
 ## Testing Strategy
 
@@ -206,15 +223,19 @@ go test -v ./...
 
 # Run with race detection
 go test -race ./...
+
+# Test PDF generation
+./test_pdf_generation.sh
 ```
 
 ## Deployment Process
 
 ### Backend Deployment
-1. Ensure `GCP_PROJECT_ID` is set correctly
-2. Build with Dockerfile (uses distroless)
+1. Ensure `GCP_PROJECT_ID` and `GOTENBERG_URL` env vars are set
+2. Build with Dockerfile (uses distroless for security)
 3. Deploy to Cloud Run with proper service account
 4. Verify health endpoint: `/health`
+5. Check logs for any startup issues
 
 ### Frontend Deployment
 1. Update `.env.local` with production URLs
@@ -233,6 +254,10 @@ gcloud run services logs read healthcare-forms-backend-go \
 # Filter for errors
 gcloud run services logs read healthcare-forms-backend-go \
   --region us-central1 --limit 100 | grep -i error
+
+# Stream logs in real-time
+gcloud run services logs tail healthcare-forms-backend-go \
+  --region us-central1
 ```
 
 ### Common Debug Points
@@ -240,6 +265,7 @@ gcloud run services logs read healthcare-forms-backend-go \
 - Network tab for API calls (check for 404s on PDF generation)
 - Console for encryption/decryption issues
 - Firestore console for data verification
+- Check service account permissions for Cloud Run services
 
 ## Migration Notes
 
@@ -248,5 +274,32 @@ The codebase is transitioning from FastAPI (Python) to Go:
 - Frontend unchanged except API base URL
 - Database schema unchanged
 - Authentication flow unchanged
+- PDF generation now uses Gotenberg instead of WeasyPrint
 
 When working on backend features, use the Go implementation (`backend-go/`) as the source of truth.
+
+## Key Data Processing Services
+
+### Form Processor (`form_processor.go`)
+- Processes SurveyJS conditional logic
+- Extracts visible questions based on response data
+- Flattens nested form structures for PDF generation
+
+### PDF Generation Pipeline
+1. Fetch form response from Firestore
+2. Process through `ProcessAndFlattenForm`
+3. Generate HTML via Vertex AI
+4. Convert to PDF via Gotenberg
+5. Return PDF to client
+
+## Environment Variables
+
+### Backend (Go)
+- `GCP_PROJECT_ID`: `healthcare-forms-v2`
+- `GOTENBERG_URL`: `https://gotenberg-ubaop6yg4q-uc.a.run.app`
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to service account JSON
+
+### Frontend
+- `REACT_APP_API_URL`: Backend API URL
+- `REACT_APP_SURVEYJS_LICENSE_KEY`: SurveyJS license
+- Firebase configuration variables (multiple REACT_APP_FIREBASE_* vars)

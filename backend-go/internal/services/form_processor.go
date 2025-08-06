@@ -6,10 +6,12 @@ import (
 
 // VisibleQuestion represents a question and its answer that should be displayed on the PDF.
 type VisibleQuestion struct {
-	Name         string      `json:"name"`
-	Title        string      `json:"title"`
-	Answer       interface{} `json:"answer"`
-	QuestionType string      `json:"questionType"`
+	Name          string      `json:"name"`
+	Title         string      `json:"title"`
+	Answer        interface{} `json:"answer"`
+	QuestionType  string      `json:"questionType"`
+	IsSignature   bool        `json:"isSignature,omitempty"`
+	SignatureData string      `json:"signatureData,omitempty"`
 }
 
 // ProcessAndFlattenForm takes the full survey JSON and the user's response data
@@ -95,15 +97,34 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 		qType, _ := element["type"].(string)
 
 		// Handle special cases like signature pads
+		// Preserve the base64 data for signatures to embed in PDF
+		isSignature := false
+		signatureData := ""
 		if qType == "signaturepad" {
-			answer = "[Signature on file]"
+			isSignature = true
+			// Keep the original base64 data if it's a string
+			if sigData, ok := answer.(string); ok {
+				// Check if it's a valid data URL
+				if len(sigData) > 100 && (sigData[:5] == "data:" || sigData[:10] == "data:image") {
+					signatureData = sigData
+					// Set a display text for the answer field
+					answer = "[Signature Captured]"
+				} else {
+					// Invalid or empty signature
+					answer = "[No Signature]"
+				}
+			} else {
+				answer = "[No Signature]"
+			}
 		}
 
 		questions = append(questions, VisibleQuestion{
-			Name:         name,
-			Title:        title,
-			Answer:       answer,
-			QuestionType: qType,
+			Name:          name,
+			Title:         title,
+			Answer:        answer,
+			QuestionType:  qType,
+			IsSignature:   isSignature,
+			SignatureData: signatureData,
 		})
 	}
 

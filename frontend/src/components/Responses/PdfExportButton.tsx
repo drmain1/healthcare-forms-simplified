@@ -36,6 +36,7 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
       
+      console.log('Generating PDF for response:', responseId);
       const response = await axios.post(
         `${apiUrl}/responses/${responseId}/generate-pdf`,
         {},
@@ -47,8 +48,12 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
         }
       );
 
+      console.log('PDF response received:', response.data.size, 'bytes');
+      
       // Create download link
       const blob = new Blob([response.data], { type: 'application/pdf' });
+      console.log('Blob created:', blob.size, 'bytes');
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -57,10 +62,13 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log('PDF download triggered');
 
     } catch (err: any) {
-      
-      const errorMessage = err.response?.data?.error || 'An unknown error occurred.';
+      console.error('PDF generation error:', err);
+      console.error('Error response:', err.response);
+      const errorMessage = err.response?.data?.error || err.message || 'An unknown error occurred.';
       setError(`Failed to generate PDF: ${errorMessage}`);
     } finally {
       setIsLoading(false);

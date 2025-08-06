@@ -20,6 +20,7 @@ import { useInsuranceCardProcessor } from '../../hooks/useInsuranceCardProcessor
 import insuranceCardGeminiService from '../../services/insuranceCardGeminiService';
 import { designTokens } from '../../styles/design-tokens';
 import { applyTheme, patientFormTheme } from '../../utils/surveyThemes';
+import { addSignatureValidation, cleanSignatureData } from '../../utils/signatureValidation';
 import { apiEndpoints } from '../../config/api';
 import { 
   detectMobile, 
@@ -119,9 +120,14 @@ export const PublicFormFill: React.FC = () => {
           </div>
         `;
         
+        // Add signature validation
+        addSignatureValidation(surveyModel);
+        
         // Handle form submission
         surveyModel.onComplete.add((sender: any) => {
-          handleFormSubmission(sender.data);
+          // Clean signature data before submission (removes empty signatures)
+          const cleanedData = cleanSignatureData(sender.data);
+          handleFormSubmission(cleanedData);
         });
         
         // Handle file uploads - required by SurveyJS

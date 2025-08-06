@@ -2,7 +2,7 @@
 steps:
   # Build backend Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/healthcare-forms-backend:latest', './backend-go']
+    args: ['build', '-f', 'backend-go/Dockerfile', '-t', 'gcr.io/$PROJECT_ID/healthcare-forms-backend:latest', './backend-go']
     id: 'build-backend'
 
   
@@ -31,7 +31,7 @@ steps:
       - '--allow-unauthenticated'
       - '--port=8080'
       - '--set-env-vars'
-      - 'GOTENBERG_URL=https://gotenberg-673381373352.us-central1.run.app,GCP_PROJECT_ID=$PROJECT_ID'
+      - 'GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app,GCP_PROJECT_ID=$PROJECT_ID'
       - '--memory'
       - '512Mi'
       - '--cpu'

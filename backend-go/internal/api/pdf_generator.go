@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -28,11 +29,14 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Response ID is required"})
 			return
 		}
+		
+		log.Printf("Starting PDF generation for response ID: %s", responseId)
 
 		ctx := context.Background()
 
 		// 1. Fetch the response document
-		responseDoc, err := client.Collection("responses").Doc(responseId).Get(ctx)
+		log.Printf("Fetching response document from form_responses collection")
+		responseDoc, err := client.Collection("form_responses").Doc(responseId).Get(ctx)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Response not found"})
 			return
@@ -44,15 +48,21 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 		}
 
 		// Extract form_id and response_data from the response document
-		formID, ok := responseData["form_id"].(string)
+		// Note: The Firestore field is "form", not "form_id"
+		formID, ok := responseData["form"].(string)
 		if !ok || formID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Form ID not found in response document"})
+			// Log the actual structure for debugging
+			log.Printf("Response document structure: %+v", responseData)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Form ID not found in response document (looking for 'form' field)", "debug": responseData})
 			return
 		}
 		
-		answers, ok := responseData["response_data"].(map[string]interface{})
+		// Note: The Firestore field is "data", not "response_data"
+		answers, ok := responseData["data"].(map[string]interface{})
 		if !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data (response_data) not found in response document"})
+			// Log the actual structure for debugging
+			log.Printf("Response data type: %T, value: %+v", responseData["data"], responseData["data"])
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document (looking for 'data' field)", "debug": responseData})
 			return
 		}
 
@@ -78,25 +88,34 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 
 		// At this point, we have surveyJSON and answers.
 		// Step 3: Pre-process/flatten data based on conditional logic.
+		log.Printf("Processing form data for response %s", responseId)
 		visibleQuestions, err := services.ProcessAndFlattenForm(surveyJSON, answers)
 		if err != nil {
+			log.Printf("ERROR: Failed to process form data: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form data", "details": err.Error()})
 			return
 		}
+		log.Printf("Successfully processed %d visible questions", len(visibleQuestions))
 
 		// Step 4: Call Vertex AI service with flattened data.
+		log.Printf("Calling Vertex AI to generate HTML for response %s", responseId)
 		generatedHTML, err := vs.GeneratePDFHTML(ctx, visibleQuestions)
 		if err != nil {
+			log.Printf("ERROR: Failed to generate HTML from AI service: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from AI service", "details": err.Error()})
 			return
 		}
+		log.Printf("Successfully generated HTML (%d bytes)", len(generatedHTML))
 
 		// Step 5: Call Gotenberg with AI-generated HTML.
+		log.Printf("Calling Gotenberg to convert HTML to PDF for response %s", responseId)
 		pdfBytes, err := gs.ConvertHTMLToPDF(generatedHTML)
 		if err != nil {
+			log.Printf("ERROR: Failed to convert HTML to PDF: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert HTML to PDF", "details": err.Error()})
 			return
 		}
+		log.Printf("Successfully generated PDF (%d bytes)", len(pdfBytes))
 
 		// Step 6: Return PDF to client.
 		c.Header("Content-Type", "application/pdf")
@@ -106,6 +125,6 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 }
 
 // Helper function to register this route - will be called from main.go
-func RegisterPDFRoutes(router *gin.Engine, client *firestore.Client, vs *services.VertexAIService, gs *services.GotenbergService) {
+func RegisterPDFRoutes(router *gin.RouterGroup, client *firestore.Client, vs *services.VertexAIService, gs *services.GotenbergService) {
 	router.POST("/responses/:responseId/generate-pdf", GeneratePDFHandler(client, vs, gs))
 }

@@ -20,12 +20,14 @@ func main() {
 	ctx := context.Background()
 
 	// Get project ID from environment
+
 	projectID := os.Getenv("GCP_PROJECT_ID")
 	if projectID == "" {
 		log.Fatal("GCP_PROJECT_ID environment variable not set")
 	}
 
 	// Initialize Firestore client
+
 	firestoreClient, err := data.NewFirestoreClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("Failed to create Firestore client: %v", err)
@@ -33,6 +35,7 @@ func main() {
 	defer firestoreClient.Close()
 
 	// Initialize Vertex AI client
+
 	vertexClient, err := genai.NewClient(ctx, projectID, "us-central1")
 	if err != nil {
 		log.Fatalf("Failed to create Vertex AI client: %v", err)
@@ -49,6 +52,7 @@ func main() {
 	r.RedirectTrailingSlash = false
 
 	// CORS Middleware
+
 	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if corsOrigins == "" {
 		corsOrigins = "http://localhost:3000"
@@ -74,6 +78,7 @@ func main() {
 	})
 
 	// Initialize Firebase Admin SDK
+
 	authClient, firebaseApp, err := data.NewFirebaseAuthClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("Failed to create Firebase Auth client: %v", err)
@@ -85,6 +90,7 @@ func main() {
 	r.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
 
 	// Authentication routes
+
 	apiAuthRoutes := r.Group("/api/auth")
 	{
 		apiAuthRoutes.POST("/session-login", api.SessionLogin(firebaseApp))
@@ -92,6 +98,7 @@ func main() {
 	}
 
 	// Authenticated routes
+
 	authRequired := r.Group("/api")
 	authRequired.Use(api.AuthMiddleware(authClient))
 	{
@@ -128,14 +135,24 @@ func main() {
 		authRequired.GET("/organizations/:id", api.GetOrganization(firestoreClient))
 
 		// PDF Generation Route
-		api.RegisterPDFRoutes(r, firestoreClient, vertexService, gotenbergService)
+		api.RegisterPDFRoutes(authRequired, firestoreClient, vertexService, gotenbergService)
 	}
 
 	// Start the server
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	// Print all registered routes for debugging
+	log.Println("Registered Routes:")
+	for _, route := range r.Routes() {
+		log.Printf("% -6s % -25s --> %s\n", route.Method, route.Path, route.Handler)
+	}
+
 	log.Printf("Starting server on port %s", port)
-	r.Run(":" + port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

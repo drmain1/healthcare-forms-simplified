@@ -83,6 +83,46 @@ func GetFormResponse(client *firestore.Client) gin.HandlerFunc {
 	}
 }
 
+// DeleteFormResponse deletes a form response by its ID.
+func DeleteFormResponse(client *firestore.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		responseID := c.Param("id")
+		orgID, _ := c.Get("organizationID")
+
+		// First, get the response to verify ownership
+		doc, err := client.Collection("form_responses").Doc(responseID).Get(c.Request.Context())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "form response not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve form response"})
+			return
+		}
+
+		var response data.FormResponse
+		if err := doc.DataTo(&response); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse form response data"})
+			return
+		}
+
+		// Check if the user has permission to delete this response
+		if response.OrganizationID != orgID.(string) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to delete this response"})
+			return
+		}
+
+		// Delete the response
+		_, err = client.Collection("form_responses").Doc(responseID).Delete(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete form response"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "form response deleted successfully"})
+	}
+}
+
 // ListFormResponses lists all form responses for a given form.
 func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {

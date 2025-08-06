@@ -129,6 +129,8 @@ func main() {
 		authRequired.GET("/responses/:id", api.GetFormResponse(firestoreClient))
 		authRequired.GET("/responses", api.ListFormResponses(firestoreClient))
 		authRequired.GET("/responses/", api.ListFormResponses(firestoreClient))
+		authRequired.DELETE("/responses/:id", api.DeleteFormResponse(firestoreClient))
+		authRequired.DELETE("/responses/:id/", api.DeleteFormResponse(firestoreClient))
 
 		// Organization routes
 		authRequired.POST("/organizations", api.CreateOrganization(firestoreClient))

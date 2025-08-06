@@ -28,9 +28,6 @@ export const encryptionMiddleware: Middleware = (store) => (next) => (action) =>
   // Check if action contains PHI
   if (PHI_ACTIONS.includes(typedAction.type) && typedAction.payload) {
     try {
-      // Log that we're encrypting PHI
-      console.log(`[HIPAA] Encrypting PHI data for action: ${typedAction.type}`);
-      
       // Clone the action to avoid mutation
       const modifiedAction = { ...typedAction };
       
@@ -58,7 +55,8 @@ export const encryptionMiddleware: Middleware = (store) => (next) => (action) =>
       
       return next(modifiedAction);
     } catch (error) {
-      console.error('[HIPAA] Encryption middleware error:', error);
+      // Silently handle encryption errors
+      return next(action);
     }
   }
   
@@ -81,7 +79,7 @@ export const createEncryptedSelector = <T>(
           try {
             return decryptData<T>(item._data);
           } catch (error) {
-            console.error('[HIPAA] Decryption error in selector:', error);
+            // Silently handle decryption errors
             return item;
           }
         }
@@ -94,7 +92,7 @@ export const createEncryptedSelector = <T>(
       try {
         return decryptData<T>(data._data);
       } catch (error) {
-        console.error('[HIPAA] Decryption error in selector:', error);
+        // Silently handle decryption errors
         return data;
       }
     }

@@ -113,7 +113,7 @@ class FirebaseAuthService {
       await firebaseSignOut(auth);
       this.currentUser = null;
     } catch (error: any) {
-      console.error('Error signing out:', error);
+      
       throw new Error(error.message || 'Failed to sign out');
     }
   }

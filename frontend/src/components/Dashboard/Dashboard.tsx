@@ -50,7 +50,7 @@ export const Dashboard: React.FC = () => {
   const responses = responsesData?.results || [];
   
   // Debug log
-  console.log('Dashboard responses:', responses);
+  
   
   // Loading state
   if (isLoading) {

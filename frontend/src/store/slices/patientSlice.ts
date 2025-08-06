@@ -83,7 +83,6 @@ const patientSlice = createSlice({
       state.error = null;
       // Reset pagination but keep filters for UX
       state.pagination.total = 0;
-      console.log('[HIPAA] Patient data cleared from memory');
     },
   },
 });

@@ -81,7 +81,7 @@ export const Login: React.FC = () => {
       // and the baseApi will automatically include the ID token
       navigate('/');
     } catch (err: any) {
-      console.error('Google sign-in error:', err);
+      
       setError(err.message || 'Failed to sign in with Google');
     } finally {
       setIsGoogleLoading(false);

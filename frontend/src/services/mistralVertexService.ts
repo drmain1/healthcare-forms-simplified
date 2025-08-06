@@ -252,7 +252,7 @@ export const extractPdfContentViaOcrVertexAIProxy = async (base64PdfString: stri
     const data = await response.json();
     return data.extractedText;
   } catch (error) {
-    console.error('Backend OCR proxy error:', error);
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to extract PDF content via backend proxy: ${errorMessage}`);
   }

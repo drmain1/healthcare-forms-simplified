@@ -79,7 +79,7 @@ export const GoogleAuthProvider: React.FC<GoogleAuthProviderProps> = ({ children
       await googleAuthService.signOut();
       setUser(null);
     } catch (error) {
-      console.error('Sign out failed:', error);
+      
       throw error;
     } finally {
       setLoading(false);

@@ -487,7 +487,7 @@ export const convertToEnhancedSurveyJS = async (customForm: EnhancedForm): Promi
 
     return surveyConfig;
   } catch (error) {
-    console.error('Error converting to enhanced SurveyJS:', error);
+    
     throw error;
   }
 };

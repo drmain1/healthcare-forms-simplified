@@ -112,7 +112,6 @@ const responseSlice = createSlice({
         averageTime: 0,
       };
       state.pagination.total = 0;
-      console.log('[HIPAA] Response data cleared from memory');
     },
   },
 });

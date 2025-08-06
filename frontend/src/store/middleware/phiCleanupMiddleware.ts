@@ -33,8 +33,6 @@ export const phiCleanupMiddleware: Middleware = (store) => (next) => (action) =>
     if (PHI_CLEANUP_ROUTES.some(route => previousPath.includes(route)) && 
         !PHI_CLEANUP_ROUTES.some(route => newPath.includes(route))) {
       
-      console.log('[PHI Cleanup] Navigating away from PHI page, clearing sensitive data');
-      
       // Dispatch cleanup actions
       store.dispatch({ type: 'patient/clearPatientData' });
       store.dispatch({ type: 'response/clearResponseData' });

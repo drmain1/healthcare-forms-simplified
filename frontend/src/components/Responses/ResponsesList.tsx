@@ -182,7 +182,7 @@ export const ResponsesList: React.FC = () => {
                   window.URL.revokeObjectURL(url);
                   document.body.removeChild(a);
                 } catch (error) {
-                  console.error('Failed to generate blank form PDF:', error);
+                  
                   alert('Failed to generate blank form PDF. Please try again.');
                 }
               }}

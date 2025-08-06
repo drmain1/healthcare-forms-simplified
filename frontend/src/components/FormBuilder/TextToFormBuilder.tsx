@@ -56,7 +56,7 @@ export const TextToFormBuilder: React.FC<TextToFormBuilderProps> = ({ onFormGene
         ...formJson
       });
     } catch (err: any) {
-      console.error('Generation error:', err);
+      
       
       // Provide more specific error messages
       if (err.message.includes('No valid JSON')) {

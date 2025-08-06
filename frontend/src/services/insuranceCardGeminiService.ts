@@ -110,7 +110,7 @@ IMPORTANT: Return ONLY the JSON object, no other text.`;
         return {};
       }
     } catch (error) {
-      console.error('Error processing insurance card with Gemini:', error);
+      
       throw new Error('Failed to process insurance card');
     }
   }

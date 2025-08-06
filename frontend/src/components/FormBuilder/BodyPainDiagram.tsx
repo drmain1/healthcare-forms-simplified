@@ -97,7 +97,7 @@ export const BodyPainDiagram: React.FC<BodyPainDiagramProps> = ({
         setSvgContent(cleanedSvg);
       })
       .catch(error => {
-        console.error('Error loading body diagram:', error);
+        
         // Fallback to a simple rectangle if SVG fails to load
         setSvgContent(`
           <svg width="100%" height="auto" viewBox="0 0 310 360">

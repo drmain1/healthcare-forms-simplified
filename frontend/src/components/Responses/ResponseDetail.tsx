@@ -66,7 +66,7 @@ export const ResponseDetail: React.FC = () => {
           if (container) {
             console.log('After render check:');
             console.log('Has question text?', container.innerHTML.includes('?'));
-            console.log('First question element:', container.querySelector('.sd-question__title')?.textContent);
+            
           }
         }, 100);
       });
@@ -156,11 +156,6 @@ export const ResponseDetail: React.FC = () => {
           <PdfExportButton
             formId={formId!}
             responseId={responseId!}
-            form={form}
-            response={response}
-            getHtmlContent={() => surveyContainerRef.current?.innerHTML || ''}
-            surveyModel={surveyModelRef.current}
-            isSurveyRendered={isSurveyRendered}
           />
         </Box>
         

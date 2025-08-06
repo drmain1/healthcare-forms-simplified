@@ -164,7 +164,7 @@ export const ConversationalFormBuilder: React.FC<ConversationalFormBuilderProps>
         addMessage('assistant', 'Done! I\'ve updated your form. What would you like to change next?', result);
       }
     } catch (err: any) {
-      console.error('AI error:', err);
+      
       
       let errorMessage = 'I encountered an error while processing your request. ';
       if (err.message.includes('quota') || err.message.includes('rate limit')) {

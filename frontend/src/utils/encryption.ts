@@ -13,7 +13,6 @@ let sessionKey: string | null = null;
 export const initializeEncryption = (): void => {
   if (!sessionKey) {
     sessionKey = generateSessionKey();
-    console.log('[HIPAA] Encryption initialized with session key');
   }
 };
 
@@ -27,7 +26,6 @@ export const encryptData = (data: any): string => {
     const encrypted = CryptoJS.AES.encrypt(jsonString, sessionKey!).toString();
     return encrypted;
   } catch (error) {
-    console.error('[HIPAA] Encryption failed:', error);
     throw new Error('Failed to encrypt sensitive data');
   }
 };
@@ -41,7 +39,6 @@ export const decryptData = <T>(encryptedData: string): T => {
     const decrypted = CryptoJS.AES.decrypt(encryptedData, sessionKey).toString(CryptoJS.enc.Utf8);
     return JSON.parse(decrypted);
   } catch (error) {
-    console.error('[HIPAA] Decryption failed:', error);
     throw new Error('Failed to decrypt sensitive data');
   }
 };
@@ -49,7 +46,6 @@ export const decryptData = <T>(encryptedData: string): T => {
 // Secure memory cleanup
 export const clearEncryptionKey = (): void => {
   sessionKey = null;
-  console.log('[HIPAA] Encryption key cleared from memory');
 };
 
 // Utility to check if data contains PHI fields

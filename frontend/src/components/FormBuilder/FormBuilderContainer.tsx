@@ -187,7 +187,7 @@ export const FormBuilderContainer: React.FC = () => {
         setFormDescription(formJson.description);
       }
     } catch (error) {
-      console.error('Error updating form:', error);
+      
       throw error;
     }
   };

@@ -190,7 +190,7 @@ class DocumentAIService {
       const text = response.data.document.text;
       return this.extractInsuranceDataFromText(text);
     } catch (error) {
-      console.error('Error with generic parsing:', error);
+      
       throw new Error('Failed to parse insurance card with OCR');
     }
   }

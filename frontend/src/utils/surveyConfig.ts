@@ -728,7 +728,6 @@ export const healthcareQuestionTypes = {
 export const registerHealthcareValidators = () => {
   // For now, we'll skip validator registration and handle validation in question configs
   // Custom validators will be applied directly to questions in questionJSON
-  console.log('Healthcare validators ready for use in question configurations');
 };
 
 // Configure SurveyJS Creator with healthcare customizations

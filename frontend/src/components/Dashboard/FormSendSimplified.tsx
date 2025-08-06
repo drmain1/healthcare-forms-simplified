@@ -149,7 +149,7 @@ export const FormSendSimplified: React.FC = () => {
       // Refresh share links
       refetchShareLinks();
     } catch (error: any) {
-      console.error('Error deleting share link:', error);
+      
       alert('Failed to delete share link. Please try again.');
     }
   };

@@ -95,7 +95,7 @@ export const Layout: React.FC<LayoutProps> = () => {
       // Navigate to login page
       navigate('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      
       // Even if Firebase fails, clear local state and redirect
       dispatch(fullLogout());
       navigate('/login');

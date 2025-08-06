@@ -23,7 +23,7 @@ export const generateFormFromPdfViaBackend = async (base64Pdf: string, token: st
     );
     return response.data;
   } catch (error) {
-    console.error('Error calling backend for PDF processing:', error);
+    
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.detail || 'Failed to process PDF via backend.');
     }

@@ -62,7 +62,7 @@ const PHILoadingBoundary: React.FC<PHILoadingBoundaryProps> = ({
 
   const handleError = (error: Error) => {
     if (clearOnError) {
-      console.log('[HIPAA] Clearing PHI due to component error');
+      
       dispatch(clearPatientData());
       dispatch(clearResponseData());
     }

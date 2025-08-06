@@ -189,7 +189,7 @@ export const MinimalDashboard: React.FC = () => {
         await deleteResponse(deleteConfirm.id).unwrap();
         refetch();
       } catch (error) {
-        console.error('Failed to delete response:', error);
+        
       }
     }
     setDeleteConfirm({ open: false, id: null });

@@ -480,7 +480,7 @@ export const PublicFormFill: React.FC = () => {
 
       console.log('Form submission successful');
     } catch (error) {
-      console.error('Form submission error:', error);
+      
       // Show error to user
       alert('Failed to submit form. Please try again.');
     }

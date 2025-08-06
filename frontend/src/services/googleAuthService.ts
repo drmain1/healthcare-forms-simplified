@@ -79,7 +79,7 @@ class GoogleAuthService {
         }
       };
     } catch (error) {
-      console.error('Google sign-in failed:', error);
+      
       throw error;
     }
   }

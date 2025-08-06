@@ -142,7 +142,7 @@ export const useTemporaryPHI = (
       
       // Set new timeout
       timeoutRef.current = setTimeout(() => {
-        console.log('[HIPAA] Temporary PHI access expired, clearing data');
+        
         dispatch(clearPatientData());
         dispatch(clearResponseData());
       }, duration);

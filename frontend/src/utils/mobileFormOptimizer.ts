@@ -90,7 +90,6 @@ export function optimizeSurveyModelForMobile(survey: any) {
     if (question.getType() === 'dropdown') {
       // Force native select rendering
       question.renderAs = 'select';
-      console.log(`Set renderAs='select' for dropdown: ${question.name}`);
     }
     
     // Add mobile-specific CSS classes

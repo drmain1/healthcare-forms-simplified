@@ -164,7 +164,7 @@ export const PdfUploader: React.FC<PdfUploaderProps> = ({ onFormGenerated, onErr
       }, 1000);
 
     } catch (error: any) {
-      console.error('PDF processing error:', error);
+      
       setProcessing(prev => ({
         ...prev,
         isProcessing: false,

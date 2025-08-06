@@ -523,7 +523,7 @@ export const FormsList: React.FC = () => {
                             window.URL.revokeObjectURL(url);
                             document.body.removeChild(a);
                           } catch (error) {
-                            console.error('Failed to generate PDF:', error);
+                            
                             setSnackbar({
                               open: true,
                               message: 'Failed to generate PDF. Please try again.',

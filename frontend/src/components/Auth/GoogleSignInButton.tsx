@@ -8,7 +8,7 @@ const GoogleSignInButton: React.FC = () => {
     try {
       await signIn();
     } catch (error) {
-      console.error('Sign in failed:', error);
+      
     }
   };
 

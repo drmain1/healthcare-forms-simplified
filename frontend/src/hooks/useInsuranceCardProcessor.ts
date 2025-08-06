@@ -102,7 +102,7 @@ export const useInsuranceCardProcessor = (survey: SurveyModel | null) => {
         error: errorMessage,
         processedData: null
       });
-      console.error('Insurance card processing error:', error);
+      
     }
   }, [survey]);
 

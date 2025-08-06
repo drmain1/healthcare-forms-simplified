@@ -460,7 +460,7 @@ export const FormBuilderUI: React.FC<FormBuilderUIProps> = ({
             onClick={() => {
               if (previewSurvey) {
                 console.log('Current Survey Data:', previewSurvey.data);
-                console.log('Survey JSON:', previewSurvey.toJSON());
+                
                 setSnackbarMessage('Survey data logged to console');
                 setSnackbarOpen(true);
               }

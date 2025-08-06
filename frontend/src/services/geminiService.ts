@@ -45,7 +45,7 @@ class GeminiService {
     if (this.initialized) return;
     
     if (!API_KEY) {
-      console.error('REACT_APP_GEMINI_API_KEY is not set. Please add it to your .env file.');
+      
       throw new Error('Gemini API key is not configured. Please set REACT_APP_GEMINI_API_KEY in your environment variables.');
     }
     
@@ -65,7 +65,7 @@ class GeminiService {
       const jsonResponse = JSON.parse(text);
       return jsonResponse;
     } catch (e) {
-      console.error("Failed to parse Gemini response as JSON", text);
+      
       throw new Error("Invalid JSON response from Gemini.");
     }
   }
@@ -93,7 +93,7 @@ class GeminiService {
       const jsonResponse = JSON.parse(text);
       return jsonResponse;
     } catch (e) {
-      console.error("Failed to parse Gemini response as JSON", text);
+      
       throw new Error("Invalid JSON response from Gemini.");
     }
   }

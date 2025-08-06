@@ -10,6 +10,7 @@ import (
 	"cloud.google.com/go/vertexai/genai"
 	"github.com/gemini/forms-api/internal/api"
 	"github.com/gemini/forms-api/internal/data"
+	"github.com/gemini/forms-api/internal/services"
 	"github.com/gin-gonic/gin"
 
 	"github.com/gin-contrib/cors" // Import the cors package
@@ -38,7 +39,8 @@ func main() {
 	}
 	defer vertexClient.Close()
 
-	gemini := vertexClient.GenerativeModel("publishers/google/models/gemini-2.5-pro")
+	vertexService := services.NewVertexAIService(vertexClient, "gemini-2.5-flash-lite")
+	gotenbergService := services.NewGotenbergService()
 
 	r := gin.New()
 	// Per Gin documentation, this is required when running behind a proxy
@@ -105,12 +107,10 @@ func main() {
 		authRequired.PATCH("/forms/:id/", api.UpdateForm(firestoreClient))
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient))
 		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
-		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(gemini))
+		
 		// New HTML to PDF endpoint using Gotenberg
 		authRequired.POST("/forms/:id/export-html-to-pdf", api.ExportHTMLToPDF(firestoreClient))
-		// PDF routes temporarily disabled - will be replaced with Gotenberg service
-		// authRequired.GET("/forms/:id/pdf", api.GenerateBlankPDF(firestoreClient))
-		// authRequired.GET("/forms/:id/pdf/response/:responseId", api.GeneratePDF(firestoreClient))
+		
 
 		// Share link routes
 		authRequired.POST("/forms/:id/share-links", api.CreateShareLink(firestoreClient))
@@ -126,6 +126,9 @@ func main() {
 		// Organization routes
 		authRequired.POST("/organizations", api.CreateOrganization(firestoreClient))
 		authRequired.GET("/organizations/:id", api.GetOrganization(firestoreClient))
+
+		// PDF Generation Route
+		api.RegisterPDFRoutes(r, firestoreClient, vertexService, gotenbergService)
 	}
 
 	// Start the server

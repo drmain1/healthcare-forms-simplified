@@ -27,5 +27,5 @@ export const logBuildInfo = () => {
 
   // Also add a global object for easy access in browser console
   (window as any).__BUILD_INFO__ = BUILD_INFO;
-  console.log('%c💡 Tip: Type __BUILD_INFO__ in console to see build details', 'color: #666; font-style: italic;');
+  
 };

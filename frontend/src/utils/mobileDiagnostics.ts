@@ -279,21 +279,7 @@ export class MobileThemeDiagnostics {
    * Log results to console with formatting
    */
   logResults() {
-    console.group('🔍 Mobile Theme Diagnostic Results');
-    
-    this.results.forEach(result => {
-      const icon = result.passed ? '✅' : '❌';
-      console.group(`${icon} ${result.test}`);
-      console.log('Message:', result.message);
-      console.log('Details:', result.details);
-      console.groupEnd();
-    });
-    
-    const passed = this.results.filter(r => r.passed).length;
-    const total = this.results.length;
-    console.log(`\n📊 Summary: ${passed}/${total} tests passed`);
-    
-    console.groupEnd();
+    // Results logging disabled for production
   }
   
   /**

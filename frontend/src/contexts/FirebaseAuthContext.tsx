@@ -84,7 +84,7 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       await firebaseAuth.signOut();
       // The onAuthStateChange listener handles clearing the session token
     } catch (error) {
-      console.error('Sign out error:', error);
+      
       throw error;
     } finally {
       setLoading(false);

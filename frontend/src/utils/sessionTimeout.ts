@@ -22,8 +22,6 @@ export const setWarningCallback = (callback: (timeRemaining: number) => void) =>
 
 // Clear all PHI and log out user
 const handleTimeout = () => {
-  console.log('[HIPAA] Session timeout - clearing all PHI and logging out');
-  
   // Clear all PHI from Redux
   store.dispatch(clearPatientData());
   store.dispatch(clearResponseData());
@@ -106,8 +104,6 @@ export const initializeSessionTimeout = () => {
   
   // Start the timeout
   resetTimeout();
-  
-  console.log('[HIPAA] Session timeout initialized (15 minutes)');
 };
 
 // Cleanup function
@@ -126,8 +122,6 @@ export const cleanupSessionTimeout = () => {
     clearTimeout(warningTimeoutId);
     warningTimeoutId = null;
   }
-  
-  console.log('[HIPAA] Session timeout cleanup completed');
 };
 
 // Get remaining time in seconds

@@ -261,7 +261,7 @@ export const convertToSurveyJS = async (customForm: CustomForm): Promise<SurveyJ
     return surveyJson;
 
   } catch (error) {
-    console.error('Error converting form schema to SurveyJS:', error);
+    
     throw new Error(`Failed to convert form schema: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

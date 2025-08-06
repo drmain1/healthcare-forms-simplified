@@ -102,25 +102,13 @@
   transform: scaleX(1);
 }
 
-/* Card hover effects */
-.response-card {
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* Table row hover effects */
+.table-row-hover {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.response-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 0.75rem;
-  background: linear-gradient(135deg, transparent, rgba(59, 130, 246, 0.05));
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-
-.response-card:hover::before {
-  opacity: 1;
+.table-row-hover:hover {
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 /* Status badge pulse animation */

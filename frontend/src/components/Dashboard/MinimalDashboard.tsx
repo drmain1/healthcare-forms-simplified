@@ -2,18 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetResponsesQuery, useDeleteResponseMutation } from '../../store/api/responsesApi';
 import {
-  Calendar,
   Clock,
   User,
   FileText,
-  Eye,
-  Trash2,
   RefreshCw,
   TrendingUp,
   Activity,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  Download,
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 interface MetricCardProps {
@@ -44,126 +44,39 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, icon, trend, colo
   </div>
 );
 
-interface ResponseCardProps {
-  response: any;
-  onView: () => void;
-  onDelete: () => void;
-}
-
-const ResponseCard: React.FC<ResponseCardProps> = ({ response, onView, onDelete }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'submitted':
-        return <CheckCircle className="tw-w-4 tw-h-4" />;
-      case 'in_progress':
-        return <AlertCircle className="tw-w-4 tw-h-4" />;
-      default:
-        return <XCircle className="tw-w-4 tw-h-4" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'submitted':
-        return 'tw-border-l-emerald-500 tw-text-emerald-600';
-      case 'reviewed':
-        return 'tw-border-l-blue-500 tw-text-blue-600';
-      case 'in_progress':
-        return 'tw-border-l-amber-500 tw-text-amber-600';
-      default:
-        return 'tw-border-l-gray-400 tw-text-gray-500';
-    }
-  };
-
-  const statusColor = getStatusColor(response.status);
-
-  return (
-    <div 
-      className={`tw-bg-white tw-rounded-xl tw-border tw-border-gray-100 tw-border-l-4 ${statusColor.split(' ')[0]} tw-p-5 tw-transition-all tw-duration-200 hover:tw-shadow-md hover:tw-translate-y-[-2px] tw-cursor-pointer tw-group`}
-      onClick={onView}
-    >
-      <div className="tw-space-y-4">
-        <div className="tw-flex tw-items-start tw-justify-between">
-          <div className="tw-flex-1 tw-min-w-0">
-            <h3 className="tw-text-base tw-font-medium tw-text-gray-900 tw-truncate">
-              {response.patient_name || 'Anonymous Patient'}
-            </h3>
-            <p className="tw-text-sm tw-text-gray-500 tw-mt-1 tw-flex tw-items-center tw-gap-1">
-              <FileText className="tw-w-3 tw-h-3" />
-              {response.form_title || response.form}
-            </p>
-          </div>
-          <div className="tw-flex tw-gap-1">
-            <button 
-              className="tw-p-2 tw-rounded-lg tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-50 tw-transition-colors tw-opacity-0 group-hover:tw-opacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView();
-              }}
-              title="View Response"
-            >
-              <Eye className="tw-w-4 tw-h-4" />
-            </button>
-            <button 
-              className="tw-p-2 tw-rounded-lg tw-text-red-400 hover:tw-text-red-600 hover:tw-bg-red-50 tw-transition-colors tw-opacity-0 group-hover:tw-opacity-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              title="Delete Response"
-            >
-              <Trash2 className="tw-w-4 tw-h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="tw-flex tw-items-center tw-justify-between tw-text-xs">
-          <div className="tw-flex tw-items-center tw-gap-4 tw-text-gray-500">
-            <span className="tw-flex tw-items-center tw-gap-1">
-              <Calendar className="tw-w-3 tw-h-3" />
-              {response.submitted_at 
-                ? new Date(response.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                : 'Not submitted'}
-            </span>
-            {response.completion_time_seconds && (
-              <span className="tw-flex tw-items-center tw-gap-1">
-                <Clock className="tw-w-3 tw-h-3" />
-                {Math.round(response.completion_time_seconds / 60)}m
-              </span>
-            )}
-          </div>
-          <div className={`tw-flex tw-items-center tw-gap-1 tw-text-xs tw-font-medium ${statusColor.split(' ')[1]}`}>
-            {getStatusIcon(response.status)}
-            <span>{response.status?.replace('_', ' ') || 'pending'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'completed':
+    case 'submitted':
+      return <CheckCircle className="tw-w-4 tw-h-4 tw-text-emerald-500" />;
+    case 'reviewed':
+      return <CheckCircle className="tw-w-4 tw-h-4 tw-text-blue-500" />;
+    case 'in_progress':
+      return <AlertCircle className="tw-w-4 tw-h-4 tw-text-amber-500" />;
+    default:
+      return <XCircle className="tw-w-4 tw-h-4 tw-text-gray-400" />;
+  }
 };
 
-const SkeletonCard: React.FC = () => (
-  <div className="tw-bg-white tw-rounded-xl tw-border tw-border-gray-100 tw-p-5 tw-animate-pulse">
-    <div className="tw-space-y-4">
-      <div className="tw-flex tw-items-start tw-justify-between">
-        <div className="tw-flex-1">
-          <div className="tw-h-5 tw-bg-gray-200 tw-rounded tw-w-32 tw-mb-2"></div>
-          <div className="tw-h-4 tw-bg-gray-100 tw-rounded tw-w-48"></div>
-        </div>
-        <div className="tw-h-8 tw-w-8 tw-bg-gray-100 tw-rounded-lg"></div>
-      </div>
-      <div className="tw-flex tw-items-center tw-justify-between">
-        <div className="tw-flex tw-gap-4">
-          <div className="tw-h-3 tw-bg-gray-100 tw-rounded tw-w-16"></div>
-          <div className="tw-h-3 tw-bg-gray-100 tw-rounded tw-w-12"></div>
-        </div>
-        <div className="tw-h-4 tw-bg-gray-100 tw-rounded tw-w-20"></div>
-      </div>
-    </div>
-  </div>
-);
+const getStatusBadge = (status: string) => {
+  const colors = {
+    'completed': 'tw-bg-emerald-100 tw-text-emerald-700',
+    'submitted': 'tw-bg-emerald-100 tw-text-emerald-700',
+    'reviewed': 'tw-bg-blue-100 tw-text-blue-700',
+    'in_progress': 'tw-bg-amber-100 tw-text-amber-700',
+    'pending': 'tw-bg-gray-100 tw-text-gray-700'
+  };
+  
+  const statusText = status?.replace('_', ' ') || 'pending';
+  const colorClass = colors[status as keyof typeof colors] || colors.pending;
+  
+  return (
+    <span className={`tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-xs tw-font-medium ${colorClass}`}>
+      {getStatusIcon(status)}
+      <span className="tw-capitalize">{statusText}</span>
+    </span>
+  );
+};
 
 export const MinimalDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -177,19 +90,28 @@ export const MinimalDashboard: React.FC = () => {
   
   const [deleteResponse, { isLoading: isDeleting }] = useDeleteResponseMutation();
   
-  const responses = responsesData?.results || [];
+  const responses = useMemo(() => responsesData?.results || [], [responsesData?.results]);
   
-  const handleDelete = async (responseId: string) => {
+  const handleDelete = async (responseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setDeleteConfirm({ open: true, id: responseId });
   };
   
   const confirmDelete = async () => {
     if (deleteConfirm.id) {
       try {
-        await deleteResponse(deleteConfirm.id).unwrap();
+        console.log('Attempting to delete response ID:', deleteConfirm.id);
+        const result = await deleteResponse(deleteConfirm.id).unwrap();
+        console.log('Delete successful:', result);
         refetch();
-      } catch (error) {
-        
+      } catch (error: any) {
+        console.error('Failed to delete response:', error);
+        console.error('Error details:', {
+          status: error?.status,
+          data: error?.data,
+          originalStatus: error?.originalStatus,
+          id: deleteConfirm.id
+        });
       }
     }
     setDeleteConfirm({ open: false, id: null });
@@ -301,26 +223,129 @@ export const MinimalDashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Response Cards Grid */}
-        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-4">
+        {/* Responses Table */}
+        <div className="tw-bg-white tw-rounded-xl tw-border tw-border-gray-200 tw-overflow-hidden">
           {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            <div className="tw-p-8 tw-text-center">
+              <div className="tw-inline-block tw-animate-spin tw-rounded-full tw-h-8 tw-w-8 tw-border-b-2 tw-border-gray-900"></div>
+              <p className="tw-text-gray-500 tw-mt-2">Loading responses...</p>
+            </div>
           ) : filteredResponses.length > 0 ? (
-            filteredResponses.map((response, index) => (
-              <div 
-                key={response.id}
-                className="tw-animate-fadeIn"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <ResponseCard 
-                  response={response}
-                  onView={() => navigate(`/forms/${response.form}/responses/${response.id}`)}
-                  onDelete={() => handleDelete(response.id)}
-                />
-              </div>
-            ))
+            <div className="tw-overflow-x-auto">
+              <table className="tw-min-w-full tw-divide-y tw-divide-gray-200">
+                <thead className="tw-bg-gray-50">
+                  <tr>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Patient
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Form
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Status
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Submitted
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Time
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-left tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Reviewed
+                    </th>
+                    <th className="tw-px-6 tw-py-3 tw-text-right tw-text-xs tw-font-medium tw-text-gray-500 tw-uppercase tw-tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="tw-bg-white tw-divide-y tw-divide-gray-200">
+                  {filteredResponses.map((response) => (
+                    <tr 
+                      key={response.id}
+                      className="hover:tw-bg-gray-50 tw-cursor-pointer tw-transition-colors"
+                      onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)}
+                    >
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap">
+                        <div className="tw-flex tw-items-center">
+                          <User className="tw-w-4 tw-h-4 tw-text-gray-400 tw-mr-2" />
+                          <div className="tw-text-sm tw-font-medium tw-text-gray-900">
+                            {response.patient_name || 'Anonymous'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap">
+                        <div className="tw-flex tw-items-center">
+                          <FileText className="tw-w-4 tw-h-4 tw-text-gray-400 tw-mr-2" />
+                          <div className="tw-text-sm tw-text-gray-900">
+                            {response.form_title || response.form}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap">
+                        {getStatusBadge(response.status)}
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
+                        {response.submitted_at 
+                          ? new Date(response.submitted_at).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : '-'}
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
+                        {response.completion_time_seconds 
+                          ? `${Math.round(response.completion_time_seconds / 60)}m`
+                          : '-'}
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap">
+                        <span className={`tw-inline-flex tw-px-2 tw-py-1 tw-text-xs tw-font-medium tw-rounded-full ${
+                          response.status === 'reviewed' 
+                            ? 'tw-bg-green-100 tw-text-green-700' 
+                            : 'tw-bg-gray-100 tw-text-gray-700'
+                        }`}>
+                          {response.status === 'reviewed' ? 'Reviewed' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-right tw-text-sm tw-font-medium">
+                        <div className="tw-flex tw-items-center tw-justify-end tw-gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/forms/${response.form}/responses/${response.id}`);
+                            }}
+                            className="tw-p-1.5 tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-100 tw-rounded-lg tw-transition-colors"
+                            title="View Response"
+                          >
+                            <Eye className="tw-w-4 tw-h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/forms/${response.form}/responses/${response.id}`);
+                            }}
+                            className="tw-p-1.5 tw-text-gray-400 hover:tw-text-gray-600 hover:tw-bg-gray-100 tw-rounded-lg tw-transition-colors"
+                            title="Download PDF"
+                          >
+                            <Download className="tw-w-4 tw-h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(response.id, e)}
+                            className="tw-p-1.5 tw-text-red-400 hover:tw-text-red-600 hover:tw-bg-red-50 tw-rounded-lg tw-transition-colors"
+                            title="Delete Response"
+                          >
+                            <Trash2 className="tw-w-4 tw-h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <div className="tw-col-span-full tw-text-center tw-py-12">
+            <div className="tw-text-center tw-py-12">
               <FileText className="tw-w-12 tw-h-12 tw-text-gray-300 tw-mx-auto tw-mb-3" />
               <p className="tw-text-gray-500">No {activeTab !== 'all' ? activeTab : ''} responses found</p>
             </div>

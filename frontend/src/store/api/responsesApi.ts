@@ -85,10 +85,15 @@ export const responsesApi = baseApi.injectEndpoints({
 
     // Delete response
     deleteResponse: builder.mutation<void, string>({
-      query: (id) => ({
-        url: `/responses/${id}`,
-        method: 'DELETE',
-      }),
+      query: (id) => {
+        const url = `/responses/${id}`;
+        console.log('DELETE request URL:', url);
+        console.log('Full URL will be:', `${process.env.REACT_APP_API_URL}/responses/${id}`);
+        return {
+          url,
+          method: 'DELETE',
+        };
+      },
       invalidatesTags: (_result, _error, id) => [
         { type: 'Response', id },
         'Response',

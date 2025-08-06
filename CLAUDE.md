@@ -132,6 +132,10 @@ client.Collection("form_responses").Doc(responseId)
 - Production uses Google Distroless images (nonroot)
 - No shell, minimal attack surface
 - Static binary compilation with security flags
+- Dockerfile location: `backend-go/Dockerfile`
+  - Build stage: `golang:1.24-alpine`
+  - Runtime stage: `gcr.io/distroless/static-debian12:nonroot`
+  - Runs as non-root user (UID 65532)
 
 ### Authentication Flow
 1. User signs in with Google via Firebase Auth

@@ -36,10 +36,10 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
       
-      console.log('Generating PDF for response:', responseId);
+      console.log('Generating PDF for form:', formId, 'and response:', responseId);
       const response = await axios.post(
         `${apiUrl}/responses/${responseId}/generate-pdf`,
-        {},
+        { formId }, // Pass formId in the request body
         {
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/vertexai/genai"
+	"github.com/gemini/forms-api/internal/data"
 )
 
 // VertexAIService provides methods for interacting with the Vertex AI API.
@@ -55,6 +57,88 @@ func (s *VertexAIService) GeneratePDFHTML(ctx context.Context, questions []Visib
 		**Patient Data (JSON):**
 		%s
 	`, string(questionsJSON)))
+
+	// Set a low temperature for deterministic output.
+	s.client.SetTemperature(0.2)
+
+	// Generate the content.
+	resp, err := s.client.GenerateContent(ctx, prompt)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate content from Vertex AI: %w", err)
+	}
+
+	// Extract the HTML from the response.
+	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("received an empty response from Vertex AI")
+	}
+
+	htmlContent, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+	if !ok {
+		return "", fmt.Errorf("unexpected response format from Vertex AI")
+	}
+
+	return string(htmlContent), nil
+}
+
+// GeneratePDFHTMLWithClinic sends the processed form data along with clinic info to a Gemini model
+// and asks it to generate a complete, styled HTML document with clinic header for PDF conversion.
+func (s *VertexAIService) GeneratePDFHTMLWithClinic(ctx context.Context, questions []VisibleQuestion, clinicInfo *data.ClinicInfo) (string, error) {
+	// Convert the structured question data to a JSON string for the prompt.
+	questionsJSON, err := json.MarshalIndent(questions, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal questions to JSON: %w", err)
+	}
+	
+	// Convert clinic info to JSON if available
+	clinicJSON := "{}"
+	if clinicInfo != nil {
+		clinicBytes, err := json.MarshalIndent(clinicInfo, "", "  ")
+		if err == nil {
+			clinicJSON = string(clinicBytes)
+		}
+	}
+	
+	// Get current date
+	currentDate := time.Now().Format("January 2, 2006")
+
+	// Construct the detailed prompt with clinic header instructions.
+	prompt := genai.Text(fmt.Sprintf(`
+		You are an expert medical document designer. Your task is to create a professional, 
+		space-efficient, and easy-to-read HTML document from a patient's intake form answers with a clinic header. 
+		The final HTML will be converted to a PDF.
+
+		**Instructions:**
+		1.  **CLINIC HEADER (CRITICAL):** Create a professional header at the top of the document with:
+		    - If clinic info is provided: Display clinic name prominently
+		    - Include full address (address_line1, address_line2 if present, city, state, zip)
+		    - Phone and fax numbers formatted as (XXX) XXX-XXXX
+		    - Email and website if available
+		    - If logo_url is provided, include it aligned to the left with max-height: 60px
+		    - Use primary_color for header background if provided, otherwise use #2c3e50
+		    - Add a thin divider line below the header
+		    - If no clinic info provided, use a generic "Medical Form Response" header
+		2.  **Document Info Bar:** Below the header, add a gray bar with:
+		    - Document title: "Patient Intake Form"
+		    - Date generated: %s
+		    - Page numbers using CSS counters
+		3.  **Clinical Summary:** Under an '<h1>' titled "Clinical Summary", write a 1-2 paragraph narrative summarizing the patient's condition.
+		4.  **Layout:** Use a 2-column CSS grid for the main content area to save space. 
+		5.  **Styling:** Include a <style> tag in the <head>. Use professional fonts. Use the "@page" rule to set the paper size to 'Letter' and margins to '0.5in'.
+		6.  **Page Breaks:** Use "page-break-inside: avoid;" on containers.
+		7.  **Grouping:** Group related items under clear <h2> subheadings.
+		8.  **Data:** For each question, clearly display the question's title and answer.
+		9.  **SIGNATURES:** For any question where "isSignature": true, embed the signature as an image using the signatureData field.
+		10. **Footer:** Add a footer with page numbers and "Confidential Medical Information" notice.
+		11. **Output:** The entire output must be a single, valid, self-contained HTML file.
+
+		**Clinic Information (JSON):**
+		%s
+
+		**Patient Data (JSON):**
+		%s
+		
+		IMPORTANT: The header should look professional and medical. If clinic has a logo_url, place it on the left side of the header with clinic name to the right. Contact info should be clearly visible but not overwhelming.
+	`, currentDate, clinicJSON, string(questionsJSON)))
 
 	// Set a low temperature for deterministic output.
 	s.client.SetTemperature(0.2)

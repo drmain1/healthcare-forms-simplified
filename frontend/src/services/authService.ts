@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
 // --- Token Management ---
 
@@ -24,12 +24,12 @@ export const authService = {
    */
   async sessionLogin(idToken: string): Promise<string> {
     const response = await axios.post(`${API_URL}/auth/session-login`, { idToken });
-    const { access_token } = response.data;
-    if (!access_token) {
+    const { sessionToken } = response.data;
+    if (!sessionToken) {
       throw new Error('Session token not received from backend');
     }
-    setSessionToken(access_token);
-    return access_token;
+    setSessionToken(sessionToken);
+    return sessionToken;
   },
 
   /**
@@ -47,9 +47,12 @@ export const authService = {
   setupInterceptor(): void {
     axios.interceptors.request.use(
       (config) => {
-        const token = getSessionToken();
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Don't override if Authorization header is already set (e.g., with Firebase ID token)
+        if (config.headers && !config.headers.Authorization) {
+          const token = getSessionToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
         }
         return config;
       },

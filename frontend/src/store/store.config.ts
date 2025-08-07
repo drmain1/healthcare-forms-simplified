@@ -6,6 +6,7 @@ import responseSlice from './slices/responseSlice';
 import patientSlice from './slices/patientSlice';
 import uiSlice from './slices/uiSlice';
 import { baseApi } from './api/baseApi';
+import { organizationsApi } from './api/organizationsApi';
 import { phiCleanupMiddleware } from './middleware/phiCleanupMiddleware';
 import { encryptionMiddleware } from './middleware/encryptionMiddleware';
 
@@ -18,6 +19,7 @@ export const createStore = () => {
       patients: patientSlice,
       ui: uiSlice,
       [baseApi.reducerPath]: baseApi.reducer,
+      [organizationsApi.reducerPath]: organizationsApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -26,6 +28,7 @@ export const createStore = () => {
         },
       })
       .concat(baseApi.middleware)
+      .concat(organizationsApi.middleware)
       .concat(phiCleanupMiddleware)
       .concat(encryptionMiddleware),
   });

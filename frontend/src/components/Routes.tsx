@@ -10,6 +10,7 @@ import { ResponsesList } from './Responses/ResponsesList';
 import { ResponseDetail } from './Responses/ResponseDetail';
 import { Login } from './Auth/Login';
 import { PrivateRoute } from './Auth/PrivateRoute';
+import { ClinicSettings } from './Settings/ClinicSettings';
 
 // Placeholder components for routes not yet implemented
 const Patients: React.FC = () => (
@@ -26,12 +27,8 @@ const Analytics: React.FC = () => (
   </div>
 );
 
-const Settings: React.FC = () => (
-  <div>
-    <h2>Settings</h2>
-    <p>Settings interface coming soon...</p>
-  </div>
-);
+// Now using the ClinicSettings component directly
+const Settings = ClinicSettings;
 
 export const AppRoutes: React.FC = () => {
   return (

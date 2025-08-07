@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Box, CircularProgress } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { store } from './store';
 import { AppRoutes } from './components/Routes';
-import { AuthInitializer } from './components/Auth/AuthInitializer';
+
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import { initializeSessionTimeout, cleanupSessionTimeout } from './utils/sessionTimeout';
-import { FirebaseAuthProvider } from './contexts/FirebaseAuthContext';
+import { FirebaseAuthProvider, useFirebaseAuth } from './contexts/FirebaseAuthContext';
 import { logBuildInfo } from './config/buildInfo';
 
 // Import SurveyJS CSS
@@ -74,6 +75,33 @@ const theme = createTheme({
   },
 });
 
+const AppContent = () => {
+  const { loading } = useFirebaseAuth();
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <CssBaseline />
+      <AppRoutes />
+      <SessionTimeoutWarning />
+    </>
+  );
+};
+
 function App() {
   useEffect(() => {
     // Log build information to console
@@ -92,13 +120,9 @@ function App() {
     <Provider store={store}>
       <FirebaseAuthProvider>
         <BrowserRouter>
-          <AuthInitializer>
-            <ThemeProvider theme={theme}>
-              <CssBaseline />
-              <AppRoutes />
-              <SessionTimeoutWarning />
-            </ThemeProvider>
-          </AuthInitializer>
+          <ThemeProvider theme={theme}>
+            <AppContent />
+          </ThemeProvider>
         </BrowserRouter>
       </FirebaseAuthProvider>
     </Provider>

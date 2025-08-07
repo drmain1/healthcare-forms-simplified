@@ -68,7 +68,7 @@ firebase deploy --only hosting --project healthcare-forms-v2
 The platform currently has TWO backend implementations in transition:
 
 1. **Go Backend** (`backend-go/`) - NEW, actively deployed
-   - Cloud Run: `healthcare-forms-backend-go-673381373352.us-central1.run.app`
+   - Cloud Run: `healthcare-forms-backend-go-ubaop6yg4q-uc.a.run.app`
    - Uses Gin framework with CORS middleware
    - Vertex AI integration for PDF generation
    - Gotenberg service for HTML to PDF conversion

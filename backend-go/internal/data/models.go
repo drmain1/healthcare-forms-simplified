@@ -49,17 +49,37 @@ type OrganizationSettings struct {
 	Timezone          string `json:"timezone" firestore:"timezone"`
 }
 
+// ClinicInfo represents the clinic header information for PDFs and branding
+type ClinicInfo struct {
+	ClinicName        string `json:"clinic_name" firestore:"clinic_name"`
+	AddressLine1      string `json:"address_line1" firestore:"address_line1"`
+	AddressLine2      string `json:"address_line2,omitempty" firestore:"address_line2,omitempty"`
+	City              string `json:"city" firestore:"city"`
+	State             string `json:"state" firestore:"state"`
+	ZipCode           string `json:"zip_code" firestore:"zip_code"`
+	Phone             string `json:"phone" firestore:"phone"`
+	Fax               string `json:"fax,omitempty" firestore:"fax,omitempty"`
+	Email             string `json:"email" firestore:"email"`
+	Website           string `json:"website,omitempty" firestore:"website,omitempty"`
+	TaxID             string `json:"tax_id,omitempty" firestore:"tax_id,omitempty"`
+	NPI               string `json:"npi,omitempty" firestore:"npi,omitempty"`
+	LogoURL           string `json:"logo_url,omitempty" firestore:"logo_url,omitempty"`
+	PrimaryColor      string `json:"primary_color,omitempty" firestore:"primary_color,omitempty"`
+	SecondaryColor    string `json:"secondary_color,omitempty" firestore:"secondary_color,omitempty"`
+}
+
 // Organization represents a single organization
 type Organization struct {
-	ID        string               `json:"_id,omitempty" firestore:"_id,omitempty"`
-	UID       string               `json:"uid" firestore:"uid"`
-	Name      string               `json:"name" firestore:"name"`
-	Email     string               `json:"email,omitempty" firestore:"email,omitempty"`
-	Phone     string               `json:"phone,omitempty" firestore:"phone,omitempty"`
-	Address   string               `json:"address,omitempty" firestore:"address,omitempty"`
-	Settings  OrganizationSettings `json:"settings" firestore:"settings"`
-	CreatedAt time.Time            `json:"created_at" firestore:"created_at"`
-	UpdatedAt time.Time            `json:"updated_at" firestore:"updated_at"`
+	ID         string               `json:"_id,omitempty" firestore:"_id,omitempty"`
+	UID        string               `json:"uid" firestore:"uid"`
+	Name       string               `json:"name" firestore:"name"`
+	Email      string               `json:"email,omitempty" firestore:"email,omitempty"`
+	Phone      string               `json:"phone,omitempty" firestore:"phone,omitempty"`
+	Address    string               `json:"address,omitempty" firestore:"address,omitempty"`
+	Settings   OrganizationSettings `json:"settings" firestore:"settings"`
+	ClinicInfo ClinicInfo           `json:"clinic_info" firestore:"clinic_info"`
+	CreatedAt  time.Time            `json:"created_at" firestore:"created_at"`
+	UpdatedAt  time.Time            `json:"updated_at" firestore:"updated_at"`
 }
 
 // ShareLink represents a shareable link for a form

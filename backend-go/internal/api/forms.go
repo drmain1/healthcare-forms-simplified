@@ -248,7 +248,20 @@ func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 
-		// Read the HTML template from the embedded filesystem
+		// Get organization details for the header
+		orgDoc, err := client.Collection("organizations").Doc(orgID.(string)).Get(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve organization details"})
+			return
+		}
+		var organization data.Organization
+		if err := orgDoc.DataTo(&organization); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse organization data"})
+			return
+		}
+
+		// Log the organization data to debug
+		log.Printf("Organization data for PDF generation: %+v", organization)
 		htmlTemplate, err := template.ParseFiles("templates/form_response_professional.html")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse email template"})
@@ -263,6 +276,7 @@ func GeneratePDF(client *firestore.Client) gin.HandlerFunc {
 			"SubmissionDate": response.SubmittedAt.Format("January 2, 2006"),
 			"Data":           response.Data,
 			"CurrentDate":    time.Now().Format("January 2, 2006"),
+			"Organization":   organization,
 		}); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute email template"})
 			return

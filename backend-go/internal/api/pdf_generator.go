@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
 
+	"github.com/gemini/forms-api/internal/data"
 	"github.com/gemini/forms-api/internal/services"
 )
 
@@ -65,7 +66,9 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document (looking for 'data' field)", "debug": responseData})
 			return
 		}
-
+		
+		// Extract organization ID from response
+		orgID, _ := responseData["organizationId"].(string)
 
 		// 2. Fetch the corresponding form document
 		formDoc, err := client.Collection("forms").Doc(formID).Get(ctx)
@@ -84,7 +87,21 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "surveyJson not found or is not the correct type in form document"})
 			return
 		}
-
+		
+		// 3. Fetch organization clinic info if available
+		var clinicInfo *data.ClinicInfo
+		if orgID != "" {
+			orgDoc, err := client.Collection("organizations").Doc(orgID).Get(ctx)
+			if err == nil {
+				var org data.Organization
+				if err := orgDoc.DataTo(&org); err == nil {
+					clinicInfo = &org.ClinicInfo
+					log.Printf("Successfully fetched clinic info for organization: %s", orgID)
+				}
+			} else {
+				log.Printf("Could not fetch organization info for ID %s: %v", orgID, err)
+			}
+		}
 
 		// At this point, we have surveyJSON and answers.
 		// Step 3: Pre-process/flatten data based on conditional logic.
@@ -97,9 +114,9 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 		}
 		log.Printf("Successfully processed %d visible questions", len(visibleQuestions))
 
-		// Step 4: Call Vertex AI service with flattened data.
+		// Step 4: Call Vertex AI service with flattened data and clinic info.
 		log.Printf("Calling Vertex AI to generate HTML for response %s", responseId)
-		generatedHTML, err := vs.GeneratePDFHTML(ctx, visibleQuestions)
+		generatedHTML, err := vs.GeneratePDFHTMLWithClinic(ctx, visibleQuestions, clinicInfo)
 		if err != nil {
 			log.Printf("ERROR: Failed to generate HTML from AI service: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from AI service", "details": err.Error()})

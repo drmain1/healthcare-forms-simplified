@@ -87,10 +87,11 @@
 <body>
     <div class="page">
         <div class="header">
-            <div class="logo">Your Logo Here</div>
+            <div class="logo">{{.Organization.Name}}</div>
             <div class="info">
-                <div><strong>Patient:</strong> {{.PatientName}}</div>
-                <div><strong>Submitted:</strong> {{.SubmissionDate}}</div>
+                <div>{{.Organization.ClinicInfo.AddressLine1}}</div>
+                <div>{{.Organization.ClinicInfo.City}}, {{.Organization.ClinicInfo.State}} {{.Organization.ClinicInfo.ZipCode}}</div>
+                <div>{{.Organization.ClinicInfo.Phone}}</div>
             </div>
         </div>
 

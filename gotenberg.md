@@ -1,7 +1,7 @@
 # Gotenberg PDF Generation Service Architecture
 
-**Last Updated: August 6, 2025**  
-**Status: ✅ FULLY OPERATIONAL**
+**Last Updated: December 2024**  
+**Status: ✅ FULLY OPERATIONAL WITH CLINIC HEADERS**
 
 This document outlines the architecture of the Gotenberg PDF generation service and its integration with the Go backend.
 
@@ -237,14 +237,17 @@ PORT: 8080
 2. Frontend sends request to `/api/responses/:responseId/generate-pdf`
 3. Backend fetches form response from Firestore `form_responses` collection
 4. Backend fetches form definition from Firestore `forms` collection
-5. Form processor extracts visible questions based on SurveyJS conditional logic
-6. Vertex AI (Gemini) generates professional HTML with:
+5. **NEW: Backend fetches organization's clinic info from Firestore `organizations` collection**
+6. Form processor extracts visible questions based on SurveyJS conditional logic
+7. Vertex AI (Gemini) generates professional HTML with:
+   - **NEW: Clinic header with logo, name, address, contact info**
    - Clinical summary paragraph
    - 2-column layout for space efficiency
    - Grouped sections (Patient Info, Health Complaints, etc.)
-7. Gotenberg converts the HTML to PDF with proper formatting
-8. PDF is returned to frontend for download
-9. Frontend triggers browser download of the PDF file
+   - Professional footer with confidentiality notice
+8. Gotenberg converts the HTML to PDF with proper formatting
+9. PDF is returned to frontend for download
+10. Frontend triggers browser download of the PDF file
 
 ### Monitoring and Debugging
 
@@ -412,6 +415,74 @@ CORS_ALLOWED_ORIGINS: http://localhost:3000;https://healthcare-forms-v2.web.app;
 - **Vertex AI**: Generates HTML with embedded images
 - **No additional libraries required** - works with existing stack
 
+## Clinic Header Support (Added December 2024)
+
+### Overview
+PDFs now include professional clinic headers with organization-specific branding. This is a multi-tenant feature where each organization's PDFs automatically include their clinic information.
+
+### Data Structure
+Organizations store clinic information in Firestore:
+```go
+type ClinicInfo struct {
+    ClinicName        string // Required
+    AddressLine1      string // Required
+    AddressLine2      string // Optional (Suite, Floor, etc.)
+    City              string // Required
+    State             string // Required (2-letter code)
+    ZipCode           string // Required
+    Phone             string // Required (formatted)
+    Fax               string // Optional
+    Email             string // Required
+    Website           string // Optional
+    TaxID             string // Optional (Federal Tax ID)
+    NPI               string // Optional (National Provider ID)
+    LogoURL           string // Optional (hosted image URL)
+    PrimaryColor      string // Optional (header background)
+    SecondaryColor    string // Optional (accent color)
+}
+```
+
+### Implementation
+1. **Backend API Endpoints**:
+   - `GET /api/organizations/:id/clinic-info` - Retrieve clinic settings
+   - `PUT /api/organizations/:id/clinic-info` - Update clinic settings
+
+2. **PDF Generation Enhancement**:
+   - `pdf_generator.go` fetches organization's clinic info
+   - `vertex_service.go` includes `GeneratePDFHTMLWithClinic()` method
+   - Vertex AI prompt creates professional medical headers
+
+3. **Frontend Settings Page**:
+   - `ClinicSettings.tsx` component for managing clinic information
+   - Real-time validation and formatting (phone numbers, etc.)
+   - Color picker for branding customization
+
+### Deployment Automation
+
+**Quick Deploy Script** (`deploy-backend.sh`):
+```bash
+# Make executable (first time only)
+chmod +x deploy-backend.sh
+
+# Deploy to Cloud Run with distroless image
+./deploy-backend.sh
+
+# Or build locally for testing
+./deploy-backend.sh --local
+```
+
+The script automates:
+- Multi-stage Docker build (Alpine builder → Distroless runtime)
+- Push to Google Container Registry
+- Deploy to Cloud Run with all environment variables
+- Health check verification
+
+### Multi-Tenant Architecture
+- Flat structure: Each organization has one clinic address
+- Automatic PDF branding per organization
+- No cross-tenant data access
+- Clinic info embedded in organization document
+
 ### Future Enhancements
 
 Consider for optimization:
@@ -420,3 +491,6 @@ Consider for optimization:
 3. Add signature verification/timestamps
 4. Support for drawing tablets
 5. Async PDF generation for better UX
+6. Direct file upload for clinic logos (currently URL-based)
+7. PDF templates per organization
+8. Custom fonts and advanced branding options

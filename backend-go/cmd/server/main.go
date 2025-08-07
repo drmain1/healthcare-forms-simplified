@@ -135,6 +135,9 @@ func main() {
 		// Organization routes
 		authRequired.POST("/organizations", api.CreateOrganization(firestoreClient))
 		authRequired.GET("/organizations/:id", api.GetOrganization(firestoreClient))
+		authRequired.GET("/organizations/current", api.GetOrCreateUserOrganization(firestoreClient))
+		authRequired.PUT("/organizations/:id/clinic-info", api.UpdateOrganizationClinicInfo(firestoreClient))
+		authRequired.GET("/organizations/:id/clinic-info", api.GetOrganizationClinicInfo(firestoreClient))
 
 		// PDF Generation Route
 		api.RegisterPDFRoutes(authRequired, firestoreClient, vertexService, gotenbergService)

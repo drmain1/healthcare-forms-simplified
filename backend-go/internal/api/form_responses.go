@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/gemini/forms-api/internal/data"
+	"github.com/gemini/forms-api/internal/services"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -264,7 +265,7 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 		// Add to Firestore
 		docRef, _, err := client.Collection("form_responses").Add(c.Request.Context(), response)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create form response"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create form response"})
 			return
 		}
 
@@ -274,5 +275,77 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			"id":      response.ID,
 			"message": "Form submitted successfully",
 		})
+	}
+}
+
+// GetClinicalSummary generates an AI-powered clinical summary for a given form response.
+func GetClinicalSummary(client *firestore.Client, vs *services.VertexAIService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		responseId := c.Param("id")
+		if responseId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Response ID is required"})
+			return
+		}
+
+		ctx := c.Request.Context()
+
+		// 1. Fetch the response document
+		responseDoc, err := client.Collection("form_responses").Doc(responseId).Get(ctx)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Response not found"})
+			return
+		}
+		var responseData map[string]interface{}
+		if err := responseDoc.DataTo(&responseData); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse response data"})
+			return
+		}
+
+		formID, ok := responseData["form"].(string)
+		if !ok || formID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Form ID not found in response document"})
+			return
+		}
+
+		answers, ok := responseData["data"].(map[string]interface{})
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document"})
+			return
+		}
+
+		// 2. Fetch the corresponding form document
+		formDoc, err := client.Collection("forms").Doc(formID).Get(ctx)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Form not found"})
+			return
+		}
+		var form map[string]interface{}
+		if err := formDoc.DataTo(&form); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse form data"})
+			return
+		}
+
+		surveyJSON, ok := form["surveyJson"].(map[string]interface{})
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "surveyJson not found or is not the correct type in form document"})
+			return
+		}
+
+		// 3. Pre-process/flatten data based on conditional logic.
+		visibleQuestions, err := services.ProcessAndFlattenForm(surveyJSON, answers)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form data", "details": err.Error()})
+			return
+		}
+
+		// 4. Call Vertex AI service with flattened data.
+		summary, err := vs.GenerateClinicalSummary(ctx, visibleQuestions)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate clinical summary from AI service", "details": err.Error()})
+			return
+		}
+
+		// 5. Return summary to client.
+		c.JSON(http.StatusOK, gin.H{"summary": summary})
 	}
 }

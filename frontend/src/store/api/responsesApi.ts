@@ -105,6 +105,11 @@ export const responsesApi = baseApi.injectEndpoints({
       query: (formId) => `/forms/${formId}/analytics/`,
       providesTags: ['Analytics'],
     }),
+
+    // Get clinical summary
+    getClinicalSummary: builder.query<{ summary: string }, string>({
+      query: (responseId) => `/responses/${responseId}/clinical-summary`,
+    }),
   }),
 });
 
@@ -116,4 +121,5 @@ export const {
   useExportResponsePdfMutation,
   useDeleteResponseMutation,
   useGetResponseAnalyticsQuery,
+  useLazyGetClinicalSummaryQuery,
 } = responsesApi;

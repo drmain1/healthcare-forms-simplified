@@ -30,6 +30,7 @@ import 'survey-core/survey-core.css';
 import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
+import { ClinicalSummaryButton } from './ClinicalSummaryButton';
 
 export const ResponseDetail: React.FC = () => {
   const surveyContainerRef = useRef<HTMLDivElement>(null);
@@ -153,10 +154,13 @@ export const ResponseDetail: React.FC = () => {
           <Typography variant="h4" fontWeight="bold">
             Response Detail
           </Typography>
-          <PdfExportButton
-            formId={formId!}
-            responseId={responseId!}
-          />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <ClinicalSummaryButton responseId={responseId!} />
+            <PdfExportButton
+              formId={formId!}
+              responseId={responseId!}
+            />
+          </Box>
         </Box>
         
         <Typography variant="h6" color="text.secondary">

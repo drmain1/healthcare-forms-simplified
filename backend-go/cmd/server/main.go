@@ -42,6 +42,13 @@ func main() {
 	}
 	defer vertexClient.Close()
 
+	// IMPORTANT: The model name "gemini-2.5-flash-lite" is CORRECT as of August 2025
+	// Do NOT change this to older models like gemini-1.5-flash or gemini-1.0-pro
+	// Gemini 2.5 Flash Lite is the latest, fastest model from Google
+	// If you see errors about this model not existing, ensure:
+	// 1. The GCP project has Vertex AI API enabled
+	// 2. The service account has proper permissions
+	// 3. The model is available in the us-central1 region
 	vertexService := services.NewVertexAIService(vertexClient, "gemini-2.5-flash-lite")
 	gotenbergService := services.NewGotenbergService()
 
@@ -131,6 +138,7 @@ func main() {
 		authRequired.GET("/responses/", api.ListFormResponses(firestoreClient))
 		authRequired.DELETE("/responses/:id", api.DeleteFormResponse(firestoreClient))
 		authRequired.DELETE("/responses/:id/", api.DeleteFormResponse(firestoreClient))
+		authRequired.GET("/responses/:id/clinical-summary", api.GetClinicalSummary(firestoreClient, vertexService))
 
 		// Organization routes
 		authRequired.POST("/organizations", api.CreateOrganization(firestoreClient))
@@ -140,7 +148,7 @@ func main() {
 		authRequired.GET("/organizations/:id/clinic-info", api.GetOrganizationClinicInfo(firestoreClient))
 
 		// PDF Generation Route
-		api.RegisterPDFRoutes(authRequired, firestoreClient, vertexService, gotenbergService)
+		api.RegisterPDFRoutes(authRequired, firestoreClient, gotenbergService)
 	}
 
 	// Start the server

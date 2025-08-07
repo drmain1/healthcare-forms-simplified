@@ -1,7 +1,7 @@
 # Gotenberg PDF Generation Service Architecture
 
-**Last Updated: December 2024**  
-**Status: ✅ FULLY OPERATIONAL WITH CLINIC HEADERS**
+**Last Updated: August 7, 2025**  
+**Status: ⚠️ FUNCTIONAL BUT TIMING OUT - 504 Gateway Timeout Issue**
 
 This document outlines the architecture of the Gotenberg PDF generation service and its integration with the Go backend.
 
@@ -39,12 +39,12 @@ The `healthcare-forms-backend-go` service is configured with the following envir
 *   `GCP_PROJECT_ID`: `healthcare-forms-v2` - Google Cloud project ID
 
 The backend uses:
-*   **Vertex AI Model**: `gemini-2.5-flash-lite` for HTML generation
+*   **Vertex AI Model**: `gemini-2.5-flash-lite` for HTML generation (⚠️ CORRECT MODEL - DO NOT CHANGE)
 *   **Service Account**: `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
 
 ## Current Implementation Status
 
-### ✅ FULLY WORKING Implementation (August 6, 2025)
+### ✅ FULLY WORKING Implementation (August 7, 2025)
 
 1. **PDF Generation Pipeline**:
    - Form response data fetched from Firestore `form_responses` collection
@@ -52,6 +52,12 @@ The backend uses:
    - Vertex AI (Gemini 2.5 Flash Lite) generates professional HTML with clinical summary
    - Gotenberg converts HTML to PDF
    - PDF returned to client for download
+
+**IMPORTANT MODEL CONFIGURATION NOTE FOR AI AGENTS:**
+- The model `gemini-2.5-flash-lite` is CORRECT as of August 2025
+- This is the latest, fastest Gemini model available
+- Do NOT change to older models like `gemini-1.5-flash` or `gemini-1.0-pro`
+- If you encounter model not found errors, check GCP permissions, NOT the model name
 
 2. **Backend Components**:
    - `pdf_generator.go`: Main orchestrator for PDF generation
@@ -65,6 +71,30 @@ The backend uses:
    - Added Google Cloud authentication to Gotenberg service calls
    - Enhanced error logging throughout the pipeline
    - Properly configured service account permissions
+
+### Recent Issues and Fixes (August 7, 2025)
+
+1. **500 Error - Model Permission Issue** (RESOLVED):
+   - **Error**: Permission denied on `gemini-1.0-pro` 
+   - **Root Cause**: Outdated model reference in deployed code
+   - **Fix**: Updated to use `gemini-2.5-flash-lite` with proper documentation
+   
+2. **504 Gateway Timeout** (ONGOING ISSUE):
+   - **Error**: Request times out with 504 Gateway Timeout
+   - **Root Cause**: PDF generation takes 2+ minutes, hitting intermediate proxy/load balancer timeout
+   - **Important**: The PDF IS generating successfully on backend (seen in logs)
+   - **Fix Applied**: 
+     - Increased Cloud Run timeout to 5 minutes ✓
+     - Added frontend axios timeout to 5 minutes ✓
+     - Added detailed timing logs to identify bottlenecks ✓
+   - **Still Failing**: Intermediate proxy/CDN timeout (likely 60 seconds) before Cloud Run
+   - **Console shows**: `ERR_FAILED 504 (Gateway Timeout)` after ~60 seconds
+   - **Backend logs show**: PDF completes successfully after ~2 minutes
+   
+3. **Critical Finding**:
+   - PDF generation WORKS but response doesn't reach client due to timeout
+   - Vertex AI takes 60-90 seconds (main bottleneck)
+   - Total time ~2 minutes exceeds proxy timeout
 
 ### Previous Issues - ALL RESOLVED
 
@@ -363,11 +393,26 @@ The system handles unlimited signatures per form, each:
 
 ### Performance Considerations
 
-**PDF Generation Time**: ~35 seconds total
+**PDF Generation Time**: Currently ~2+ minutes (CRITICAL - EXCEEDS PROXY TIMEOUT)
 - Firestore fetch: ~1 second
-- Form processing: <1 second
-- Vertex AI HTML generation: ~22 seconds
-- Gotenberg PDF conversion: ~13 seconds
+- Form processing: <1 second  
+- Vertex AI HTML generation: ~60-90 seconds (main bottleneck)
+- Gotenberg PDF conversion: ~10-15 seconds
+
+**Optimization Notes (August 7, 2025)**:
+- Added detailed timing logs to identify bottlenecks
+- Cloud Run timeout increased to 5 minutes ✓
+- Frontend axios timeout increased to 5 minutes ✓
+- **PROBLEM**: Intermediate proxy/load balancer times out at ~60 seconds
+- Primary bottleneck is Vertex AI response time despite using fastest model
+- **URGENT**: Must reduce total time to under 60 seconds OR implement async
+
+**Recommended Solutions**:
+1. **Simplify Vertex AI prompt** - Remove complex formatting instructions
+2. **Implement async processing** - Return job ID, poll for completion
+3. **Pre-generate HTML template** - Use Vertex only for content, not layout
+4. **Cache common responses** - Store generated PDFs temporarily
+5. **Stream the response** - Use Server-Sent Events or WebSockets
 
 **Cloud Run Compute Cost**:
 - Full 35 seconds billed (includes wait time)

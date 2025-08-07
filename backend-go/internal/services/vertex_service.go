@@ -1,4 +1,3 @@
-
 package services
 
 import (
@@ -160,4 +159,47 @@ func (s *VertexAIService) GeneratePDFHTMLWithClinic(ctx context.Context, questio
 	}
 
 	return string(htmlContent), nil
+}
+
+// GenerateClinicalSummary sends the processed form data to a Gemini model
+// and asks it to generate a clinical summary.
+func (s *VertexAIService) GenerateClinicalSummary(ctx context.Context, questions []VisibleQuestion) (string, error) {
+	// Convert the structured question data to a JSON string for the prompt.
+	questionsJSON, err := json.MarshalIndent(questions, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal questions to JSON: %w", err)
+	}
+
+	// Construct the detailed prompt for a clinical summary.
+	prompt := genai.Text(fmt.Sprintf(`
+		You are an expert medical assistant. Your task is to create a concise clinical summary from a patient's intake form answers. 
+
+		**Instructions:**
+		1.  **Clinical Summary:** Write a 1-2 paragraph narrative summarizing the patient's condition. Synthesize their primary complaints, pain scores, and relevant medical history into a concise overview for the doctor.
+		2.  **Output:** The entire output must be a single block of text. Do not include any markdown, HTML, or other formatting.
+
+		**Patient Data (JSON):**
+		%s
+	`, string(questionsJSON)))
+
+	// Set a low temperature for deterministic output.
+	s.client.SetTemperature(0.2)
+
+	// Generate the content.
+	resp, err := s.client.GenerateContent(ctx, prompt)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate content from Vertex AI: %w", err)
+	}
+
+	// Extract the text from the response.
+	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("received an empty response from Vertex AI")
+	}
+
+	summary, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+	if !ok {
+		return "", fmt.Errorf("unexpected response format from Vertex AI")
+	}
+
+	return string(summary), nil
 }

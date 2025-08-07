@@ -45,6 +45,7 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
             'Authorization': `Bearer ${token}`,
           },
           responseType: 'blob',
+          timeout: 300000, // 5 minutes timeout to match Cloud Run
         }
       );
 

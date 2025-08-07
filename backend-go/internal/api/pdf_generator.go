@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,7 @@ type PDFGenerationRequest struct {
 // GeneratePDFHandler is the main orchestrator for the PDF generation process.
 // It fetches form and response data, sends it to an AI for HTML generation,
 // then sends that HTML to Gotenberg for PDF conversion.
-func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, gs *services.GotenbergService) gin.HandlerFunc {
+func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		responseId := c.Param("responseId")
 		if responseId == "" {
@@ -32,6 +33,7 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 		}
 		
 		log.Printf("Starting PDF generation for response ID: %s", responseId)
+		startTime := time.Now()
 
 		ctx := context.Background()
 
@@ -112,27 +114,26 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form data", "details": err.Error()})
 			return
 		}
-		log.Printf("Successfully processed %d visible questions", len(visibleQuestions))
+		log.Printf("Successfully processed %d visible questions (elapsed: %v)", len(visibleQuestions), time.Since(startTime))
 
-		// Step 4: Call Vertex AI service with flattened data and clinic info.
-		log.Printf("Calling Vertex AI to generate HTML for response %s", responseId)
-		generatedHTML, err := vs.GeneratePDFHTMLWithClinic(ctx, visibleQuestions, clinicInfo)
+		log.Printf("Generating HTML from template for response %s (elapsed: %v)", responseId, time.Since(startTime))
+		generatedHTML, err := services.GenerateHTMLFromTemplate(visibleQuestions, clinicInfo)
 		if err != nil {
-			log.Printf("ERROR: Failed to generate HTML from AI service: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from AI service", "details": err.Error()})
+			log.Printf("ERROR: Failed to generate HTML from template: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from template", "details": err.Error()})
 			return
 		}
-		log.Printf("Successfully generated HTML (%d bytes)", len(generatedHTML))
 
 		// Step 5: Call Gotenberg with AI-generated HTML.
-		log.Printf("Calling Gotenberg to convert HTML to PDF for response %s", responseId)
+		gotenbergStart := time.Now()
+		log.Printf("Calling Gotenberg to convert HTML to PDF for response %s (elapsed: %v)", responseId, time.Since(startTime))
 		pdfBytes, err := gs.ConvertHTMLToPDF(generatedHTML)
 		if err != nil {
 			log.Printf("ERROR: Failed to convert HTML to PDF: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert HTML to PDF", "details": err.Error()})
 			return
 		}
-		log.Printf("Successfully generated PDF (%d bytes)", len(pdfBytes))
+		log.Printf("Successfully generated PDF (%d bytes) - Gotenberg took: %v, Total time: %v", len(pdfBytes), time.Since(gotenbergStart), time.Since(startTime))
 
 		// Step 6: Return PDF to client.
 		c.Header("Content-Type", "application/pdf")
@@ -142,6 +143,6 @@ func GeneratePDFHandler(client *firestore.Client, vs *services.VertexAIService, 
 }
 
 // Helper function to register this route - will be called from main.go
-func RegisterPDFRoutes(router *gin.RouterGroup, client *firestore.Client, vs *services.VertexAIService, gs *services.GotenbergService) {
-	router.POST("/responses/:responseId/generate-pdf", GeneratePDFHandler(client, vs, gs))
+func RegisterPDFRoutes(router *gin.RouterGroup, client *firestore.Client, gs *services.GotenbergService) {
+	router.POST("/responses/:responseId/generate-pdf", GeneratePDFHandler(client, gs))
 }

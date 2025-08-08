@@ -68,11 +68,14 @@ func UpdateOrganizationClinicInfo(client *firestore.Client) gin.HandlerFunc {
 		orgID := c.Param("id")
 		userUID := c.GetString("uid")
 		
+		log.Printf("UpdateOrganizationClinicInfo: orgID=%s, userUID=%s", orgID, userUID)
+		
 		// Build expected organization ID for this user
 		expectedOrgID := "org-" + userUID
 		
 		// Ensure user can only update their own organization
 		if orgID != expectedOrgID && orgID != userUID {
+			log.Printf("Authorization failed: orgID=%s, expectedOrgID=%s, userUID=%s", orgID, expectedOrgID, userUID)
 			c.JSON(http.StatusForbidden, gin.H{"error": "Cannot update another organization's settings"})
 			return
 		}
@@ -83,11 +86,20 @@ func UpdateOrganizationClinicInfo(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 		
-		// Update the clinic_info field in Firestore
-		_, err := client.Collection("organizations").Doc(orgID).Update(c.Request.Context(), []firestore.Update{
-			{Path: "clinic_info", Value: clinicInfo},
-			{Path: "updated_at", Value: time.Now().UTC()},
-		})
+		// Handle both org-{uid} and {uid} formats
+		docID := orgID
+		if orgID == expectedOrgID {
+			// If it's org-{uid}, use just the uid for the document
+			docID = userUID
+		}
+		
+		log.Printf("Updating organization document ID: %s with clinic_info", docID)
+		
+		// Use Set with MergeAll to ensure the field is created if it doesn't exist
+		_, err := client.Collection("organizations").Doc(docID).Set(c.Request.Context(), map[string]interface{}{
+			"clinic_info": clinicInfo,
+			"updated_at":  time.Now().UTC(),
+		}, firestore.MergeAll)
 		
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update clinic information"})
@@ -113,7 +125,16 @@ func GetOrganizationClinicInfo(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 		
-		doc, err := client.Collection("organizations").Doc(orgID).Get(c.Request.Context())
+		// Handle both org-{uid} and {uid} formats
+		docID := orgID
+		if orgID == expectedOrgID {
+			// If it's org-{uid}, use just the uid for the document
+			docID = userUID
+		}
+		
+		log.Printf("GetOrganizationClinicInfo: fetching document ID: %s", docID)
+		
+		doc, err := client.Collection("organizations").Doc(docID).Get(c.Request.Context())
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
 			return

@@ -95,10 +95,25 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 		if orgID != "" {
 			orgDoc, err := client.Collection("organizations").Doc(orgID).Get(ctx)
 			if err == nil {
+				// Debug: log raw organization data
+				orgData := orgDoc.Data()
+				log.Printf("DEBUG: Raw organization data: %+v", orgData)
+				
+				// Check if clinic_info field exists
+				if clinicData, exists := orgData["clinic_info"]; exists {
+					log.Printf("DEBUG: clinic_info field exists in Firestore: %+v", clinicData)
+				} else {
+					log.Printf("DEBUG: clinic_info field DOES NOT exist in Firestore document")
+				}
+				
 				var org data.Organization
 				if err := orgDoc.DataTo(&org); err == nil {
 					clinicInfo = &org.ClinicInfo
 					log.Printf("Successfully fetched clinic info for organization: %s", orgID)
+					log.Printf("DEBUG: Organization struct after parsing: %+v", org)
+					log.Printf("DEBUG: ClinicInfo specifically: %+v", org.ClinicInfo)
+				} else {
+					log.Printf("ERROR: Failed to parse organization data: %v", err)
 				}
 			} else {
 				log.Printf("Could not fetch organization info for ID %s: %v", orgID, err)

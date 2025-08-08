@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -137,21 +138,19 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 		// --- END DEBUG LOGGING ---
 
 
-		// Step 3: Pre-process/flatten data based on conditional logic.
-		log.Printf("Processing form data for response %s", responseId)
-		visibleQuestions, err := services.ProcessAndFlattenForm(surveyJSON, answers)
+		// Step 3: Marshal the survey JSON to a string to pass to the new generator
+		surveyJSONString, err := json.Marshal(surveyJSON)
 		if err != nil {
-			log.Printf("ERROR: Failed to process form data: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form data", "details": err.Error()})
+			log.Printf("ERROR: Failed to marshal surveyJSON: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form structure"})
 			return
 		}
-		log.Printf("Successfully processed %d visible questions (elapsed: %v)", len(visibleQuestions), time.Since(startTime))
 
-		log.Printf("Generating HTML from template for response %s (elapsed: %v)", responseId, time.Since(startTime))
-		generatedHTML, err := services.GenerateHTMLFromTemplate(visibleQuestions, clinicInfo)
+		log.Printf("Generating dynamic HTML from form structure for response %s (elapsed: %v)", responseId, time.Since(startTime))
+		generatedHTML, err := services.GenerateDynamicHTML(string(surveyJSONString), answers, clinicInfo)
 		if err != nil {
-			log.Printf("ERROR: Failed to generate HTML from template: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from template", "details": err.Error()})
+			log.Printf("ERROR: Failed to generate dynamic HTML: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from data", "details": err.Error()})
 			return
 		}
 

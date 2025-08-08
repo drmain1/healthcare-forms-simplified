@@ -7,11 +7,13 @@ import { clearEncryptionKey } from './encryption';
 const TIMEOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes before timeout
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+const VISIBILITY_EVENTS = ['visibilitychange', 'focus'];
 
 let timeoutId: NodeJS.Timeout | null = null;
 let warningTimeoutId: NodeJS.Timeout | null = null;
 let lastActivity = Date.now();
 let isWarningShown = false;
+let sessionExpired = false;
 
 // Callback for showing warning
 let onWarningCallback: ((timeRemaining: number) => void) | null = null;
@@ -22,6 +24,8 @@ export const setWarningCallback = (callback: (timeRemaining: number) => void) =>
 
 // Clear all PHI and log out user
 const handleTimeout = () => {
+  sessionExpired = true;
+  
   // Clear all PHI from Redux
   store.dispatch(clearPatientData());
   store.dispatch(clearResponseData());
@@ -32,7 +36,7 @@ const handleTimeout = () => {
   // Log out the user
   store.dispatch(fullLogout() as any); // Use `as any` because store.dispatch is not typed for thunks here
   
-  // Redirect to login
+  // Force reload to clear any cached state
   window.location.href = '/login';
 };
 
@@ -62,6 +66,11 @@ const showWarning = () => {
 
 // Reset the timeout on user activity
 export const resetTimeout = () => {
+  // Don't reset if session already expired
+  if (sessionExpired) {
+    return;
+  }
+  
   lastActivity = Date.now();
   isWarningShown = false;
   
@@ -90,17 +99,43 @@ const handleActivity = () => {
   
   // Only reset if it's been at least 1 second since last activity
   // This prevents excessive resets
-  if (now - lastActivity > 1000) {
+  if (now - lastActivity > 1000 && !sessionExpired) {
     resetTimeout();
+  }
+};
+
+// Check session validity on visibility change
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible' && !sessionExpired) {
+    const now = Date.now();
+    const elapsed = now - lastActivity;
+    
+    // If more time has passed than the timeout duration, session expired
+    if (elapsed >= TIMEOUT_DURATION) {
+      console.log('Session expired while app was in background');
+      handleTimeout();
+    } else if (elapsed >= TIMEOUT_DURATION - WARNING_DURATION) {
+      // Show warning if in warning period
+      showWarning();
+    } else {
+      // Resume normal timeout
+      resetTimeout();
+    }
   }
 };
 
 // Initialize session timeout monitoring
 export const initializeSessionTimeout = () => {
+  sessionExpired = false;
+  
   // Add event listeners for user activity
   ACTIVITY_EVENTS.forEach(event => {
     document.addEventListener(event, handleActivity, { passive: true });
   });
+  
+  // Add visibility change listeners
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('focus', handleVisibilityChange);
   
   // Start the timeout
   resetTimeout();
@@ -112,6 +147,10 @@ export const cleanupSessionTimeout = () => {
   ACTIVITY_EVENTS.forEach(event => {
     document.removeEventListener(event, handleActivity);
   });
+  
+  // Remove visibility change listeners
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('focus', handleVisibilityChange);
   
   // Clear timeouts
   if (timeoutId) {
@@ -135,4 +174,9 @@ export const getRemainingTime = (): number => {
 export const shouldShowWarning = (): boolean => {
   const elapsed = Date.now() - lastActivity;
   return elapsed >= (TIMEOUT_DURATION - WARNING_DURATION) && !isWarningShown;
+};
+
+// Check if session is expired
+export const isSessionExpired = (): boolean => {
+  return sessionExpired;
 };

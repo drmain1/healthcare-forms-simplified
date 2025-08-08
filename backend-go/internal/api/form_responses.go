@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -221,6 +222,21 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		// --- DEBUG LOGGING ---
+		log.Printf("--- DEBUG: Received Form Submission ---")
+		// Safely log signature data by checking for it and printing its length
+		for key, value := range requestBody.ResponseData {
+			if (strings.Contains(key, "signature")) {
+				if sigData, ok := value.(string); ok {
+					log.Printf("Signature field '%s' received with data length: %d", key, len(sigData))
+				} else {
+					log.Printf("Signature field '%s' received with non-string data type: %T", key, value)
+				}
+			} 
+		}
+		// --- END DEBUG LOGGING ---
+
 
 		log.Printf("Public form submission received for form %s with token %s", requestBody.FormID, requestBody.ShareToken)
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -121,6 +122,21 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 		}
 
 		// At this point, we have surveyJSON and answers.
+
+		// --- DEBUG LOGGING ---
+		log.Printf("--- DEBUG: Data Pulled from Firestore for PDF Generation ---")
+		for key, value := range answers {
+			if (strings.Contains(key, "signature")) {
+				if sigData, ok := value.(string); ok {
+					log.Printf("Signature field '%s' from Firestore has data length: %d", key, len(sigData))
+				} else {
+					log.Printf("Signature field '%s' from Firestore has non-string data type: %T", key, value)
+				}
+			}
+		}
+		// --- END DEBUG LOGGING ---
+
+
 		// Step 3: Pre-process/flatten data based on conditional logic.
 		log.Printf("Processing form data for response %s", responseId)
 		visibleQuestions, err := services.ProcessAndFlattenForm(surveyJSON, answers)

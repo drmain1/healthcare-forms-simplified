@@ -2,6 +2,9 @@ package services
 
 import (
 	"fmt"
+	"html/template"
+	"log"
+	"strings"
 	"time"
 )
 
@@ -12,7 +15,7 @@ type VisibleQuestion struct {
 	Answer        interface{} `json:"answer"`
 	QuestionType  string      `json:"questionType"`
 	IsSignature   bool        `json:"isSignature,omitempty"`
-	SignatureData string      `json:"signatureData,omitempty"`
+	SignatureData template.URL `json:"signatureData,omitempty"`
 }
 
 // ProcessAndFlattenForm takes the full survey JSON and the user's response data
@@ -59,26 +62,20 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 			continue
 		}
 
-		// Check for conditional visibility
-		if visibleIf, ok := element["visibleIf"].(string); ok {
-			isVisible, err := checkVisibility(visibleIf, responseData)
-			if err != nil || !isVisible {
-				continue // Skip if not visible or if there's an error evaluating
+		// If it's a panel or a question with nested elements, process them recursively
+		if subElements, ok := element["elements"]; ok {
+			panelQuestions, err := processElements(subElements, responseData)
+			if err == nil {
+				questions = append(questions, panelQuestions...)
 			}
 		}
 
-		// If it's a panel, process its elements recursively
-		if qType, ok := element["type"].(string); ok && qType == "panel" {
-			if panelElements, ok := element["elements"]; ok {
-				panelQuestions, err := processElements(panelElements, responseData)
-				if err == nil {
-					questions = append(questions, panelQuestions...)
-				}
-			}
+		// Process the element itself if it's a question
+		qType, isQuestion := element["type"].(string)
+		if !isQuestion || qType == "panel" { // Skip panels themselves after processing their elements
 			continue
 		}
 
-		// It's a question, so process it
 		name, ok := element["name"].(string)
 		if !ok {
 			continue // Skip elements without a name
@@ -95,27 +92,17 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 			title = name // Fallback to name if title is missing
 		}
 
-		qType, _ := element["type"].(string)
-
-		// Handle special cases like signature pads and date of birth
-		// Preserve the base64 data for signatures to embed in PDF
 		isSignature := false
-		signatureData := ""
+		var signatureData template.URL
 		if qType == "signaturepad" {
 			isSignature = true
-			// Keep the original base64 data if it's a string
-			if sigData, ok := answer.(string); ok {
-				// Check if it's a valid data URL
-				if len(sigData) > 100 && (sigData[:5] == "data:" || sigData[:10] == "data:image") {
-					signatureData = sigData
-					// Set a display text for the answer field
-					answer = "[Signature Captured]"
-				} else {
-					// Invalid or empty signature
-					answer = "[No Signature]"
-				}
+			if sigData, ok := answer.(string); ok && strings.HasPrefix(sigData, "data:image/") {
+				signatureData = template.URL(sigData)
+				answer = "[Signature Captured]"
+				log.Printf("--- DEBUG: Successfully processed signature for question: %s ---", name)
 			} else {
 				answer = "[No Signature]"
+				log.Printf("--- DEBUG: Failed to process signature for question: %s. Data type: %T, Value: %v ---", name, answer, answer)
 			}
 		} else if qType == "dateofbirth" {
 			// Handle date of birth with age calculation

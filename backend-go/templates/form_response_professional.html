@@ -352,10 +352,16 @@
         </div>
         
         <div class="responses-section">
-            {{range $key, $value := .Data}}
+            {{range .Questions}}
                 <div class="field">
-                    <div class="field-label">{{$key}}</div>
-                    <div class="field-value">{{$value}}</div>
+                    <div class="field-label">{{.Title}}</div>
+                    <div class="field-value">
+                        {{if .SignatureData}}
+                            <img src="{{.SignatureData}}" alt="Signature" style="max-width: 250px; max-height: 125px; border: 1px solid #eee; padding: 5px;"/>
+                        {{else}}
+                            {{.Answer}}
+                        {{end}}
+                    </div>
                 </div>
             {{end}}
         </div>

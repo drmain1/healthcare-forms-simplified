@@ -24,11 +24,10 @@ export const isSignatureEmpty = (signatureData: string | undefined | null): bool
   }
 
   const base64Data = signatureData.substring(base64Start + 7);
-  
-  // Decode and check size - empty signatures are typically very small
-  // A blank signature pad usually produces a base64 string of less than 1000 characters
-  // Real signatures are typically 2000+ characters
-  if (base64Data.length < 1000) {
+
+  // A blank signature pad can still produce a base64 string, but it's usually very small.
+  // A simple check for a very short length can be a first pass.
+  if (base64Data.length < 200) { // Reduced from 1000 to a more reasonable threshold
     return true;
   }
 

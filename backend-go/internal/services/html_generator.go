@@ -3,20 +3,12 @@ package services
 import (
 	"bytes"
 	"html/template"
-	"log"
 
 	"github.com/gemini/forms-api/internal/data"
 )
 
 // GenerateHTMLFromTemplate generates an HTML document from a template and data.
 func GenerateHTMLFromTemplate(questions []VisibleQuestion, clinicInfo *data.ClinicInfo) (string, error) {
-	// Debug logging
-	if clinicInfo != nil {
-		log.Printf("DEBUG: ClinicInfo passed to template: %+v", *clinicInfo)
-	} else {
-		log.Printf("DEBUG: ClinicInfo is nil")
-	}
-	
 	tmpl, err := template.New("pdf").Parse(pdfTemplate)
 	if err != nil {
 		return "", err
@@ -88,14 +80,14 @@ const pdfTemplate = `
     font-size: 14px;
     font-weight: 400;
     line-height: 1.6;
-    color: #3a3a3a;
+    color: #000000;
   }
   
   .contact-info {
     text-align: right;
     font-size: 14px;
     font-weight: 400;
-    color: #3a3a3a;
+    color: #000000;
     padding-top: 4px;
   }
   
@@ -127,13 +119,10 @@ const pdfTemplate = `
     color: #ffffff !important;
   }
   
-  /* Content area with subtle background */
+  /* Content area - no background */
   .content-area {
-    background: #fafafa !important;
     padding: 32px;
     margin-bottom: 36px;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
   
   .question {
@@ -156,7 +145,7 @@ const pdfTemplate = `
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #6a6a6a;
+    color: #000000;
     margin-bottom: 8px;
   }
   
@@ -169,6 +158,20 @@ const pdfTemplate = `
   
   .question-answer:empty:before {
     content: '\00a0';
+  }
+  
+  /* Signature styles */
+  .signature-image {
+    max-width: 300px;
+    max-height: 150px;
+    border: 1px solid #e0e0e0;
+    padding: 8px;
+    background: white;
+    display: inline-block;
+  }
+  
+  .signature-wrapper {
+    margin: 12px 0;
   }
   
   /* Print optimizations */
@@ -187,24 +190,8 @@ const pdfTemplate = `
     .section-title {
       color: #ffffff !important;
     }
-    
-    .content-area {
-      background: #fafafa !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
   }
   
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .section-bar {
-      border: 2px solid #000000;
-    }
-    
-    .content-area {
-      border: 1px solid #000000;
-    }
-  }
   
   /* Patient Demographics Form Styles */
   .demographics-form {
@@ -270,19 +257,6 @@ const pdfTemplate = `
     gap: 6px;
   }
   
-  /* Secondary section styling */
-  .section-bar.secondary {
-    height: 48px;
-    background: #4a4a4a !important;
-  }
-  
-  .section-bar.secondary .section-title {
-    font-size: 13px;
-  }
-  
-  .other-questions {
-    padding-top: 16px;
-  }
 </style>
 </head>
 <body>
@@ -334,12 +308,13 @@ const pdfTemplate = `
     
     <!-- Gender, Date of Birth row -->
     <div class="form-row">
-      <div class="form-field" style="width: 150px;">
-        <span class="field-label">Gender</span>
+      <div class="form-field" style="width: 200px;">
+        <span class="field-label">Sex Assigned at Birth</span>
         <span class="checkbox-group">
           {{range .Questions}}{{if eq .Title "Sex Assigned at Birth"}}
-            <span class="checkbox">{{if eq .Answer "male"}}☑{{else}}☐{{end}} M</span>
-            <span class="checkbox">{{if eq .Answer "female"}}☑{{else}}☐{{end}} F</span>
+            <span class="checkbox">{{if eq .Answer "male"}}☑{{else}}☐{{end}} Male</span>
+            <span class="checkbox">{{if eq .Answer "female"}}☑{{else}}☐{{end}} Female</span>
+            <span class="checkbox">{{if eq .Answer "other"}}☑{{else}}☐{{end}} Other</span>
           {{end}}{{end}}
         </span>
       </div>
@@ -376,51 +351,145 @@ const pdfTemplate = `
     <!-- Phone and Email -->
     <div class="form-row">
       <div class="form-field" style="flex: 1;">
-        <span class="field-label">Phone</span>
+        <span class="field-label">Primary Phone Number</span>
         <span class="field-value underline">{{range .Questions}}{{if eq .Title "Primary Phone Number"}}{{.Answer}}{{end}}{{end}}</span>
       </div>
       <div class="form-field" style="flex: 1;">
-        <span class="field-label">Email</span>
+        <span class="field-label">Email Address</span>
         <span class="field-value underline">{{range .Questions}}{{if eq .Title "Email Address"}}{{.Answer}}{{end}}{{end}}</span>
       </div>
     </div>
     
     <!-- Secondary Phone (Optional) -->
     {{range .Questions}}
-    {{if eq .Title "Secondary Phone Number"}}
+    {{if eq .Title "Secondary Phone Number (Optional)"}}
     <div class="form-row">
-      <div class="form-field" style="flex: 1;">
-        <span class="field-label">Secondary Phone Number</span>
+      <div class="form-field full-width">
+        <span class="field-label">Secondary Phone Number (Optional)</span>
         <span class="field-value underline">{{.Answer}}</span>
-        <span class="checkbox-group" style="margin-left: 10px;">
-          <span class="checkbox">☐ W</span>
-          <span class="checkbox">☐ H</span>
-          <span class="checkbox">☐ C</span>
+      </div>
+    </div>
+    {{end}}
+    {{end}}
+    
+    <!-- Communication Preference -->
+    {{range .Questions}}
+    {{if eq .Title "Preferred method of communication"}}
+    <div class="form-row">
+      <div class="form-field full-width">
+        <span class="field-label">Preferred method of communication</span>
+        <span class="checkbox-group">
+          <span class="checkbox">{{if eq .Answer "Cell Phone"}}☑{{else}}☐{{end}} Cell Phone</span>
+          <span class="checkbox">{{if eq .Answer "Home Phone"}}☑{{else}}☐{{end}} Home Phone</span>
+          <span class="checkbox">{{if eq .Answer "E-mail"}}☑{{else}}☐{{end}} E-mail</span>
+          <span class="checkbox">{{if eq .Answer "Other"}}☑{{else}}☐{{end}} Other</span>
         </span>
       </div>
     </div>
     {{end}}
     {{end}}
+    
+    <!-- Marital Status -->
+    {{range .Questions}}
+    {{if eq .Title "Marital Status"}}
+    <div class="form-row">
+      <div class="form-field">
+        <span class="field-label">Marital Status</span>
+        <span class="checkbox-group">
+          <span class="checkbox">{{if eq .Answer "M"}}☑{{else}}☐{{end}} M</span>
+          <span class="checkbox">{{if eq .Answer "S"}}☑{{else}}☐{{end}} S</span>
+          <span class="checkbox">{{if eq .Answer "W"}}☑{{else}}☐{{end}} W</span>
+          <span class="checkbox">{{if eq .Answer "D"}}☑{{else}}☐{{end}} D</span>
+        </span>
+      </div>
+      {{range $.Questions}}
+      {{if eq .Title "Name of Spouse/Significant Other"}}
+      <div class="form-field" style="flex: 1; margin-left: 20px;">
+        <span class="field-label">Name of Spouse/Significant Other</span>
+        <span class="field-value underline">{{.Answer}}</span>
+      </div>
+      {{end}}
+      {{end}}
+    </div>
+    {{end}}
+    {{end}}
+    
+    <!-- Emergency Contact -->
+    <div class="form-row">
+      <div class="form-field" style="flex: 2;">
+        <span class="field-label">Emergency Contact Name</span>
+        <span class="field-value underline">{{range .Questions}}{{if eq .Title "Emergency Contact Name"}}{{.Answer}}{{end}}{{end}}</span>
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <span class="field-label">Relationship</span>
+        <span class="field-value underline">{{range .Questions}}{{if eq .Title "Relationship"}}{{.Answer}}{{end}}{{end}}</span>
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <span class="field-label">Phone</span>
+        <span class="field-value underline">{{range .Questions}}{{if eq .Title "Phone"}}{{.Answer}}{{end}}{{end}}</span>
+      </div>
+    </div>
+    
+    <!-- How did you hear about us -->
+    <div class="form-row" style="margin-bottom: 0;">
+      <div class="form-field full-width">
+        <span class="field-label">How did you hear about us?</span>
+        <span class="field-value underline">{{range .Questions}}{{if eq .Title "How did you hear about us?"}}{{.Answer}}{{end}}{{end}}</span>
+      </div>
+    </div>
   </div>
   
-  <!-- Other questions that are not demographics -->
+  <!-- Check for Consent & Policies section -->
+  {{$hasConsent := false}}
   {{$hasOtherQuestions := false}}
   {{range .Questions}}
-    {{if and (ne .Title "First Name") (ne .Title "Last Name") (ne .Title "Today's Date") (ne .Title "Street Address") (ne .Title "Date of Birth") (ne .Title "Sex Assigned at Birth") (ne .Title "City") (ne .Title "State") (ne .Title "ZIP Code") (ne .Title "Primary Phone Number") (ne .Title "Secondary Phone Number") (ne .Title "Email Address")}}
+    {{if or (eq .Title "CONSENT TO CHIROPRACTIC EXAMINATION AND TREATMENT") (eq .Title "Consent to Treatment") (eq .Title "I consent to treatment")}}
+      {{$hasConsent = true}}
+    {{else if and (ne .Title "First Name") (ne .Title "Last Name") (ne .Title "Today's Date") (ne .Title "Street Address") (ne .Title "Date of Birth") (ne .Title "Sex Assigned at Birth") (ne .Title "City") (ne .Title "State") (ne .Title "ZIP Code") (ne .Title "Primary Phone Number") (ne .Title "Secondary Phone Number (Optional)") (ne .Title "Email Address") (ne .Title "Preferred method of communication") (ne .Title "Marital Status") (ne .Title "Name of Spouse/Significant Other") (ne .Title "Emergency Contact Name") (ne .Title "Relationship") (ne .Title "Phone") (ne .Title "How did you hear about us?")}}
       {{$hasOtherQuestions = true}}
     {{end}}
   {{end}}
   
-  {{if $hasOtherQuestions}}
-  <div class="section-bar secondary" style="margin-top: 40px;">
-    <div class="section-title">Clinical Information</div>
+  <!-- Consent & Policies Section -->
+  {{if $hasConsent}}
+  <div class="section-bar" style="margin-top: 40px;">
+    <div class="section-title">Consent & Policies</div>
   </div>
-  <div class="other-questions">
+  <div class="content-area">
     {{range .Questions}}
-      {{if and (ne .Title "First Name") (ne .Title "Last Name") (ne .Title "Today's Date") (ne .Title "Street Address") (ne .Title "Date of Birth") (ne .Title "Sex Assigned at Birth") (ne .Title "City") (ne .Title "State") (ne .Title "ZIP Code") (ne .Title "Primary Phone Number") (ne .Title "Secondary Phone Number") (ne .Title "Email Address")}}
+      {{if or (eq .Title "CONSENT TO CHIROPRACTIC EXAMINATION AND TREATMENT") (eq .Title "Consent to Treatment") (eq .Title "I consent to treatment") (eq .Title "HIPAA Acknowledgment") (eq .Title "Financial Policy Acknowledgment") (eq .Title "Cancellation Policy Acknowledgment")}}
       <div class="question">
         <div class="question-title">{{.Title}}</div>
-        <div class="question-answer">{{if .Answer}}{{.Answer}}{{else}}&nbsp;{{end}}</div>
+        <div class="question-answer">
+          {{if .SignatureData}}
+            <img src="{{.SignatureData}}" class="signature-image" alt="Signature" />
+          {{else}}
+            {{if .Answer}}{{.Answer}}{{else}}&nbsp;{{end}}
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    {{end}}
+  </div>
+  {{end}}
+  
+  <!-- Clinical History Section -->
+  {{if $hasOtherQuestions}}
+  <div class="section-bar" style="margin-top: 40px;">
+    <div class="section-title">Clinical History</div>
+  </div>
+  <div class="content-area">
+    {{range .Questions}}
+      {{if and (ne .Title "First Name") (ne .Title "Last Name") (ne .Title "Today's Date") (ne .Title "Street Address") (ne .Title "Date of Birth") (ne .Title "Sex Assigned at Birth") (ne .Title "City") (ne .Title "State") (ne .Title "ZIP Code") (ne .Title "Primary Phone Number") (ne .Title "Secondary Phone Number (Optional)") (ne .Title "Email Address") (ne .Title "Preferred method of communication") (ne .Title "Marital Status") (ne .Title "Name of Spouse/Significant Other") (ne .Title "Emergency Contact Name") (ne .Title "Relationship") (ne .Title "Phone") (ne .Title "How did you hear about us?") (ne .Title "CONSENT TO CHIROPRACTIC EXAMINATION AND TREATMENT") (ne .Title "Consent to Treatment") (ne .Title "I consent to treatment") (ne .Title "HIPAA Acknowledgment") (ne .Title "Financial Policy Acknowledgment") (ne .Title "Cancellation Policy Acknowledgment")}}
+      <div class="question">
+        <div class="question-title">{{.Title}}</div>
+        <div class="question-answer">
+          {{if .SignatureData}}
+            <img src="{{.SignatureData}}" class="signature-image" alt="Signature" />
+          {{else}}
+            {{if .Answer}}{{.Answer}}{{else}}&nbsp;{{end}}
+          {{end}}
+        </div>
       </div>
       {{end}}
     {{end}}

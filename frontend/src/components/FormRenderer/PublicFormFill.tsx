@@ -126,8 +126,15 @@ export const PublicFormFill: React.FC = () => {
         
         // Handle form submission
         surveyModel.onComplete.add((sender: any) => {
+          console.log("--- DEBUG: Form Data Before Cleaning ---");
+          console.log(JSON.stringify(sender.data, null, 2));
+
           // Clean signature data before submission (removes empty signatures)
           const cleanedData = cleanSignatureData(sender.data);
+
+          console.log("--- DEBUG: Form Data After Cleaning ---");
+          console.log(JSON.stringify(cleanedData, null, 2));
+
           handleFormSubmission(cleanedData);
         });
         

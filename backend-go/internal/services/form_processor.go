@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 )
 
 // VisibleQuestion represents a question and its answer that should be displayed on the PDF.
@@ -96,7 +97,7 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 
 		qType, _ := element["type"].(string)
 
-		// Handle special cases like signature pads
+		// Handle special cases like signature pads and date of birth
 		// Preserve the base64 data for signatures to embed in PDF
 		isSignature := false
 		signatureData := ""
@@ -116,6 +117,15 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 			} else {
 				answer = "[No Signature]"
 			}
+		} else if qType == "dateofbirth" {
+			// Handle date of birth with age calculation
+			if dobStr, ok := answer.(string); ok && dobStr != "" {
+				age := calculateAgeFromDOB(dobStr)
+				if age >= 0 {
+					// Append age to the answer
+					answer = fmt.Sprintf("%s (Age: %d)", dobStr, age)
+				}
+			}
 		}
 
 		questions = append(questions, VisibleQuestion{
@@ -129,6 +139,44 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 	}
 
 	return questions, nil
+}
+
+// calculateAgeFromDOB calculates age from a date of birth string
+func calculateAgeFromDOB(dobStr string) int {
+	// Parse the date string - handle various formats
+	var dob time.Time
+	var err error
+	
+	// Try common date formats
+	formats := []string{
+		"2006-01-02",           // ISO format (most common from HTML date input)
+		"01/02/2006",           // US format
+		"02/01/2006",           // EU format
+		time.RFC3339,           // Full timestamp
+		"2006-01-02T15:04:05Z", // ISO 8601
+	}
+	
+	for _, format := range formats {
+		dob, err = time.Parse(format, dobStr)
+		if err == nil {
+			break
+		}
+	}
+	
+	if err != nil {
+		// If we couldn't parse the date, return -1
+		return -1
+	}
+	
+	now := time.Now()
+	age := now.Year() - dob.Year()
+	
+	// Check if birthday hasn't occurred this year
+	if now.Month() < dob.Month() || (now.Month() == dob.Month() && now.Day() < dob.Day()) {
+		age--
+	}
+	
+	return age
 }
 
 // checkVisibility evaluates a SurveyJS `visibleIf` expression against the response data.

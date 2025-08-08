@@ -47,7 +47,16 @@ export const Dashboard: React.FC = () => {
     ordering: '-submitted_at' 
   });
   
-  const responses = responsesData?.results || [];
+  // Sort responses by submitted_at date (newest first) as a fallback
+  const responses = React.useMemo(() => {
+    const data = responsesData?.results || [];
+    return [...data].sort((a, b) => {
+      // Handle cases where submitted_at might be null
+      const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+      const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+      return dateB - dateA; // Newest first (descending order)
+    });
+  }, [responsesData?.results]);
   
   // Debug log
   
@@ -125,7 +134,13 @@ export const Dashboard: React.FC = () => {
                   <TableCell>
                     <Typography variant="body2">
                       {response.submitted_at 
-                        ? new Date(response.submitted_at).toLocaleDateString()
+                        ? new Date(response.submitted_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })
                         : 'Not submitted'
                       }
                     </Typography>

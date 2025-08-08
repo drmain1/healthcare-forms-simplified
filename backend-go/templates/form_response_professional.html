@@ -3,89 +3,317 @@
 <head>
     <title>{{.Title}}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-        body {
-            font-family: 'Inter', sans-serif;
-            color: #333;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #fff;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Text', 'Segoe UI', sans-serif;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            font-size: 14px;
+            line-height: 1.5;
+            letter-spacing: -0.011em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .page {
-            padding: 40px;
+            padding: 48px 48px 72px 48px;
             page-break-after: always;
+            max-width: 816px;
+            margin: 0 auto;
         }
 
+        /* Monochrome header with strong typography */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 40px;
-            border-bottom: 2px solid #eee;
             padding-bottom: 20px;
+            border-bottom: 2px solid #000000;
         }
 
         .header .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            color: #1976d2;
+            color: #000000;
+            letter-spacing: -0.025em;
+            text-transform: uppercase;
         }
 
         .header .info {
             text-align: right;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #4a4a4a;
+            font-weight: 500;
+            letter-spacing: 0.02em;
         }
 
+        .header .info div {
+            margin-bottom: 1px;
+        }
+
+        /* Bold title with maximum impact */
         .title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            letter-spacing: -0.035em;
+            color: #000000;
+            line-height: 1.1;
         }
 
-        .patient-info {
-            margin-bottom: 30px;
+        /* SIGNATURE THICK BAR SECTION HEADER - BLACK & WHITE OPTIMIZED */
+        .section-header {
+            position: relative;
+            margin-top: 36px;
+            margin-bottom: 24px;
         }
 
+        .section-header.first {
+            margin-top: 0;
+        }
+
+        /* Thick black bar with integrated text */
+        .section-bar {
+            height: 56px;
+            background-color: #000000;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+        }
+
+        /* White text on black bar for primary sections */
         .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
 
+        /* Secondary section with gray bar */
+        .section-header.secondary .section-bar {
+            background-color: #2a2a2a;
+            height: 48px;
+        }
+
+        .section-header.secondary .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        /* Tertiary section with lighter gray */
+        .section-header.tertiary .section-bar {
+            background-color: #6a6a6a;
+            height: 40px;
+        }
+
+        .section-header.tertiary .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        /* Content sections with subtle gray backgrounds */
+        .patient-info {
+            margin-bottom: 36px;
+            background-color: #f8f8f8;
+            padding: 24px 28px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .responses-section {
+            background-color: #fafafa;
+            padding: 24px 28px;
+            border: 1px solid #e5e5e5;
+        }
+
+        /* High contrast field styling */
         .field {
             display: flex;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            padding: 14px 0;
+            border-bottom: 1px solid #d0d0d0;
+        }
+
+        .field:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .field:first-child {
+            padding-top: 0;
         }
 
         .field-label {
             font-weight: 600;
-            width: 200px;
+            width: 160px;
             padding-right: 20px;
+            color: #3a3a3a;
+            font-size: 12px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            flex-shrink: 0;
         }
 
         .field-value {
             flex: 1;
+            color: #000000;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            line-height: 1.5;
         }
 
+        /* Emphasized patient name with strong weight */
+        .field.patient-name .field-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #000000;
+            letter-spacing: -0.02em;
+        }
+
+        /* Minimalist footer */
         .footer {
             position: fixed;
-            bottom: 0;
-            left: 40px;
-            right: 40px;
+            bottom: 20px;
+            left: 48px;
+            right: 48px;
             text-align: center;
-            font-size: 12px;
-            color: #999;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
+            font-size: 10px;
+            color: #6a6a6a;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .footer-divider {
+            width: 48px;
+            height: 2px;
+            background-color: #000000;
+            margin: 0 auto 10px;
+        }
+
+        /* Alternative thick bar designs for variety */
+        .section-header.accent .section-bar {
+            background: repeating-linear-gradient(
+                90deg,
+                #000000,
+                #000000 8px,
+                #2a2a2a 8px,
+                #2a2a2a 16px
+            );
+        }
+
+        /* Print optimizations for perfect black & white output */
+        @media print {
+            body {
+                background-color: #ffffff;
+                color: #000000;
+            }
+            
+            .page {
+                padding: 36px 36px 60px 36px;
+            }
+            
+            .section-bar {
+                background-color: #000000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .section-header.secondary .section-bar {
+                background-color: #2a2a2a !important;
+            }
+
+            .section-header.tertiary .section-bar {
+                background-color: #6a6a6a !important;
+            }
+            
+            .patient-info {
+                background-color: #f8f8f8 !important;
+                border-color: #d0d0d0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .responses-section {
+                background-color: #fafafa !important;
+                border-color: #d5d5d5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .field {
+                border-bottom-color: #d0d0d0 !important;
+            }
+
+            .header {
+                border-bottom-color: #000000 !important;
+            }
+
+            /* Ensure all text is pure black for maximum contrast */
+            .title,
+            .header .logo,
+            .field-value,
+            .field.patient-name .field-value {
+                color: #000000 !important;
+            }
+
+            .field-label {
+                color: #3a3a3a !important;
+            }
+
+            .header .info {
+                color: #4a4a4a !important;
+            }
+
+            .footer {
+                color: #6a6a6a !important;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .section-bar {
+                background-color: #000000;
+            }
+            
+            .section-title {
+                color: #ffffff;
+                font-weight: 800;
+            }
+
+            .patient-info,
+            .responses-section {
+                border-width: 2px;
+                border-color: #000000;
+            }
+
+            .field {
+                border-bottom-width: 2px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="page">
+        <!-- Elegant header with clinic information -->
         <div class="header">
             <div class="logo">{{.Organization.Name}}</div>
             <div class="info">
@@ -95,27 +323,48 @@
             </div>
         </div>
 
+        <!-- Document title with refined typography -->
         <div class="title">{{.Title}}</div>
 
-        <div class="section-title">Patient Information</div>
+        <!-- Patient Information with distinctive thick bar -->
+        <div class="section-header first">
+            <div class="section-bar">
+                <div class="section-title">Patient Information</div>
+            </div>
+        </div>
+        
         <div class="patient-info">
-            <div class="field">
+            <div class="field patient-name">
                 <div class="field-label">Patient Name</div>
                 <div class="field-value">{{.PatientName}}</div>
             </div>
+            <div class="field">
+                <div class="field-label">Date of Visit</div>
+                <div class="field-value">{{.CurrentDate}}</div>
+            </div>
         </div>
 
-        <div class="section-title">Form Responses</div>
-        {{range $key, $value := .Data}}
-            <div class="field">
-                <div class="field-label">{{$key}}</div>
-                <div class="field-value">{{$value}}</div>
+        <!-- Form Responses with secondary styling -->
+        <div class="section-header secondary">
+            <div class="section-bar">
+                <div class="section-title">Clinical Responses</div>
             </div>
-        {{end}}
+        </div>
+        
+        <div class="responses-section">
+            {{range $key, $value := .Data}}
+                <div class="field">
+                    <div class="field-label">{{$key}}</div>
+                    <div class="field-value">{{$value}}</div>
+                </div>
+            {{end}}
+        </div>
     </div>
 
+    <!-- Minimal footer with subtle divider -->
     <div class="footer">
-        Page <span class="page-number"></span> of <span class="total-pages"></span> - Generated on {{.CurrentDate}}
+        <div class="footer-divider"></div>
+        Page <span class="page-number"></span> of <span class="total-pages"></span> • Generated on {{.CurrentDate}}
     </div>
 </body>
 </html>

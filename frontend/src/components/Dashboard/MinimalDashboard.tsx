@@ -90,7 +90,16 @@ export const MinimalDashboard: React.FC = () => {
   
   const [deleteResponse, { isLoading: isDeleting }] = useDeleteResponseMutation();
   
-  const responses = useMemo(() => responsesData?.results || [], [responsesData?.results]);
+  // Sort responses by submitted_at date (newest first)
+  const responses = useMemo(() => {
+    const data = responsesData?.results || [];
+    return [...data].sort((a, b) => {
+      // Handle cases where submitted_at might be null
+      const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+      const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+      return dateB - dateA; // Newest first (descending order)
+    });
+  }, [responsesData?.results]);
   
   const handleDelete = async (responseId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -286,11 +295,12 @@ export const MinimalDashboard: React.FC = () => {
                       </td>
                       <td className="tw-px-6 tw-py-4 tw-whitespace-nowrap tw-text-sm tw-text-gray-500">
                         {response.submitted_at 
-                          ? new Date(response.submitted_at).toLocaleDateString('en-US', { 
+                          ? new Date(response.submitted_at).toLocaleString('en-US', { 
                               month: 'short', 
                               day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true
                             })
                           : '-'}
                       </td>

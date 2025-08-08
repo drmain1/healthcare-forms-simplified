@@ -1,168 +1,367 @@
-# UI Modernization Handoff Guide
-
-## 📋 Current State Summary (Updated July 22, 2025 - Latest)
-
-### ✅ Completed Cleanup Tasks
-- **Removed duplicate components**: Dashboard.tsx kept (DashboardNew.tsx removed)
-- **Simplified form sending**: FormSendSimplified.tsx kept (FormSend.tsx removed)
-- **Extracted test components**: Moved to `src/__demos__/` folder
-- **Standardized to TypeScript**: All service files now use `.ts` extension
-- **Removed deprecated services**: anthropicService and mistralService removed
-- **MAJOR CSS cleanup completed**:
-  - Removed 13 CSS files total (App.css, index.css, form-builder-styles.css, 10+ themes)
-  - Consolidated form-builder-styles.css into main.css
-  - Integrated design system variables into main.css
-  - All CSS variables now properly available
-- **🆕 FormBuilder refactoring completed**:
-  - Split 400+ line component into 3 clean components
-  - FormBuilderContainer.tsx - Data logic
-  - FormBuilderUI.tsx - Presentation
-  - FormBuilderToolbar.tsx - Reusable toolbar
-- **🆕 Documentation updates**:
-  - Created DO_NOT_MODIFY.md for critical components
-  - Updated COMPONENT_INVENTORY.md with checkboxes
-  - All docs reflect latest changes
-
-### 🎨 UI Framework Status
-- **Phase 1 & 2 completed**: Tailwind CSS setup with design tokens
-- **Compatibility layer**: Prevents conflicts with SurveyJS and Material-UI
-- **Design tokens**: Available in `src/styles/design-tokens.ts`
-- **Tailwind prefix**: Use `tw-` prefix for all Tailwind classes
-
-## 🚀 Next Steps for UI Developer
-
-**📚 IMPORTANT: See `COMPONENT_INVENTORY.md` for detailed component catalog with styling guidelines**
-
-### 1. Start with Clean Components (Ready Now)
-These components are ready for UI modernization:
-- [ ] **`Dashboard.tsx`** - ✨ RECENTLY CLEANED - Simple table, perfect starting point
-- [ ] `src/components/Common/Layout.tsx` - Main app layout wrapper
-- [ ] `src/components/Dashboard/FormsList.tsx` - Forms listing table
-- [ ] `src/components/Responses/ResponsesList.tsx` - Response listings
-
-### 2. ~~Components Needing Refactoring First~~ ✅ ALL REFACTORED!
-- [x] ~~`src/components/FormBuilder/FormBuilder.tsx` (400+ lines)~~
-  - **✅ COMPLETED**: Split into:
-    - FormBuilderContainer.tsx (data/API logic)
-    - FormBuilderUI.tsx (presentation)
-    - FormBuilderToolbar.tsx (reusable toolbar)
-  - **Now ready for styling!**
-- [ ] `src/components/Responses/ResponseViewer.tsx`
-  - Address prop drilling issues (minor - can style as-is)
-
-### 3. Do NOT Touch (Core Functionality)
-Preserve these components exactly as-is:
-- ❌ `src/components/FormRenderer/` - SurveyJS core rendering
-- ❌ Form validation logic
-- ❌ API integration layer (`src/store/`)
-- ❌ Authentication flow (`src/services/authService.ts`)
-- ❌ Healthcare-specific components (BodyDiagram, VitalSigns)
-
-## 🛠️ Available Tools & Guidelines
-
-### Styling Approach
-```typescript
-// Use Tailwind with prefix
-<div className="tw-bg-primary-500 tw-p-4 tw-rounded">
-
-// Use design tokens
-import { designTokens } from '@/styles/design-tokens';
-
-// Use MigrationWrapper for gradual updates
-<MigrationWrapper useTailwind={true}>
-  <YourComponent />
-</MigrationWrapper>
-```
-
-### Import Path Aliases
-```typescript
-// Use these aliases for cleaner imports
-import { Button } from '@components/Common/Button';
-import { useAuth } from '@hooks/useAuth';
-import { formsApi } from '@store/api/formsApi';
-```
-
-### Testing Each Change
-After updating each component:
-1. Test form builder functionality
-2. Test form viewer/renderer
-3. Check responsive behavior
-4. Verify no visual regressions
-5. Run build to check for errors
-
-## 📁 Project Structure
-
-```
-frontend/src/
-├── __demos__/           # Test components (ignore these)
-├── components/
-│   ├── Common/         # Shared UI components
-│   ├── Dashboard/      # Dashboard views
-│   ├── FormBuilder/    # Form creation (needs refactoring)
-│   ├── FormRenderer/   # DO NOT MODIFY
-│   └── Responses/      # Response viewing
-├── services/           # All TypeScript now
-├── store/             # Redux/RTK Query
-└── styles/            # CSS and design tokens
-```
-
-## ⚠️ Known Issues & Technical Debt
-
-### High Priority
-1. ~~FormBuilder component too complex (400+ lines)~~ ✅ RESOLVED
-2. Some Material-UI components still using sx prop inconsistently
-3. Bundle size could be optimized with better imports
-
-### Medium Priority  
-1. Error handling patterns inconsistent across components
-2. Some components missing TypeScript interfaces
-3. Loading states could be unified
-
-### Low Priority
-1. Test coverage gaps
-2. Some unused dependencies in package.json
-3. Storybook setup incomplete
-
-## 🏁 Quick Start Commands
-
-```bash
-# Install dependencies
-cd frontend
-npm install --legacy-peer-deps
-
-# Start development
-npm start
-
-# Run type checking
-npm run typecheck
-
-# Build for production
-npm run build
-
-# Analyze bundle size
-npm run analyze
-```
-
-## 📞 Key Contacts & Resources
-
-- **🆕 Component Inventory**: `COMPONENT_INVENTORY.md` - **START HERE for styling guide**
-- **🆕 DO NOT MODIFY**: `DO_NOT_MODIFY.md` - Critical components list
-- UI Modernization Plan: `UI_MODERNIZATION_PLAN.md`
-- Technical Debt Status: `TECHNICAL_DEBT.md` (updated with latest fixes)
-- CSS Architecture: `src/styles/CSS_ARCHITECTURE.md` (updated structure)
-- Design Tokens: `src/styles/design-tokens.ts`
-- Bundle Size Baseline: `BUNDLE_SIZE_BASELINE.md`
-- SurveyJS Docs: https://surveyjs.io/documentation
-- Project specific instructions: `CLAUDE.md`
-
-## 🎯 Success Criteria
-
-Your UI updates are successful when:
-- ✅ All existing functionality remains intact
-- ✅ Forms can be created, edited, and filled out
-- ✅ No console errors or warnings
-- ✅ Bundle size increase < 50KB
-- ✅ Responsive on mobile devices
-- ✅ Accessibility standards maintained
-
-Good luck with the UI modernization! The codebase is now clean and ready for your improvements.
+{
+  "title": "",
+  "pages": [
+    {
+      "name": "page1",
+      "elements": [
+        {
+          "type": "panel",
+          "name": "patient_demographics",
+          "title": "Patient Demographics",
+          "elements": [
+            {
+              "type": "html",
+              "name": "demographics_header",
+              "html": "<h3 style=\"margin-bottom: 20px; color: #333;\">Patient Information</h3>"
+            },
+            {
+              "type": "text",
+              "name": "form_date",
+              "title": "Today's Date",
+              "defaultValue": "2025-08-08",
+              "readOnly": true,
+              "inputType": "date"
+            },
+            {
+              "type": "text",
+              "name": "first_name",
+              "title": "First Name",
+              "isRequired": true,
+              "validators": [
+                {
+                  "type": "text",
+                  "minLength": 2,
+                  "maxLength": 50
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "name": "last_name",
+              "title": "Last Name",
+              "isRequired": true,
+              "validators": [
+                {
+                  "type": "text",
+                  "minLength": 2,
+                  "maxLength": 50
+                }
+              ]
+            },
+            {
+              "type": "dateofbirth",
+              "name": "date_of_birth",
+              "title": "Date of Birth",
+              "isRequired": true,
+              "ageFieldName": "calculated_age"
+            },
+            {
+              "type": "dropdown",
+              "name": "sex_at_birth",
+              "title": "Sex Assigned at Birth",
+              "isRequired": true,
+              "choices": [
+                {
+                  "value": "male",
+                  "text": "Male"
+                },
+                {
+                  "value": "female",
+                  "text": "Female"
+                },
+                {
+                  "value": "other",
+                  "text": "Other"
+                },
+                {
+                  "value": "prefer_not_to_answer",
+                  "text": "Prefer not to answer"
+                }
+              ],
+              "placeholder": "Select sex assigned at birth..."
+            },
+            {
+              "type": "text",
+              "name": "street_address",
+              "title": "Street Address",
+              "isRequired": true,
+              "placeholder": "123 Main Street"
+            },
+            {
+              "type": "text",
+              "name": "city",
+              "title": "City",
+              "isRequired": true,
+              "placeholder": "New York"
+            },
+            {
+              "type": "dropdown",
+              "name": "state",
+              "title": "State",
+              "isRequired": true,
+              "choices": [
+                {
+                  "value": "AL",
+                  "text": "Alabama"
+                },
+                {
+                  "value": "AK",
+                  "text": "Alaska"
+                },
+                {
+                  "value": "AZ",
+                  "text": "Arizona"
+                },
+                {
+                  "value": "AR",
+                  "text": "Arkansas"
+                },
+                {
+                  "value": "CA",
+                  "text": "California"
+                },
+                {
+                  "value": "CO",
+                  "text": "Colorado"
+                },
+                {
+                  "value": "CT",
+                  "text": "Connecticut"
+                },
+                {
+                  "value": "DE",
+                  "text": "Delaware"
+                },
+                {
+                  "value": "FL",
+                  "text": "Florida"
+                },
+                {
+                  "value": "GA",
+                  "text": "Georgia"
+                },
+                {
+                  "value": "HI",
+                  "text": "Hawaii"
+                },
+                {
+                  "value": "ID",
+                  "text": "Idaho"
+                },
+                {
+                  "value": "IL",
+                  "text": "Illinois"
+                },
+                {
+                  "value": "IN",
+                  "text": "Indiana"
+                },
+                {
+                  "value": "IA",
+                  "text": "Iowa"
+                },
+                {
+                  "value": "KS",
+                  "text": "Kansas"
+                },
+                {
+                  "value": "KY",
+                  "text": "Kentucky"
+                },
+                {
+                  "value": "LA",
+                  "text": "Louisiana"
+                },
+                {
+                  "value": "ME",
+                  "text": "Maine"
+                },
+                {
+                  "value": "MD",
+                  "text": "Maryland"
+                },
+                {
+                  "value": "MA",
+                  "text": "Massachusetts"
+                },
+                {
+                  "value": "MI",
+                  "text": "Michigan"
+                },
+                {
+                  "value": "MN",
+                  "text": "Minnesota"
+                },
+                {
+                  "value": "MS",
+                  "text": "Mississippi"
+                },
+                {
+                  "value": "MO",
+                  "text": "Missouri"
+                },
+                {
+                  "value": "MT",
+                  "text": "Montana"
+                },
+                {
+                  "value": "NE",
+                  "text": "Nebraska"
+                },
+                {
+                  "value": "NV",
+                  "text": "Nevada"
+                },
+                {
+                  "value": "NH",
+                  "text": "New Hampshire"
+                },
+                {
+                  "value": "NJ",
+                  "text": "New Jersey"
+                },
+                {
+                  "value": "NM",
+                  "text": "New Mexico"
+                },
+                {
+                  "value": "NY",
+                  "text": "New York"
+                },
+                {
+                  "value": "NC",
+                  "text": "North Carolina"
+                },
+                {
+                  "value": "ND",
+                  "text": "North Dakota"
+                },
+                {
+                  "value": "OH",
+                  "text": "Ohio"
+                },
+                {
+                  "value": "OK",
+                  "text": "Oklahoma"
+                },
+                {
+                  "value": "OR",
+                  "text": "Oregon"
+                },
+                {
+                  "value": "PA",
+                  "text": "Pennsylvania"
+                },
+                {
+                  "value": "RI",
+                  "text": "Rhode Island"
+                },
+                {
+                  "value": "SC",
+                  "text": "South Carolina"
+                },
+                {
+                  "value": "SD",
+                  "text": "South Dakota"
+                },
+                {
+                  "value": "TN",
+                  "text": "Tennessee"
+                },
+                {
+                  "value": "TX",
+                  "text": "Texas"
+                },
+                {
+                  "value": "UT",
+                  "text": "Utah"
+                },
+                {
+                  "value": "VT",
+                  "text": "Vermont"
+                },
+                {
+                  "value": "VA",
+                  "text": "Virginia"
+                },
+                {
+                  "value": "WA",
+                  "text": "Washington"
+                },
+                {
+                  "value": "WV",
+                  "text": "West Virginia"
+                },
+                {
+                  "value": "WI",
+                  "text": "Wisconsin"
+                },
+                {
+                  "value": "WY",
+                  "text": "Wyoming"
+                }
+              ],
+              "placeholder": "Select a state...",
+              "itemComponent": "custom-dropdown-item"
+            },
+            {
+              "type": "text",
+              "name": "zip_code",
+              "title": "ZIP Code",
+              "isRequired": true,
+              "validators": [
+                {
+                  "type": "regex",
+                  "text": "Please enter a valid ZIP code (e.g., 12345 or 12345-6789)",
+                  "regex": "^[0-9]{5}(-[0-9]{4})?$"
+                }
+              ],
+              "placeholder": "12345"
+            },
+            {
+              "type": "text",
+              "name": "phone_number",
+              "title": "Primary Phone Number",
+              "isRequired": true,
+              "validators": [
+                {
+                  "type": "regex",
+                  "text": "Please enter a valid 10-digit phone number (e.g., (555) 123-4567)",
+                  "regex": "^\\(?[0-9]{3}\\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4}$"
+                }
+              ],
+              "inputType": "tel",
+              "placeholder": "(555) 123-4567"
+            },
+            {
+              "type": "text",
+              "name": "secondary_phone",
+              "title": "Secondary Phone Number (Optional)",
+              "validators": [
+                {
+                  "type": "regex",
+                  "text": "Please enter a valid 10-digit phone number (e.g., (555) 987-6543)",
+                  "regex": "^$|^\\(?[0-9]{3}\\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4}$"
+                }
+              ],
+              "inputType": "tel",
+              "placeholder": "(555) 987-6543"
+            },
+            {
+              "type": "text",
+              "name": "email",
+              "title": "Email Address",
+              "validators": [
+                {
+                  "type": "email"
+                }
+              ],
+              "inputType": "email",
+              "placeholder": "patient@example.com"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

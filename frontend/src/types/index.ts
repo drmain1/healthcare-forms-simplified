@@ -144,6 +144,7 @@ export interface FormResponse {
   patient_name?: string; // Added from serializer
   form_title?: string; // Added from serializer
   response_data: any; // SurveyJS response data
+  patient_data?: any; // Patient data from the form
   status: 'in_progress' | 'completed' | 'submitted' | 'reviewed' | 'archived';
   started_at: string;
   submitted_at?: string;

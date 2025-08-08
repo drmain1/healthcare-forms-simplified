@@ -15,6 +15,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// extractPatientName extracts the patient's full name from response data
+func extractPatientName(responseData map[string]interface{}) string {
+	firstName := ""
+	lastName := ""
+	
+	// Try to get first_name and last_name from response data
+	if val, ok := responseData["first_name"].(string); ok {
+		firstName = val
+	}
+	
+	if val, ok := responseData["last_name"].(string); ok {
+		lastName = val
+	}
+	
+	// Combine names
+	fullName := ""
+	if firstName != "" && lastName != "" {
+		fullName = firstName + " " + lastName
+	} else if firstName != "" {
+		fullName = firstName
+	} else if lastName != "" {
+		fullName = lastName
+	}
+	
+	return fullName
+}
+
 // CreateFormResponse creates a new form response.
 func CreateFormResponse(client *firestore.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -37,6 +64,9 @@ func CreateFormResponse(client *firestore.Client) gin.HandlerFunc {
 		response.SubmittedAt = now
 		response.SubmittedBy = userID.(string)
 		response.OrganizationID = orgID.(string)
+		
+		// Extract patient name from response data
+		response.PatientName = extractPatientName(response.Data)
 
 		// Add to Firestore
 		docRef, _, err := client.Collection("form_responses").Add(c.Request.Context(), response)
@@ -79,6 +109,11 @@ func GetFormResponse(client *firestore.Client) gin.HandlerFunc {
 		}
 
 		response.ID = doc.Ref.ID
+		
+		// Extract patient name from data if not already set
+		if response.PatientName == "" && response.Data != nil {
+			response.PatientName = extractPatientName(response.Data)
+		}
 
 		c.JSON(http.StatusOK, response)
 	}
@@ -155,6 +190,12 @@ func ListFormResponses(client *firestore.Client) gin.HandlerFunc {
 				return
 			}
 			response.ID = doc.Ref.ID
+			
+			// Extract patient name from data if not already set
+			if response.PatientName == "" && response.Data != nil {
+				response.PatientName = extractPatientName(response.Data)
+			}
+			
 			responses = append(responses, response)
 		}
 
@@ -260,6 +301,7 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			SubmittedAt:    time.Now().UTC(),
 			SubmittedBy:    "public",
 			OrganizationID: orgID,
+			PatientName:    extractPatientName(requestBody.ResponseData),
 		}
 
 		// Add to Firestore

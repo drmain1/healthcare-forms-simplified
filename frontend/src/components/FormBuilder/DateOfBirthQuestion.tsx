@@ -23,7 +23,7 @@ const calculateAge = (birthDate: string): number => {
 // Date of Birth Component
 export const DateOfBirthInput: React.FC<{
   value: string;
-  onChange: (value: string, age: number) => void;
+  onChange: (value: string) => void;
   readOnly?: boolean;
 }> = ({ value = '', onChange, readOnly = false }) => {
   const [dob, setDob] = useState(value);
@@ -38,7 +38,8 @@ export const DateOfBirthInput: React.FC<{
     setDob(newDate);
     const newAge = calculateAge(newDate);
     setAge(newAge);
-    onChange(newDate, newAge);
+    console.log('[DateOfBirthInput] Date changed:', newDate, 'Age:', newAge);
+    onChange(newDate);
   };
 
   // Format date for display (ensure it's YYYY-MM-DD for input)
@@ -107,20 +108,40 @@ export class QuestionDateOfBirthModel extends Question {
   }
 
   get value() {
-    return this.getPropertyValue('value', '');
+    const val = this.getPropertyValue('value', '');
+    console.log('[DateOfBirth] Getting value:', val, 'for question:', this.name);
+    return val;
   }
 
   set value(newValue: any) {
+    console.log('[DateOfBirth] Setting value:', newValue);
     this.setPropertyValue('value', newValue);
     // Also update the calculated age
     if (newValue) {
       const age = calculateAge(newValue);
+      console.log('[DateOfBirth] Calculated age:', age);
       this.setPropertyValue('calculatedAge', age);
+      this.updateSurveyData(age);
     }
   }
 
   get calculatedAge() {
     return this.getPropertyValue('calculatedAge', 0);
+  }
+
+  private updateSurveyData(age: number) {
+    if (this.survey) {
+      const ageFieldName = this.getPropertyValue('ageFieldName', 'patient_age');
+      console.log('[DateOfBirth] Updating survey data - Age field:', ageFieldName, 'Value:', age);
+      (this.survey as SurveyModel).setValue(ageFieldName, age);
+      
+      // Also make sure the DOB value is set in the survey data
+      const dobValue = this.value;
+      if (dobValue) {
+        console.log('[DateOfBirth] Ensuring DOB is in survey data. Name:', this.name, 'Value:', dobValue);
+        (this.survey as SurveyModel).setValue(this.name, dobValue);
+      }
+    }
   }
 
   public getDisplayValue(keysAsText: boolean, value?: any): any {
@@ -146,6 +167,7 @@ export class QuestionDateOfBirthModel extends Question {
   // Override to include age in the data
   public getPlainData(options?: any): any {
     const data = super.getPlainData(options);
+    console.log('[DateOfBirth] getPlainData called. Value:', this.value, 'Age:', this.calculatedAge);
     return {
       ...data,
       value: this.value,
@@ -156,37 +178,13 @@ export class QuestionDateOfBirthModel extends Question {
   // Override to set age variable when value changes
   protected onValueChanged(): void {
     super.onValueChanged();
-    if (this.survey && this.value) {
-      const ageFieldName = this.getPropertyValue('ageFieldName', 'patient_age');
-      // Store age as a data value in the survey
-      const survey = this.survey as SurveyModel;
-      if (survey.data) {
-        survey.data[ageFieldName] = this.calculatedAge;
-      }
+    if (this.value) {
+      const age = calculateAge(this.value);
+      this.setPropertyValue('calculatedAge', age);
+      this.updateSurveyData(age);
     }
   }
 }
-
-// Register the question type
-Serializer.addClass(
-  QuestionDateOfBirthModel.typeName,
-  [
-    {
-      name: 'includeAge:boolean',
-      default: true,
-      category: 'general'
-    },
-    {
-      name: 'ageFieldName',
-      default: 'patient_age',
-      category: 'general'
-    }
-  ],
-  function() {
-    return new QuestionDateOfBirthModel('');
-  },
-  'question'
-);
 
 // React Component for Date of Birth Question
 export class SurveyQuestionDateOfBirth extends SurveyQuestionElementBase {
@@ -198,20 +196,9 @@ export class SurveyQuestionDateOfBirth extends SurveyQuestionElementBase {
     return (
       <DateOfBirthInput
         value={this.question.value}
-        onChange={(value, age) => {
-          this.question.value = value;
-          // Store age in a separate property if needed
-          if (this.question.survey) {
-            const ageFieldName = this.question.getPropertyValue('ageFieldName', 'patient_age');
-            // Store age directly in survey data
-            const survey = this.question.survey as SurveyModel;
-            if (survey.data) {
-              survey.data[ageFieldName] = age;
-            }
-            
-            // Also set it as a custom property on the question itself
-            this.question.setPropertyValue('calculatedAge', age);
-          }
+        onChange={(value) => {
+          console.log('[DateOfBirth Component] Value changed:', value);
+          this.question.value = value; // This will trigger the setter and updateSurveyData
         }}
         readOnly={this.question.isReadOnly}
       />
@@ -219,13 +206,51 @@ export class SurveyQuestionDateOfBirth extends SurveyQuestionElementBase {
   }
 }
 
-// Register React Component
-ReactQuestionFactory.Instance.registerQuestion(
-  QuestionDateOfBirthModel.typeName,
-  (props: any) => {
-    return React.createElement(SurveyQuestionDateOfBirth, props);
+// Self-registering function
+function registerDateOfBirthQuestion() {
+  if (Serializer.findClass(QuestionDateOfBirthModel.typeName)) {
+    console.log('[DateOfBirth] Already registered');
+    return; // Already registered
   }
-);
+
+  console.log('[DateOfBirth] Registering question type');
+  // Register the question type
+  Serializer.addClass(
+    QuestionDateOfBirthModel.typeName,
+    [
+      {
+        name: 'value',
+        default: '',
+        category: 'general'
+      },
+      {
+        name: 'includeAge:boolean',
+        default: true,
+        category: 'general'
+      },
+      {
+        name: 'ageFieldName',
+        default: 'patient_age',
+        category: 'general'
+      }
+    ],
+    function() {
+      return new QuestionDateOfBirthModel('');
+    },
+    'question'
+  );
+
+  // Register React Component
+  ReactQuestionFactory.Instance.registerQuestion(
+    QuestionDateOfBirthModel.typeName,
+    (props: any) => {
+      return React.createElement(SurveyQuestionDateOfBirth, props);
+    }
+  );
+}
+
+// Run registration automatically on import
+registerDateOfBirthQuestion();
 
 // Export for use
 export default QuestionDateOfBirthModel;

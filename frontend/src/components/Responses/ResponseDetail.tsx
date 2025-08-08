@@ -55,7 +55,8 @@ export const ResponseDetail: React.FC = () => {
     if (form && response) {
       const model = new Model(form.surveyJson);
       model.mode = 'display';
-      model.data = response.response_data;
+      // Combine patient_data and response_data for a complete view
+      model.data = { ...response.patient_data, ...response.response_data };
       surveyModelRef.current = model;
       
       model.onAfterRenderSurvey.add(() => {
@@ -134,7 +135,7 @@ export const ResponseDetail: React.FC = () => {
   const surveyModel = surveyModelRef.current || new Model(form.surveyJson);
   if (!surveyModelRef.current) {
     surveyModel.mode = 'display';
-    surveyModel.data = response.response_data;
+    surveyModel.data = { ...response.patient_data, ...response.response_data };
     surveyModelRef.current = surveyModel;
   }
   

@@ -33,6 +33,7 @@ import '../../styles/mobile-minimal.css';
 import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
 import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
+import '../FormBuilder/DateOfBirthQuestion';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -465,7 +466,10 @@ export const PublicFormFill: React.FC = () => {
 
   const handleFormSubmission = async (formData: any) => {
     try {
-      console.log('Form submitted:', formData);
+      console.log('Form submitted with data:', formData);
+      console.log('[DOB Check] patient_dob value:', formData.patient_dob);
+      console.log('[DOB Check] patient_age value:', formData.patient_age);
+      console.log('[DOB Check] All form keys:', Object.keys(formData));
       
       // Send to public submission endpoint
       const response = await fetch(apiEndpoints.responses.submitPublic(), {

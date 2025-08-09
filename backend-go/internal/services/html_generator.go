@@ -27,6 +27,7 @@ type Element struct {
 	Type          string    `json:"type"`
 	Name          string    `json:"name"`
 	Title         string    `json:"title"`
+	HTML          string    `json:"html"` // For raw HTML content
 	Elements      []Element `json:"elements"`      // For panels
 	LayoutColumns int       `json:"layoutColumns"` // For multi-column layouts
 	ColSpan       int       `json:"colSpan"`       // For elements spanning multiple columns
@@ -45,6 +46,12 @@ func GenerateDynamicHTML(formJSON string, answers map[string]interface{}, clinic
 				return val
 			}
 			return ""
+		},
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safeURL": func(s string) template.URL {
+			return template.URL(s)
 		},
 	}
 
@@ -173,54 +180,84 @@ const pdfTemplate = `
 
   .grid-container-2 {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px; /* tighter spacing */
+    align-items: end;
   }
 
   .grid-container-3 {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 16px; /* tighter spacing */
+    align-items: end;
+  }
+
+  .field-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 8px;
   }
 
   .colspan-2 { grid-column: span 2 / auto; }
   .colspan-3 { grid-column: span 3 / auto; }
   
   .form-field {
-    padding: 12px 0;
-    border-bottom: 1px solid #e0e0e0;
+    padding-top: 8px;
+    padding-bottom: 8px;
     page-break-inside: avoid;
-  }
-
-  .grid-container-2 .form-field, .grid-container-3 .form-field {
-    border-bottom: none; /* No lines inside grids */
-    padding: 0;
+    border-bottom: 1px solid #eee;
   }
 
   .form-field:last-child {
     border-bottom: none;
   }
+
+  .grid-container-2 .form-field, .grid-container-3 .form-field {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .form-field.inline {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    flex: 1;
+    min-width: 0;
+  }
   
   .field-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #000000;
-    margin-bottom: 4px;
+    color: #333;
+    margin-right: 12px;
+    flex: 0 0 200px; /* Give label a fixed width */
   }
   
   .field-value {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 400;
-    color: #000000;
-    min-height: 24px;
-    padding: 2px 0;
-    border-bottom: 1px solid #000000;
+    color: #000;
+    flex: 1;
+    border-bottom: 1px solid #999;
+    padding-bottom: 2px;
   }
   
   .field-value:empty:before {
     content: '\000a0';
+  }
+
+  .signature-field {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #ccc;
+  }
+
+  .signature-field img {
+    max-width: 250px;
+    max-height: 100px;
+    display: block;
   }
 
   @media print {
@@ -267,23 +304,63 @@ const pdfTemplate = `
   </div>
   <div class="content-area">
     {{range .Elements}} <!-- Panels -->
-      {{if .Title}}<h3 style="margin-bottom: 20px; font-size: 18px; font-weight: 600;">{{.Title}}</h3>{{end}}
+      {{if .Title}}{{end}}
       
-      {{if gt .LayoutColumns 0}}
+      {{if eq .Type "html"}}
+        <div class="form-html" style="font-size: 14px; line-height: 1.6; margin-bottom: 20px; overflow: visible; page-break-inside: auto; white-space: normal; word-wrap: break-word;">
+          {{.HTML | safeHTML}}
+        </div>
+      {{else if gt .LayoutColumns 0}}
         <div class="grid-container-{{.LayoutColumns}}">
           {{range .Elements}} <!-- Questions in a grid -->
-            <div class="form-field {{if gt .ColSpan 1}}colspan-{{.ColSpan}}{{end}}">
-              <div class="field-label">{{.Title}}</div>
-              <div class="field-value">{{getAnswer .Name}}&nbsp;</div>
-            </div>
+            {{if eq .Type "html"}}
+              <div class="form-html {{if gt .ColSpan 1}}colspan-{{.ColSpan}}{{end}}" style="font-size: 14px; line-height: 1.6; overflow: visible; page-break-inside: auto; white-space: normal; word-wrap: break-word;">
+                {{.HTML | safeHTML}}
+              </div>
+            {{else if eq .Type "signaturepad"}}
+              <!-- Signatures should not be in a grid, so this block is intentionally left empty -->
+            {{else}}
+              {{if getAnswer .Name}}
+              <div class="form-field {{if gt .ColSpan 1}}colspan-{{.ColSpan}}{{end}} inline">
+                <div class="field-label">{{.Title}}</div>
+                <span class="field-value">{{getAnswer .Name}}&nbsp;</span>
+              </div>
+              {{end}}
+            {{end}}
           {{end}}
         </div>
+        <!-- Render signatures outside of the grid -->
+        {{range .Elements}}
+          {{if eq .Type "signaturepad"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              <div class="signature-field">
+                <img src="{{getAnswer .Name | safeURL}}" alt="Signature" />
+              </div>
+            </div>
+          {{end}}
+        {{end}}
       {{else}}
-        {{range .Elements}} <!-- Questions in a single column -->
-          <div class="form-field">
-            <div class="field-label">{{.Title}}</div>
-            <div class="field-value">{{getAnswer .Name}}&nbsp;</div>
-          </div>
+        {{range .Elements}} <!-- Questions or HTML in a single column -->
+          {{if eq .Type "html"}}
+            <div class="form-html" style="font-size: 14px; line-height: 1.6; margin-bottom: 20px; overflow: visible; page-break-inside: auto; white-space: normal; word-wrap: break-word;">
+              {{.HTML | safeHTML}}
+            </div>
+          {{else if eq .Type "signaturepad"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              <div class="signature-field">
+                <img src="{{getAnswer .Name | safeURL}}" alt="Signature" />
+              </div>
+            </div>
+          {{else}}
+            {{if getAnswer .Name}}
+            <div class="form-field inline">
+              <div class="field-label">{{.Title}}</div>
+              <span class="field-value">{{getAnswer .Name}}&nbsp;</span>
+            </div>
+            {{end}}
+          {{end}}
         {{end}}
       {{end}}
     {{end}}

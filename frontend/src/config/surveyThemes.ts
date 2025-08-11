@@ -1,29 +1,26 @@
-// ================================
+import { Model } from "survey-core";
+import * as SurveyTheme from "survey-core/themes";
+
+// ===============================
 // SurveyJS Theme Configuration
-// Clean slate with standard themes
-// ================================
+// ===============================
 
-// Standard SurveyJS themes available:
-// - "defaultV2" (modern flat design)
-// - "defaultV2-dark" (dark mode)
-// - "layered" (classic layered look)
-// - "solid" (solid backgrounds)
-// - "double-border" (bordered design)
-// - "modern" (clean modern look)
-
-// For now, we'll just use the default theme without customization
-// SurveyJS will automatically use its default "defaultV2" theme
-
-// Function to apply theme to a survey (currently does nothing - uses default)
-export const applySurveyTheme = (survey: any, isViewer: boolean = false) => {
-  // Using default theme - no need to apply anything
-  // If you want to change themes later, uncomment and modify:
-  // survey.applyTheme("defaultV2");
+// Define a custom theme for the patient-facing form
+export const patientFormTheme = {
+  ...SurveyTheme.DefaultLightPanelless,
+  "isPanelless": true,
 };
 
-// Function to apply theme to form builder (currently does nothing - uses default)
+// Function to apply theme to a survey
+export const applySurveyTheme = (survey: any, isViewer: boolean = false) => {
+  if (isViewer) {
+    survey.applyTheme(patientFormTheme);
+  } else {
+    survey.applyTheme("defaultV2");
+  }
+};
+
+// Function to apply theme to form builder
 export const applyCreatorTheme = (creator: any) => {
-  // Using default theme - no need to apply anything
-  // If you want to change themes later, uncomment and modify:
-  // creator.theme = "defaultV2";
+  creator.theme = "defaultV2";
 };

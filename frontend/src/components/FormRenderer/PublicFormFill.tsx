@@ -19,7 +19,7 @@ import { createSurveyModel } from '../../utils/surveyConfig';
 import { useInsuranceCardProcessor } from '../../hooks/useInsuranceCardProcessor';
 import insuranceCardGeminiService from '../../services/insuranceCardGeminiService';
 import { designTokens } from '../../styles/design-tokens';
-import { applyTheme, patientFormTheme } from '../../utils/surveyThemes';
+import { applySurveyTheme, patientFormTheme } from '../../config/surveyThemes';
 import { addSignatureValidation, cleanSignatureData } from '../../utils/signatureValidation';
 import { apiEndpoints } from '../../config/api';
 import { 
@@ -105,7 +105,7 @@ export const PublicFormFill: React.FC = () => {
         const surveyModel = createSurveyModel(surveyJson, { isBuilder: false, isPreview: false });
         
         // Apply patient form theme with panelless view
-        applyTheme(surveyModel, patientFormTheme);
+        applySurveyTheme(surveyModel, true);
         
         // Configure survey for public filling
         surveyModel.showCompletedPage = true;

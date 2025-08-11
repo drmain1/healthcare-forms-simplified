@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #333;
+    margin: 20px;
+  }
+
+  .pain-table-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .section-header {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+  }
+
+  .pain-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .pain-table th,
+  .pain-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .pain-table thead {
+    background-color: #f8f8f8;
+  }
+
+  .pain-table th {
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .area-col {
+    width: 15%;
+    font-weight: 500;
+  }
+
+  .intensity-col {
+    width: 45%;
+  }
+
+  .frequency-col {
+    width: 40%;
+  }
+
+  .intensity-scale {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .intensity-scale li {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+
+  .frequency-scale {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .frequency-scale li {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="pain-table-container">
+  <div class="section-header">Section 1 - Pain Intensity</div>
+  <p style="font-size: 12px; margin-bottom: 15px;">Please circle the appropriate # that describes your present pain levels, with 0 being no pain and 10 being the worst pain you can imagine and indicate how frequent the pain is.</p>
+  
+  <table class="pain-table">
+    <thead>
+      <tr>
+        <th class="area-col" rowspan="2">Area of pain</th>
+        <th class="intensity-col" colspan="11">Pain Intensity</th>
+        <th class="frequency-col" colspan="5">How frequent is your pain?</th>
+      </tr>
+      <tr>
+        <!-- Sub-headers for Pain Intensity -->
+        <th colspan="1">Normal</th>
+        <th colspan="2">Mild</th>
+        <th colspan="3">Moderate</th>
+        <th colspan="4">Severe</th>
+        <th>Worst</th>
+        
+        <!-- Sub-headers for Frequency -->
+        <th>None</th>
+        <th>Occasional</th>
+        <th>Intermittent</th>
+        <th>Frequent</th>
+        <th>Constant</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .}}
+      <tr>
+        <td class="area-col">{{.Area}}</td>
+        <!-- Intensity Cells (0-10) -->
+        <td{{if eq .Severity 0.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 0.0}}✓{{else}}0{{end}}</td>
+        <td{{if eq .Severity 1.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 1.0}}✓{{else}}1{{end}}</td>
+        <td{{if eq .Severity 2.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 2.0}}✓{{else}}2{{end}}</td>
+        <td{{if eq .Severity 3.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 3.0}}✓{{else}}3{{end}}</td>
+        <td{{if eq .Severity 4.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 4.0}}✓{{else}}4{{end}}</td>
+        <td{{if eq .Severity 5.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 5.0}}✓{{else}}5{{end}}</td>
+        <td{{if eq .Severity 6.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 6.0}}✓{{else}}6{{end}}</td>
+        <td{{if eq .Severity 7.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 7.0}}✓{{else}}7{{end}}</td>
+        <td{{if eq .Severity 8.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 8.0}}✓{{else}}8{{end}}</td>
+        <td{{if eq .Severity 9.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 9.0}}✓{{else}}9{{end}}</td>
+        <td{{if eq .Severity 10.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 10.0}}✓{{else}}10{{end}}</td>
+        <!-- Frequency Cells: None is when no pain reported, 0=Occasional, 1=Intermittent, 2=Frequent, 3=Constant -->
+        <td>-</td>
+        <td{{if eq .Frequency 0.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 0.0}}✓{{end}}</td>
+        <td{{if eq .Frequency 1.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 1.0}}✓{{end}}</td>
+        <td{{if eq .Frequency 2.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 2.0}}✓{{end}}</td>
+        <td{{if eq .Frequency 3.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 3.0}}✓{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

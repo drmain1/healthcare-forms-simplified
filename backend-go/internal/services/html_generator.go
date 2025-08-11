@@ -31,6 +31,9 @@ type Element struct {
 	Elements      []Element `json:"elements"`      // For panels
 	LayoutColumns int       `json:"layoutColumns"` // For multi-column layouts
 	ColSpan       int       `json:"colSpan"`       // For elements spanning multiple columns
+
+	// RenderedHTML holds the pre-rendered HTML for custom elements
+	RenderedHTML template.HTML `json:"-"`
 }
 
 // GenerateDynamicHTML generates a professional PDF from a JSON form structure.
@@ -38,6 +41,22 @@ func GenerateDynamicHTML(formJSON string, answers map[string]interface{}, clinic
 	var form Form
 	if err := json.Unmarshal([]byte(formJSON), &form); err != nil {
 		return "", err
+	}
+
+	// Pre-process the form to render custom elements
+	for i, page := range form.Pages {
+		for j, element := range page.Elements {
+			// Detect the special panel by its unique name
+			if element.Name == "pain_assessment_panel" {
+				html, err := RenderCustomTable(element, answers)
+				if err != nil {
+					return "", err
+				}
+				form.Pages[i].Elements[j].RenderedHTML = html
+				// Clear sub-elements to prevent default rendering
+				form.Pages[i].Elements[j].Elements = nil
+			}
+		}
 	}
 
 	funcMap := template.FuncMap{
@@ -306,7 +325,9 @@ const pdfTemplate = `
     {{range .Elements}} <!-- Panels -->
       {{if .Title}}{{end}}
       
-      {{if eq .Type "html"}}
+      {{if .RenderedHTML}}
+        {{.RenderedHTML}}
+      {{else if eq .Type "html"}}
         <div class="form-html" style="font-size: 14px; line-height: 1.6; margin-bottom: 20px; overflow: visible; page-break-inside: auto; white-space: normal; word-wrap: break-word;">
           {{.HTML | safeHTML}}
         </div>

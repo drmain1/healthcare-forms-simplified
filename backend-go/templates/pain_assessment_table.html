@@ -1,149 +1,184 @@
-<!DOCTYPE html>
-<html>
-<head>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-  body {
-    font-family: 'Inter', sans-serif;
-    color: #333;
-    margin: 20px;
-  }
-
   .pain-table-container {
-    border: 1px solid #ccc;
     padding: 15px;
-    border-radius: 8px;
+    margin-bottom: 20px;
   }
 
   .section-header {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .section-description {
+    font-size: 11px;
     margin-bottom: 15px;
+    line-height: 1.4;
   }
 
   .pain-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .pain-table th,
   .pain-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+    border: 1px solid #000;
+    padding: 4px 6px;
+    text-align: center;
     vertical-align: middle;
   }
 
-  .pain-table thead {
-    background-color: #f8f8f8;
-  }
-
-  .pain-table th {
+  .pain-table thead th {
+    background-color: #ffffff;
     font-weight: 600;
-    text-align: center;
+    border-bottom: 2px solid #000;
   }
-
-  .area-col {
-    width: 15%;
+  
+  .pain-table th.area-col {
+    text-align: left;
+    width: 12%;
+  }
+  
+  .pain-table td.area-col {
+    text-align: left;
     font-weight: 500;
   }
-
-  .intensity-col {
-    width: 45%;
+  
+  .pain-table td.side-col {
+    font-size: 10px;
+    padding: 2px 4px;
+    width: 8%;
   }
 
-  .frequency-col {
-    width: 40%;
+  .intensity-header {
+    border-bottom: 1px solid #000;
+  }
+  
+  .intensity-subheader th {
+    font-weight: normal;
+    font-style: italic;
+    padding: 2px 4px;
+    font-size: 10px;
   }
 
-  .intensity-scale {
-    display: flex;
-    justify-content: space-between;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .intensity-scale li {
-    flex: 1;
-    text-align: center;
+  .intensity-cell {
+    width: 3%;
+    padding: 3px;
+    font-size: 10px;
     position: relative;
   }
-
-  .frequency-scale {
-    display: flex;
-    justify-content: space-between;
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  
+  .intensity-cell.selected {
+    font-weight: bold;
+  }
+  
+  .intensity-cell.selected::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #000;
+    border-radius: 50%;
+    z-index: -1;
   }
 
-  .frequency-scale li {
-    flex: 1;
-    text-align: center;
-    position: relative;
+  .frequency-header {
+    width: 35%;
   }
-
+  
+  .frequency-subheader th {
+    font-weight: normal;
+    font-size: 9px;
+    padding: 2px 3px;
+    border-left: 1px solid #000;
+  }
+  
+  .frequency-cell {
+    font-size: 9px;
+    text-align: left;
+    padding: 2px 4px;
+    letter-spacing: -0.5px;
+  }
+  
+  .freq-scale {
+    display: inline-block;
+    width: 100%;
+    white-space: nowrap;
+  }
 </style>
-</head>
-<body>
 
 <div class="pain-table-container">
   <div class="section-header">Section 1 - Pain Intensity</div>
-  <p style="font-size: 12px; margin-bottom: 15px;">Please circle the appropriate # that describes your present pain levels, with 0 being no pain and 10 being the worst pain you can imagine and indicate how frequent the pain is.</p>
+  <p class="section-description">Please circle the appropriate # that describes your present pain levels, with 0 being no pain and 10 being the worst pain you can imagine and indicate how frequent the pain is.</p>
   
   <table class="pain-table">
     <thead>
       <tr>
-        <th class="area-col" rowspan="2">Area of pain</th>
-        <th class="intensity-col" colspan="11">Pain Intensity</th>
-        <th class="frequency-col" colspan="5">How frequent is your pain?</th>
+        <th rowspan="3" class="area-col">Area of pain</th>
+        <th rowspan="3" style="width: 8%;"></th>
+        <th colspan="11" rowspan="2" class="intensity-header">Pain Intensity (0-10 Scale)</th>
+        <th colspan="5" class="frequency-header">How frequent is your pain?</th>
       </tr>
-      <tr>
-        <!-- Sub-headers for Pain Intensity -->
-        <th colspan="1">Normal</th>
-        <th colspan="2">Mild</th>
-        <th colspan="3">Moderate</th>
-        <th colspan="4">Severe</th>
-        <th>Worst</th>
-        
-        <!-- Sub-headers for Frequency -->
+      <tr class="frequency-subheader">
         <th>None</th>
         <th>Occasional</th>
         <th>Intermittent</th>
         <th>Frequent</th>
         <th>Constant</th>
       </tr>
+      <tr class="intensity-subheader">
+        <th colspan="1" style="border-left: none;">Normal</th>
+        <th colspan="2">Mild</th>
+        <th colspan="3">Moderate</th>
+        <th colspan="4">Severe</th>
+        <th>Worst</th>
+        <th colspan="5" style="font-size: 9px; font-weight: normal;">0------25%--------50%-------75%------100%</th>
+      </tr>
     </thead>
     <tbody>
       {{range .}}
       <tr>
         <td class="area-col">{{.Area}}</td>
-        <!-- Intensity Cells (0-10) -->
-        <td{{if eq .Severity 0.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 0.0}}✓{{else}}0{{end}}</td>
-        <td{{if eq .Severity 1.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 1.0}}✓{{else}}1{{end}}</td>
-        <td{{if eq .Severity 2.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 2.0}}✓{{else}}2{{end}}</td>
-        <td{{if eq .Severity 3.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 3.0}}✓{{else}}3{{end}}</td>
-        <td{{if eq .Severity 4.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 4.0}}✓{{else}}4{{end}}</td>
-        <td{{if eq .Severity 5.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 5.0}}✓{{else}}5{{end}}</td>
-        <td{{if eq .Severity 6.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 6.0}}✓{{else}}6{{end}}</td>
-        <td{{if eq .Severity 7.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 7.0}}✓{{else}}7{{end}}</td>
-        <td{{if eq .Severity 8.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 8.0}}✓{{else}}8{{end}}</td>
-        <td{{if eq .Severity 9.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 9.0}}✓{{else}}9{{end}}</td>
-        <td{{if eq .Severity 10.0}} style="background-color: #ffcccc; font-weight: bold;"{{end}}>{{if eq .Severity 10.0}}✓{{else}}10{{end}}</td>
-        <!-- Frequency Cells: None is when no pain reported, 0=Occasional, 1=Intermittent, 2=Frequent, 3=Constant -->
-        <td>-</td>
-        <td{{if eq .Frequency 0.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 0.0}}✓{{end}}</td>
-        <td{{if eq .Frequency 1.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 1.0}}✓{{end}}</td>
-        <td{{if eq .Frequency 2.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 2.0}}✓{{end}}</td>
-        <td{{if eq .Frequency 3.0}} style="background-color: #ccffcc; font-weight: bold;"{{end}}>{{if eq .Frequency 3.0}}✓{{end}}</td>
+        <td class="side-col">{{.Side}}</td>
+        <!-- Intensity Cells (0-10) with value display -->
+        <td class="intensity-cell{{if eq .Severity 0.0}} selected{{end}}">0</td>
+        <td class="intensity-cell{{if eq .Severity 1.0}} selected{{end}}">1</td>
+        <td class="intensity-cell{{if eq .Severity 2.0}} selected{{end}}">2</td>
+        <td class="intensity-cell{{if eq .Severity 3.0}} selected{{end}}">3</td>
+        <td class="intensity-cell{{if eq .Severity 4.0}} selected{{end}}">4</td>
+        <td class="intensity-cell{{if eq .Severity 5.0}} selected{{end}}">5</td>
+        <td class="intensity-cell{{if eq .Severity 6.0}} selected{{end}}">6</td>
+        <td class="intensity-cell{{if eq .Severity 7.0}} selected{{end}}">7</td>
+        <td class="intensity-cell{{if eq .Severity 8.0}} selected{{end}}">8</td>
+        <td class="intensity-cell{{if eq .Severity 9.0}} selected{{end}}">9</td>
+        <td class="intensity-cell{{if eq .Severity 10.0}} selected{{end}}">10</td>
+        <!-- Frequency Cell with visual scale -->
+        <td class="frequency-cell" colspan="5">
+          {{if .Frequency}}
+            {{if le .FrequencyValue 12.5}}
+              <span class="freq-scale">0<b>---●--</b>25%--------50%-------75%------100%</span>
+            {{else if le .FrequencyValue 37.5}}
+              <span class="freq-scale">0------25%<b>---●----</b>50%-------75%------100%</span>
+            {{else if le .FrequencyValue 62.5}}
+              <span class="freq-scale">0------25%--------50%<b>---●---</b>75%------100%</span>
+            {{else if le .FrequencyValue 87.5}}
+              <span class="freq-scale">0------25%--------50%-------75%<b>---●--</b>100%</span>
+            {{else}}
+              <span class="freq-scale">0------25%--------50%-------75%-----<b>●</b>100%</span>
+            {{end}}
+          {{else}}
+            <span class="freq-scale">0------25%--------50%-------75%------100%</span>
+          {{end}}
+        </td>
       </tr>
       {{end}}
     </tbody>
   </table>
 </div>
-
-</body>
-</html>

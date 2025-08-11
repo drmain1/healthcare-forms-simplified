@@ -303,11 +303,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'neck_pain_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -341,11 +341,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'headaches_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -379,11 +379,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'low_back_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -417,11 +417,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'mid_back_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -455,11 +455,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'upper_back_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -499,11 +499,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'shoulder_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -543,11 +543,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'hip_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -587,11 +587,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'arm_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -631,11 +631,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'leg_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }
@@ -673,11 +673,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
                 {
                   type: 'slider',
                   name: 'other_frequency',
-                  title: 'Pain Frequency',
-                  description: '0: Occasional (0-25%), 1: Intermittent (25-50%), 2: Frequent (50-75%), 3: Constant (75-100%)',
+                  title: 'How often do you experience this pain? (0-100%)',
+                  description: 'Occasional pain<------------------------->Constant pain',
                   min: 0,
-                  max: 3,
-                  step: 1
+                  max: 100,
+                  step: 5
                 }
               ]
             }

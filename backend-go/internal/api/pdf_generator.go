@@ -62,12 +62,12 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 			return
 		}
 		
-		// Note: The Firestore field is "data", not "response_data"
-		answers, ok := responseData["data"].(map[string]interface{})
+		// Note: The Firestore field is "response_data" based on the models.go struct tags
+		answers, ok := responseData["response_data"].(map[string]interface{})
 		if !ok {
 			// Log the actual structure for debugging
-			log.Printf("Response data type: %T, value: %+v", responseData["data"], responseData["data"])
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document (looking for 'data' field)", "debug": responseData})
+			log.Printf("Response data type: %T, value: %+v", responseData["response_data"], responseData["response_data"])
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document (looking for 'response_data' field)", "debug": responseData})
 			return
 		}
 		
@@ -126,13 +126,16 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 
 		// --- DEBUG LOGGING ---
 		log.Printf("--- DEBUG: Data Pulled from Firestore for PDF Generation ---")
+		log.Printf("Total answer fields: %d", len(answers))
 		for key, value := range answers {
-			if (strings.Contains(key, "signature")) {
+			if strings.Contains(key, "signature") {
 				if sigData, ok := value.(string); ok {
 					log.Printf("Signature field '%s' from Firestore has data length: %d", key, len(sigData))
 				} else {
 					log.Printf("Signature field '%s' from Firestore has non-string data type: %T", key, value)
 				}
+			} else if strings.Contains(key, "pain") || strings.Contains(key, "body") || strings.Contains(key, "diagram") {
+				log.Printf("Body/Pain field '%s': type=%T, value=%+v", key, value, value)
 			}
 		}
 		// --- END DEBUG LOGGING ---

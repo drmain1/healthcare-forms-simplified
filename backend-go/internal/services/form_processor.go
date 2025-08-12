@@ -10,12 +10,14 @@ import (
 
 // VisibleQuestion represents a question and its answer that should be displayed on the PDF.
 type VisibleQuestion struct {
-	Name          string      `json:"name"`
-	Title         string      `json:"title"`
-	Answer        interface{} `json:"answer"`
-	QuestionType  string      `json:"questionType"`
-	IsSignature   bool        `json:"isSignature,omitempty"`
+	Name          string       `json:"name"`
+	Title         string       `json:"title"`
+	Answer        interface{}  `json:"answer"`
+	QuestionType  string       `json:"questionType"`
+	IsSignature   bool         `json:"isSignature,omitempty"`
 	SignatureData template.URL `json:"signatureData,omitempty"`
+	IsBodyDiagram bool         `json:"isBodyDiagram,omitempty"`
+	BodyDiagramData interface{} `json:"bodyDiagramData,omitempty"`
 }
 
 // ProcessAndFlattenForm takes the full survey JSON and the user's response data
@@ -113,6 +115,25 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 					answer = fmt.Sprintf("%s (Age: %d)", dobStr, age)
 				}
 			}
+		} else if qType == "bodydiagram" || qType == "bodypaindiagram" {
+			// Handle body diagram pain points
+			// The answer should be an array of pain points
+			// We'll keep the raw data for PDF rendering
+			log.Printf("--- DEBUG: Processing body diagram for question: %s, type: %s, data type: %T ---", name, qType, answer)
+			// Keep the raw answer data for special rendering in PDF
+		}
+
+		// Check if this is a body diagram question (both old and new types)
+		isBodyDiagram := qType == "bodydiagram" || qType == "bodypaindiagram"
+		var bodyDiagramData interface{}
+		if isBodyDiagram {
+			bodyDiagramData = answer
+			// Format the answer for display
+			if painPoints, ok := answer.([]interface{}); ok && len(painPoints) > 0 {
+				answer = fmt.Sprintf("[%d pain areas marked]", len(painPoints))
+			} else {
+				answer = "[No pain areas marked]"
+			}
 		}
 
 		questions = append(questions, VisibleQuestion{
@@ -122,6 +143,8 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 			QuestionType:  qType,
 			IsSignature:   isSignature,
 			SignatureData: signatureData,
+			IsBodyDiagram: isBodyDiagram,
+			BodyDiagramData: bodyDiagramData,
 		})
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
+	"log"
 
 	"github.com/gemini/forms-api/internal/data"
 )
@@ -43,6 +44,20 @@ func GenerateDynamicHTML(formJSON string, answers map[string]interface{}, clinic
 		return "", err
 	}
 
+	// Log all question names in the form
+	log.Printf("=== Form Structure Debug ===")
+	for pageIdx, page := range form.Pages {
+		log.Printf("Page %d: %s", pageIdx, page.Title)
+		for elemIdx, element := range page.Elements {
+			log.Printf("  Element %d: type=%s, name=%s, title=%s", elemIdx, element.Type, element.Name, element.Title)
+			// Check nested elements
+			for subIdx, subElem := range element.Elements {
+				log.Printf("    SubElement %d: type=%s, name=%s, title=%s", subIdx, subElem.Type, subElem.Name, subElem.Title)
+			}
+		}
+	}
+	log.Printf("=== End Form Structure ===")
+
 	// Pre-process the form to render custom elements
 	for i, page := range form.Pages {
 		for j, element := range page.Elements {
@@ -71,6 +86,9 @@ func GenerateDynamicHTML(formJSON string, answers map[string]interface{}, clinic
 		},
 		"safeURL": func(s string) template.URL {
 			return template.URL(s)
+		},
+		"renderBodyDiagram": func(painPoints interface{}) template.HTML {
+			return RenderBodyDiagram(painPoints)
 		},
 	}
 
@@ -340,6 +358,10 @@ const pdfTemplate = `
               </div>
             {{else if eq .Type "signaturepad"}}
               <!-- Signatures should not be in a grid, so this block is intentionally left empty -->
+            {{else if eq .Type "bodydiagram"}}
+              <!-- Body diagrams should not be in a grid, so this block is intentionally left empty -->
+            {{else if eq .Type "bodypaindiagram"}}
+              <!-- Body pain diagrams should not be in a grid, so this block is intentionally left empty -->
             {{else}}
               {{if getAnswer .Name}}
               <div class="form-field {{if gt .ColSpan 1}}colspan-{{.ColSpan}}{{end}} inline">
@@ -350,7 +372,7 @@ const pdfTemplate = `
             {{end}}
           {{end}}
         </div>
-        <!-- Render signatures outside of the grid -->
+        <!-- Render signatures and body diagrams outside of the grid -->
         {{range .Elements}}
           {{if eq .Type "signaturepad"}}
             <div class="form-field">
@@ -358,6 +380,16 @@ const pdfTemplate = `
               <div class="signature-field">
                 <img src="{{getAnswer .Name | safeURL}}" alt="Signature" />
               </div>
+            </div>
+          {{else if eq .Type "bodydiagram"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              {{renderBodyDiagram (getAnswer .Name)}}
+            </div>
+          {{else if eq .Type "bodypaindiagram"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              {{renderBodyDiagram (getAnswer .Name)}}
             </div>
           {{end}}
         {{end}}
@@ -373,6 +405,16 @@ const pdfTemplate = `
               <div class="signature-field">
                 <img src="{{getAnswer .Name | safeURL}}" alt="Signature" />
               </div>
+            </div>
+          {{else if eq .Type "bodydiagram"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              {{renderBodyDiagram (getAnswer .Name)}}
+            </div>
+          {{else if eq .Type "bodypaindiagram"}}
+            <div class="form-field">
+              <div class="field-label">{{.Title}}</div>
+              {{renderBodyDiagram (getAnswer .Name)}}
             </div>
           {{else}}
             {{if getAnswer .Name}}

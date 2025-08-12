@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// Helper function to get map keys
+func getMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
 
 // extractPatientName extracts the patient's full name from response data
 func extractPatientName(responseData map[string]interface{}) string {
@@ -225,6 +235,30 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 
 		// --- DEBUG LOGGING ---
 		log.Printf("--- DEBUG: Received Form Submission ---")
+		log.Printf("Total fields in ResponseData: %d", len(requestBody.ResponseData))
+		
+		// Log all field names to see what we're receiving
+		log.Printf("Field names received:")
+		for key := range requestBody.ResponseData {
+			log.Printf("  - %s", key)
+		}
+		
+		// Check specifically for pain_areas
+		if painAreas, exists := requestBody.ResponseData["pain_areas"]; exists {
+			log.Printf("✅ pain_areas field FOUND in request")
+			if arr, ok := painAreas.([]interface{}); ok {
+				log.Printf("  pain_areas is array with %d items", len(arr))
+				// Log first item as sample
+				if len(arr) > 0 {
+					log.Printf("  Sample pain area: %+v", arr[0])
+				}
+			} else {
+				log.Printf("  pain_areas type: %T", painAreas)
+			}
+		} else {
+			log.Printf("❌ pain_areas field NOT FOUND in request")
+		}
+		
 		// Safely log signature data by checking for it and printing its length
 		for key, value := range requestBody.ResponseData {
 			if (strings.Contains(key, "signature")) {
@@ -319,6 +353,32 @@ func CreatePublicFormResponse(client *firestore.Client) gin.HandlerFunc {
 			OrganizationID: orgID,
 			PatientName:    extractPatientName(requestBody.ResponseData),
 		}
+
+		// --- NEW DEBUG LOGGING ---
+		// Check if pain_areas exists in the data being saved
+		if painAreas, exists := response.Data["pain_areas"]; exists {
+			log.Printf("✅ pain_areas WILL BE SAVED to Firestore")
+			if arr, ok := painAreas.([]interface{}); ok {
+				log.Printf("  Saving %d pain areas", len(arr))
+			}
+		} else {
+			log.Printf("❌ pain_areas NOT in data being saved to Firestore")
+			log.Printf("  Fields being saved: %v", getMapKeys(response.Data))
+		}
+		
+		jsonData, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("Error marshalling response for logging: %v", err)
+		} else {
+			log.Printf("--- DEBUG: Saving to Firestore ---")
+			// Truncate if too long
+			dataStr := string(jsonData)
+			if len(dataStr) > 1000 {
+				dataStr = dataStr[:1000] + "... (truncated)"
+			}
+			log.Printf("Data being saved: %s", dataStr)
+		}
+		// --- END NEW DEBUG LOGGING ---
 
 		// Add to Firestore
 		docRef, _, err := client.Collection("form_responses").Add(c.Request.Context(), response)

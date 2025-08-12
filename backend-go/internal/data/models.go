@@ -24,7 +24,7 @@ type FormResponse struct {
 	ID                      string                 `json:"id,omitempty" firestore:"id,omitempty"`
 	OrganizationID          string                 `json:"organizationId" firestore:"organizationId"`
 	FormID                  string                 `json:"form" firestore:"form"`
-	Data                    map[string]interface{} `json:"response_data" firestore:"data"`
+	Data                    map[string]interface{} `json:"response_data" firestore:"response_data"`
 	Metadata                map[string]interface{} `json:"metadata,omitempty" firestore:"metadata,omitempty"`
 	SubmittedBy             string                 `json:"submitted_by" firestore:"submitted_by"`
 	SubmittedAt             time.Time              `json:"submitted_at" firestore:"submitted_at"`

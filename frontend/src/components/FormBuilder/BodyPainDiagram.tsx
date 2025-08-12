@@ -92,7 +92,6 @@ export const BodyPainDiagram: React.FC<BodyPainDiagramProps> = ({
         // Clean up the SVG to ensure it scales properly
         const cleanedSvg = data
           .replace(/width="[^"]*"/, 'width="100%"')
-          .replace(/height="[^"]*"/, 'height="auto"')
           .replace(/viewBox="[^"]*"/, 'viewBox="0 0 310 360"');
         setSvgContent(cleanedSvg);
       })

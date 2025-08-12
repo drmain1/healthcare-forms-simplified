@@ -33,6 +33,125 @@ func RenderCustomTable(element Element, answers map[string]interface{}) (templat
 	}
 }
 
+// RenderBodyDiagram renders a body diagram with pain points marked
+func RenderBodyDiagram(painPoints interface{}) template.HTML {
+	// Log the incoming data for debugging
+	log.Printf("RenderBodyDiagram received data type: %T, value: %+v", painPoints, painPoints)
+	
+	// Default empty diagram
+	if painPoints == nil {
+		return template.HTML(`<div style="text-align: center; padding: 20px; border: 1px solid #ddd; background: #f9f9f9;">
+			<p style="color: #666;">No pain areas marked</p>
+		</div>`)
+	}
+
+	// Parse pain points array
+	points, ok := painPoints.([]interface{})
+	if !ok || len(points) == 0 {
+		return template.HTML(`<div style="text-align: center; padding: 20px; border: 1px solid #ddd; background: #f9f9f9;">
+			<p style="color: #666;">No pain areas marked</p>
+		</div>`)
+	}
+
+	// For now, just display the raw data as a simple table
+	var html strings.Builder
+	html.WriteString(`<div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; background: #f9f9f9;">`)
+	html.WriteString(`<h4 style="margin-bottom: 10px;">Pain Points Data (`)
+	html.WriteString(fmt.Sprintf("%d points marked)", len(points)))
+	html.WriteString(`</h4>`)
+	html.WriteString(`<table style="width: 100%; border-collapse: collapse;">`)
+	html.WriteString(`<thead><tr style="background: #e0e0e0;">`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">#</th>`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">X</th>`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">Y</th>`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">Intensity</th>`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">Label</th>`)
+	html.WriteString(`<th style="padding: 8px; border: 1px solid #ccc;">View</th>`)
+	html.WriteString(`</tr></thead><tbody>`)
+	
+	for i, point := range points {
+		if pointMap, ok := point.(map[string]interface{}); ok {
+			log.Printf("Processing point %d: %+v", i, pointMap)
+			
+			x, _ := pointMap["x"].(float64)
+			y, _ := pointMap["y"].(float64)
+			
+			// Handle intensity as either string or number
+			var intensityText string
+			if intensityNum, ok := pointMap["intensity"].(float64); ok {
+				intensityText = getIntensityText(intensityNum)
+			} else if intensityStr, ok := pointMap["intensity"].(string); ok {
+				intensityText = intensityStr
+			} else {
+				intensityText = fmt.Sprintf("%v", pointMap["intensity"])
+			}
+			
+			// Get other fields with defaults
+			label, _ := pointMap["label"].(string)
+			if label == "" {
+				label = fmt.Sprintf("Point %d", i+1)
+			}
+			
+			view, _ := pointMap["view"].(string)
+			if view == "" {
+				view = "unknown"
+			}
+			
+			id, _ := pointMap["id"].(string)
+			
+			html.WriteString(`<tr>`)
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%d</td>`, i+1))
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%.1f</td>`, x))
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%.1f</td>`, y))
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%s</td>`, intensityText))
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%s</td>`, label))
+			html.WriteString(fmt.Sprintf(`<td style="padding: 8px; border: 1px solid #ccc;">%s</td>`, id))
+			html.WriteString(`</tr>`)
+		}
+	}
+	
+	html.WriteString(`</tbody></table>`)
+	html.WriteString(`</div>`)
+	
+	return template.HTML(html.String())
+}
+
+// getIntensityColor returns the color for a given pain intensity
+func getIntensityColor(intensity float64) string {
+	switch int(intensity) {
+	case 1:
+		return "#FFE082" // Mild - yellow
+	case 2:
+		return "#FF9800" // Moderate - orange
+	case 3:
+		return "#F44336" // Severe - red
+	case 4:
+		return "#B71C1C" // Very severe - dark red
+	case 5:
+		return "#880000" // Extreme - very dark red
+	default:
+		return "#F44336" // Default to red
+	}
+}
+
+// getIntensityText returns the text description for a given pain intensity
+func getIntensityText(intensity float64) string {
+	switch int(intensity) {
+	case 1:
+		return "Mild"
+	case 2:
+		return "Moderate"
+	case 3:
+		return "Severe"
+	case 4:
+		return "Very Severe"
+	case 5:
+		return "Extreme"
+	default:
+		return "Unknown"
+	}
+}
+
 // renderPainAssessmentTable handles the specific logic for the pain assessment table.
 func renderPainAssessmentTable(element Element, answers map[string]interface{}) (template.HTML, error) {
 	// 1. Transform the raw answers into a structured format.

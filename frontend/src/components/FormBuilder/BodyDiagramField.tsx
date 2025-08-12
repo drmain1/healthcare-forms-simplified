@@ -188,7 +188,7 @@ export const BodyDiagramField: React.FC<BodyDiagramFieldProps> = ({
         <svg
           ref={svgRef}
           viewBox="0 0 800 400"
-          style={{ width: '100%', height: 'auto', ...getCursorStyle('crosshair') }}
+          style={{ width: '100%', ...getCursorStyle('crosshair') }}
           onClick={handleSvgClick}
         >
           {/* Body diagram paths */}

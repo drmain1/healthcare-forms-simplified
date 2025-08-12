@@ -18,7 +18,6 @@ import {
   CheckCircle,
   Schedule,
   Warning,
-  GetApp,
   Person,
   CalendarToday,
   Timer,
@@ -31,50 +30,99 @@ import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
 import { ClinicalSummaryButton } from './ClinicalSummaryButton';
+// Import custom question types
+import '../FormBuilder/BodyDiagramQuestion';
+import '../FormBuilder/BodyPainDiagramQuestion';
+import { BodyPainDiagram } from '../FormBuilder/BodyPainDiagram';
+
 
 export const ResponseDetail: React.FC = () => {
-  const surveyContainerRef = useRef<HTMLDivElement>(null);
   const surveyModelRef = useRef<Model | null>(null);
-  const [isSurveyRendered, setIsSurveyRendered] = useState(false);
   const { formId, responseId } = useParams<{ formId: string; responseId: string }>();
   const navigate = useNavigate();
   
-  // API queries
   const { data: response, isLoading: responseLoading, error: responseError } = useGetResponseQuery(responseId || '');
   const { data: form, isLoading: formLoading } = useGetFormQuery(formId || '');
-  
-  useEffect(() => {
-    // Mark as reviewed when viewing
-    if (response && response.status !== 'reviewed') {
-      // markReviewed(responseId || '');
-    }
-  }, [response, responseId]);
-  
-  // Set up render completion handler - must be before any returns
+
+  // State to hold extracted body diagram questions and their data
+  const [bodyDiagrams, setBodyDiagrams] = useState<any[]>([]);
+
   useEffect(() => {
     if (form && response) {
-      const model = new Model(form.surveyJson);
-      model.mode = 'display';
-      // Combine patient_data and response_data for a complete view
-      model.data = { ...response.patient_data, ...response.response_data };
-      surveyModelRef.current = model;
+      // Debug logging to understand the response structure
+      console.log('[ResponseDetail] Full response object:', response);
+      console.log('[ResponseDetail] response.response_data:', response.response_data);
+      console.log('[ResponseDetail] response.patient_data:', response.patient_data);
       
-      model.onAfterRenderSurvey.add(() => {
-        console.log('Survey fully rendered!');
-        setIsSurveyRendered(true);
-        // Log what we see after render
-        setTimeout(() => {
-          const container = surveyContainerRef.current;
-          if (container) {
-            console.log('After render check:');
-            console.log('Has question text?', container.innerHTML.includes('?'));
-            
+      // Check ALL possible locations for the data
+      console.log('[ResponseDetail] Checking all fields for pain_areas:');
+      Object.keys(response).forEach(key => {
+        const value = (response as any)[key];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          if (value.pain_areas) {
+            console.log(`[ResponseDetail] Found pain_areas in response.${key}:`, value.pain_areas);
           }
-        }, 100);
+        }
       });
+      
+      // Initialize the SurveyJS model
+      const surveyModel = new Model(form.surveyJson);
+      surveyModel.mode = 'display';
+      
+      // Merge all data sources
+      const mergedData = { ...response.patient_data, ...response.response_data };
+      console.log('[ResponseDetail] Merged data for survey:', mergedData);
+      console.log('[ResponseDetail] pain_areas in merged data:', mergedData.pain_areas);
+      
+      surveyModel.data = mergedData;
+      surveyModelRef.current = surveyModel;
+
+      // Simplified logic to find and store body diagram data
+      const findBodyDiagrams = () => {
+        const diagrams: any[] = [];
+        
+        // Check BOTH response_data and patient_data for pain_areas
+        const painAreasData = response.response_data?.pain_areas || response.patient_data?.pain_areas || mergedData.pain_areas;
+        
+        if (painAreasData && Array.isArray(painAreasData) && painAreasData.length > 0) {
+          console.log('[ResponseDetail] Adding pain_areas from data:', painAreasData);
+          diagrams.push({
+            name: 'pain_areas',
+            title: 'Pain Areas',
+            type: 'bodypaindiagram',
+            data: painAreasData,
+          });
+        }
+        
+        // Also check through survey questions (as backup)
+        surveyModel.getAllQuestions().forEach((question: any) => {
+          console.log('[ResponseDetail] Checking question:', question.name, 'type:', question.getType(), 'value:', question.value);
+          
+          // Check for both question types
+          if (question.getType() === 'bodypaindiagram' || question.getType() === 'bodydiagram') {
+            // Ensure there is data to display
+            if (question.value && Array.isArray(question.value) && question.value.length > 0) {
+              // Check if we already added this data
+              const alreadyAdded = diagrams.some(d => d.name === question.name);
+              if (!alreadyAdded) {
+                diagrams.push({
+                  name: question.name,
+                  title: question.title,
+                  type: question.getType(),
+                  data: question.value,
+                });
+              }
+            }
+          }
+        });
+        console.log('Found valid body diagram data to render:', diagrams);
+        setBodyDiagrams(diagrams);
+      };
+
+      findBodyDiagrams();
     }
   }, [form, response]);
-  
+
   if (responseLoading || formLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -130,14 +178,6 @@ export const ResponseDetail: React.FC = () => {
         return 'default';
     }
   };
-  
-  // Create a read-only survey instance with the response data
-  const surveyModel = surveyModelRef.current || new Model(form.surveyJson);
-  if (!surveyModelRef.current) {
-    surveyModel.mode = 'display';
-    surveyModel.data = { ...response.patient_data, ...response.response_data };
-    surveyModelRef.current = surveyModel;
-  }
   
   return (
     <Box>
@@ -267,25 +307,29 @@ export const ResponseDetail: React.FC = () => {
         </Typography>
         <Divider sx={{ mb: 3 }} />
         
-        {/* Render the survey in display mode with response data */}
-        <Box ref={surveyContainerRef} sx={{ 
-          '& .sd-root-modern': {
-            backgroundColor: 'transparent',
-          },
-          '& .sd-question': {
-            marginBottom: 2,
-          },
-          '& .sd-question__title': {
-            fontWeight: 600,
-            color: 'text.primary',
-          },
-          '& .sd-question__content': {
-            marginTop: 1,
-          }
-        }}>
-          <Survey model={surveyModel} />
-        </Box>
+        {surveyModelRef.current && <Survey model={surveyModelRef.current} />}
       </Paper>
+
+      {/* NEW: Cleaned up, single rendering location for body diagrams */}
+      {bodyDiagrams.length > 0 && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Pain Areas
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
+          {bodyDiagrams.map((diagram) => (
+            <Box key={diagram.name} sx={{ mt: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0' }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                {diagram.title || 'Body Pain Diagram'}
+              </Typography>
+              <BodyPainDiagram
+                value={diagram.data}
+                readOnly={true}
+              />
+            </Box>
+          ))}
+        </Paper>
+      )}
       
       {/* Additional Information */}
       {response.review_notes && (

@@ -16,7 +16,9 @@ export class QuestionBodyPainDiagramModel extends Question {
   }
 
   set value(newValue: any) {
+    console.log('[BodyPainDiagramModel] Setting value to:', newValue);
     this.setPropertyValue('value', newValue);
+    console.log('[BodyPainDiagramModel] Value after setPropertyValue:', this.getPropertyValue('value'));
   }
 
   // Override to handle PDF export
@@ -36,12 +38,75 @@ export class QuestionBodyPainDiagramModel extends Question {
   public getHtmlForPDF(): string {
     return renderBodyDiagramForPDF(this.value || []);
   }
+  
+  // Override to ensure value is included in survey data
+  protected getValueCore(): any {
+    return this.value || [];
+  }
+  
+  // Override to ensure value is properly saved
+  protected setValueCore(newValue: any): void {
+    this.value = newValue;
+  }
+  
+  // Override isEmpty to properly detect empty state
+  public isEmpty(): boolean {
+    return !this.value || this.value.length === 0;
+  }
+  
+  // Override to ensure data is collected in survey results
+  public getPlainData(options?: any): any {
+    const data = super.getPlainData(options);
+    if (!this.isEmpty()) {
+      // Clean the array data to remove any non-serializable properties
+      const cleanValue = this.getCleanValue();
+      data[this.name] = cleanValue;
+    }
+    return data;
+  }
+  
+  // Helper method to get clean array without any non-serializable properties
+  private getCleanValue(): any[] {
+    const currentValue = this.value || [];
+    if (!Array.isArray(currentValue)) return [];
+    
+    // Create clean objects with only the necessary properties
+    return currentValue.map((mark: any) => ({
+      id: mark.id,
+      x: mark.x,
+      y: mark.y,
+      intensity: mark.intensity,
+      ...(mark.label && { label: mark.label })
+    })).filter((mark: any) => 
+      mark.id && 
+      typeof mark.x === 'number' && 
+      typeof mark.y === 'number' &&
+      mark.intensity
+    );
+  }
+  
+  // Override toJSON to ensure clean serialization
+  public toJSON(): any {
+    const json = super.toJSON();
+    if (this.value && Array.isArray(this.value)) {
+      json.value = this.getCleanValue();
+    }
+    return json;
+  }
 }
 
 // Register the question type
 Serializer.addClass(
   QuestionBodyPainDiagramModel.typeName,
-  [],
+  [
+    {
+      name: 'value',
+      default: [],
+      category: 'data',
+      visible: false,
+      isSerializable: true,
+    },
+  ],
   function() {
     return new QuestionBodyPainDiagramModel('');
   },
@@ -73,11 +138,14 @@ export class SurveyQuestionBodyPainDiagram extends SurveyQuestionElementBase {
   }
 
   protected renderElement(): JSX.Element {
+    console.log('[BodyPainDiagramQuestion] Current value:', this.question.value);
     return (
       <BodyPainDiagram
         value={this.question.value}
         onChange={(marks) => {
+          console.log('[BodyPainDiagramQuestion] onChange called with:', marks);
           this.question.value = marks;
+          console.log('[BodyPainDiagramQuestion] Value after setting:', this.question.value);
         }}
         readOnly={this.question.isReadOnly}
       />

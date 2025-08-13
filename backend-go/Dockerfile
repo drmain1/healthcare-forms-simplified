@@ -23,7 +23,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 # Copy the binary
 COPY --from=builder /app/server /server
 
-# No templates needed - PDF generation moved to Gotenberg service
+# Copy templates directory (required for pain assessment and form templates)
+COPY --from=builder /app/templates /templates
 
 # The nonroot image includes a non-root user by default (65532)
 # No need to create one!

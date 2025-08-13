@@ -45,6 +45,7 @@ export const formsApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Form'],
     }),
 
     // Update existing form

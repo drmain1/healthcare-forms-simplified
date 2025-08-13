@@ -62,6 +62,33 @@ export const responsesApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: 'Response', id }],
     }),
 
+    // Create new response
+    createResponse: builder.mutation<FormResponse, { formId: string; data: any }>({
+      query: ({ formId, data }) => ({
+        url: '/responses/',
+        method: 'POST',
+        body: {
+          form_id: formId,
+          response_data: data,
+        },
+      }),
+      invalidatesTags: ['Response'],
+    }),
+
+    // Submit public response
+    submitPublicResponse: builder.mutation<FormResponse, { formId: string; shareToken: string; data: any }>({
+      query: ({ formId, shareToken, data }) => ({
+        url: '/responses/public',
+        method: 'POST',
+        body: {
+          form_id: formId,
+          share_token: shareToken,
+          response_data: data,
+        },
+      }),
+      invalidatesTags: ['Response'],
+    }),
+
     // Mark response as reviewed
     // markResponseReviewed: builder.mutation<FormResponse, string>({
     //   query: (id) => ({
@@ -117,6 +144,8 @@ export const {
   useGetResponsesQuery,
   useGetFormResponsesQuery,
   useGetResponseQuery,
+  useCreateResponseMutation,
+  useSubmitPublicResponseMutation,
   // useMarkResponseReviewedMutation,
   useExportResponsePdfMutation,
   useDeleteResponseMutation,

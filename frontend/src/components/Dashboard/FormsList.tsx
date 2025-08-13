@@ -71,12 +71,16 @@ export const FormsList: React.FC = () => {
   const [previewFormId, setPreviewFormId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Get forms from API
-  const { data: formsResponse, isLoading, error } = useGetFormsQuery({
+  // Get forms from API with polling for real-time updates
+  const { data: formsResponse, isLoading, error, refetch } = useGetFormsQuery({
     search: searchTerm,
     status: statusFilter === 'all' ? '' : statusFilter,
     page: 1,
     page_size: 50,
+  }, {
+    pollingInterval: 30000, // Poll every 30 seconds
+    refetchOnFocus: true,   // Refetch when window regains focus
+    refetchOnReconnect: true // Refetch when reconnecting to network
   });
 
   // Delete form mutation

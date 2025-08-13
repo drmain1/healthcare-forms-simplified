@@ -41,10 +41,14 @@ const getStatusColor = (status: string) => {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   
-  // Get form responses
-  const { data: responsesData, isLoading, error } = useGetResponsesQuery({ 
+  // Get form responses with polling for real-time updates
+  const { data: responsesData, isLoading, error, refetch } = useGetResponsesQuery({ 
     page_size: 20, 
     ordering: '-submitted_at' 
+  }, {
+    pollingInterval: 30000, // Poll every 30 seconds
+    refetchOnFocus: true,   // Refetch when window regains focus
+    refetchOnReconnect: true // Refetch when reconnecting to network
   });
   
   // Sort responses by submitted_at date (newest first) as a fallback

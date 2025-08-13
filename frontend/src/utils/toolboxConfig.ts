@@ -324,6 +324,16 @@ export const healthcareToolboxItems = [
     }
   },
   {
+    name: 'bodydiagram2',
+    title: 'Body Diagram 2',
+    iconName: 'icon-image',
+    json: {
+      type: 'bodydiagram2',
+      name: 'sensation_areas',
+      title: 'Please mark areas where you experience different sensations'
+    }
+  },
+  {
     name: 'pain-assessment',
     title: 'Complete Pain Assessment (VAS)',
     iconName: 'icon-panel',

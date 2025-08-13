@@ -263,6 +263,22 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   
   creator.toolbox.addItem(bodyPainDiagram);
   
+  // Add Body Diagram 2
+  const bodyDiagram2 = {
+    name: 'bodydiagram2',
+    title: 'Body Diagram 2',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    json: {
+      type: 'bodydiagram2',
+      name: 'sensation_areas',
+      title: 'Please mark areas where you experience different sensations',
+      description: 'Click on the body diagram to indicate sensation locations and types'
+    }
+  };
+  
+  creator.toolbox.addItem(bodyDiagram2);
+  
   // Add Visual Analog Scale & Pain Assessment
     const visualAnalogPainAssessment = {
     name: 'visual-analog-pain-assessment',

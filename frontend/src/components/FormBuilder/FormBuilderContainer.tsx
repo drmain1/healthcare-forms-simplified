@@ -12,6 +12,7 @@ import { selectOrganization } from '../../store/selectors/authSelectors';
 
 // Register custom components
 import './BodyPainDiagramQuestion';
+import './BodyDiagram2Question';
 import './HeightWeightSlider';
 import './DateOfBirthQuestion';
 import './CustomDropdownItem';

@@ -33,7 +33,9 @@ import { ClinicalSummaryButton } from './ClinicalSummaryButton';
 // Import custom question types
 import '../FormBuilder/BodyDiagramQuestion';
 import '../FormBuilder/BodyPainDiagramQuestion';
+import '../FormBuilder/BodyDiagram2Question';
 import { BodyPainDiagram } from '../FormBuilder/BodyPainDiagram';
+import { BodyDiagram2 } from '../FormBuilder/BodyDiagram2';
 
 
 export const ResponseDetail: React.FC = () => {
@@ -99,7 +101,7 @@ export const ResponseDetail: React.FC = () => {
           console.log('[ResponseDetail] Checking question:', question.name, 'type:', question.getType(), 'value:', question.value);
           
           // Check for both question types
-          if (question.getType() === 'bodypaindiagram' || question.getType() === 'bodydiagram') {
+          if (question.getType() === 'bodypaindiagram' || question.getType() === 'bodydiagram' || question.getType() === 'bodydiagram2') {
             // Ensure there is data to display
             if (question.value && Array.isArray(question.value) && question.value.length > 0) {
               // Check if we already added this data
@@ -320,12 +322,19 @@ export const ResponseDetail: React.FC = () => {
           {bodyDiagrams.map((diagram) => (
             <Box key={diagram.name} sx={{ mt: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0' }}>
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
-                {diagram.title || 'Body Pain Diagram'}
+                {diagram.title || (diagram.type === 'bodydiagram2' ? 'Body Sensation Diagram' : 'Body Pain Diagram')}
               </Typography>
-              <BodyPainDiagram
-                value={diagram.data}
-                readOnly={true}
-              />
+              {diagram.type === 'bodydiagram2' ? (
+                <BodyDiagram2
+                  value={diagram.data}
+                  readOnly={true}
+                />
+              ) : (
+                <BodyPainDiagram
+                  value={diagram.data}
+                  readOnly={true}
+                />
+              )}
             </Box>
           ))}
         </Paper>

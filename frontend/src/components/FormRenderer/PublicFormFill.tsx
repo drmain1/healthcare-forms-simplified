@@ -34,6 +34,7 @@ import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
 import '../FormBuilder/DateOfBirthQuestion';
 import '../FormBuilder/BodyPainDiagramQuestion';
+import '../FormBuilder/BodyDiagram2Question';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -147,7 +148,7 @@ export const PublicFormFill: React.FC = () => {
           
           // Also check all other bodypaindiagram questions
           sender.getAllQuestions().forEach((q: any) => {
-            if (q.getType() === 'bodypaindiagram' && q.value && !plainData[q.name]) {
+            if ((q.getType() === 'bodypaindiagram' || q.getType() === 'bodydiagram2') && q.value && !plainData[q.name]) {
               console.log(`[Survey onComplete] Manually adding ${q.name} to plainData`);
               plainData[q.name] = q.value;
             }

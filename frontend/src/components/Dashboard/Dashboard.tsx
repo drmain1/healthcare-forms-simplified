@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -14,13 +14,20 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
 } from '@mui/material';
 import {
   Visibility,
   Person,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useGetResponsesQuery } from '../../store/api/responsesApi';
+import { useGetResponsesQuery, useDeleteResponseMutation } from '../../store/api/responsesApi';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -40,32 +47,51 @@ const getStatusColor = (status: string) => {
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  
-  // Get form responses with polling for real-time updates
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [responseToDelete, setResponseToDelete] = useState<string | null>(null);
+
   const { data: responsesData, isLoading, error, refetch } = useGetResponsesQuery({ 
     page_size: 20, 
     ordering: '-submitted_at' 
   }, {
-    pollingInterval: 30000, // Poll every 30 seconds
-    refetchOnFocus: true,   // Refetch when window regains focus
-    refetchOnReconnect: true // Refetch when reconnecting to network
+    pollingInterval: 30000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true
   });
-  
-  // Sort responses by submitted_at date (newest first) as a fallback
+
+  const [deleteResponse, { isLoading: isDeleting }] = useDeleteResponseMutation();
+
   const responses = React.useMemo(() => {
     const data = responsesData?.results || [];
     return [...data].sort((a, b) => {
-      // Handle cases where submitted_at might be null
       const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
       const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
-      return dateB - dateA; // Newest first (descending order)
+      return dateB - dateA;
     });
   }, [responsesData?.results]);
-  
-  // Debug log
-  
-  
-  // Loading state
+
+  const handleDeleteClick = (responseId: string) => {
+    setResponseToDelete(responseId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setResponseToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (responseToDelete) {
+      try {
+        await deleteResponse(responseToDelete).unwrap();
+        refetch();
+      } catch (err) {
+        console.error('Failed to delete the response: ', err);
+      }
+      handleDeleteCancel();
+    }
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -74,7 +100,6 @@ export const Dashboard: React.FC = () => {
     );
   }
   
-  // Error state
   if (error) {
     return (
       <Box sx={{ mb: 4 }}>
@@ -87,7 +112,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Dashboard
@@ -97,7 +121,6 @@ export const Dashboard: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Form Responses Table */}
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <TableContainer>
           <Table>
@@ -114,12 +137,12 @@ export const Dashboard: React.FC = () => {
             <TableBody>
               {responses.map((response) => (
                 <TableRow key={response.id} hover>
-                  <TableCell>
+                  <TableCell onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)} style={{ cursor: 'pointer'}}>
                     <Typography variant="body2" fontWeight="medium">
                       {response.form_title || response.form}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)} style={{ cursor: 'pointer'}}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Person fontSize="small" color="disabled" />
                       <Typography variant="body2">
@@ -127,7 +150,7 @@ export const Dashboard: React.FC = () => {
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)} style={{ cursor: 'pointer'}}>
                     <Chip 
                       label={response.status ? response.status.replace('_', ' ') : ''} 
                       size="small" 
@@ -135,7 +158,7 @@ export const Dashboard: React.FC = () => {
                       variant="outlined"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)} style={{ cursor: 'pointer'}}>
                     <Typography variant="body2">
                       {response.submitted_at 
                         ? new Date(response.submitted_at).toLocaleString('en-US', {
@@ -149,7 +172,7 @@ export const Dashboard: React.FC = () => {
                       }
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)} style={{ cursor: 'pointer'}}>
                     <Typography variant="body2">
                       {response.completion_time_seconds 
                         ? `${Math.round(response.completion_time_seconds / 60)} min`
@@ -165,6 +188,18 @@ export const Dashboard: React.FC = () => {
                         onClick={() => navigate(`/forms/${response.form}/responses/${response.id}`)}
                       >
                         <Visibility />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Response">
+                      <IconButton 
+                        size="small" 
+                        color="error"
+                        onClick={(e) => { 
+                          e.stopPropagation();
+                          handleDeleteClick(response.id);
+                        }}
+                      >
+                        <DeleteIcon />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -183,6 +218,24 @@ export const Dashboard: React.FC = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this response? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

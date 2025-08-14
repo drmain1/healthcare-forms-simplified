@@ -1,7 +1,6 @@
 import { 
   SurveyModel,
-  setLicenseKey,
-  ITheme
+  setLicenseKey
 } from 'survey-core';
 import { SurveyCreator } from 'survey-creator-react';
 import { ICreatorOptions } from 'survey-creator-core';

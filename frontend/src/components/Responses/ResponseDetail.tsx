@@ -187,7 +187,7 @@ export const ResponseDetail: React.FC = () => {
       <Box sx={{ mb: 3 }}>
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate(`/forms/${formId}/responses`)}
+          onClick={() => navigate('/')}
           sx={{ mb: 2 }}
         >
           Back to Responses

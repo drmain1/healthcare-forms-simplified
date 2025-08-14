@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './Common/Layout';
-import { MinimalDashboard } from './Dashboard/MinimalDashboard';
+import { Dashboard } from './Dashboard/Dashboard';
 import { FormsList } from './Dashboard/FormsList';
 import { FormBuilder } from './FormBuilder/FormBuilder';
 import { FormSendSimplified } from './Dashboard/FormSendSimplified';
@@ -11,6 +11,7 @@ import { ResponseDetail } from './Responses/ResponseDetail';
 import { Login } from './Auth/Login';
 import { PrivateRoute } from './Auth/PrivateRoute';
 import { ClinicSettings } from './Settings/ClinicSettings';
+
 
 // Placeholder components for routes not yet implemented
 const Patients: React.FC = () => (
@@ -46,7 +47,7 @@ export const AppRoutes: React.FC = () => {
           </PrivateRoute>
         }
       >
-        <Route index element={<MinimalDashboard />} />
+        <Route index element={<Dashboard />} />
         <Route path="forms" element={<FormsList />} />
         <Route path="forms/create" element={<FormBuilder />} />
         <Route path="forms/:id/edit" element={<FormBuilder />} />

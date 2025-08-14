@@ -28,11 +28,12 @@ func NewPatternDetector() *PatternDetector {
 			&TermsCheckboxMatcher{},
 			&TermsConditionsMatcher{},
 			&PatientDemographicsMatcher{},
-			&PainAssessmentMatcher{},
 			&NeckDisabilityMatcher{},
 			&OswestryDisabilityMatcher{},
 			&BodyDiagram2Matcher{},
 			&BodyPainDiagram2Matcher{},
+			&SensationAreasMatcher{},
+			&PainAssessmentMatcher{},
 			&PatientVitalsMatcher{},
 			&InsuranceCardMatcher{},
 			&SignatureMatcher{},
@@ -247,7 +248,15 @@ func (m *PainAssessmentMatcher) Match(formDef, responseData map[string]interface
 	painFields := []string{}
 	
 	for key := range responseData {
-		if strings.Contains(strings.ToLower(key), "pain") {
+		lowerKey := strings.ToLower(key)
+		// Exclude body diagram fields from pain assessment
+		if key == "pain_areas" || key == "sensation_areas" {
+			continue // These are handled by specific diagram renderers
+		}
+		// Only match pain assessment fields (not diagram fields)
+		if strings.Contains(lowerKey, "pain") &&
+		   !strings.Contains(lowerKey, "body") &&
+		   !strings.Contains(lowerKey, "diagram") {
 			painFields = append(painFields, key)
 		}
 	}
@@ -328,44 +337,55 @@ func (m *OswestryDisabilityMatcher) Match(formDef, responseData map[string]inter
 func (m *OswestryDisabilityMatcher) GetPatternType() string { return "oswestry_disability" }
 func (m *OswestryDisabilityMatcher) GetPriority() int       { return 5 }
 
-// 7. Body Diagram 2 Matcher
+// 7. Body Diagram 2 Matcher (Sensation Diagram - uses bodydiagram2 type)
 type BodyDiagram2Matcher struct{}
 
 func (m *BodyDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	bodyDiagramFields := []string{}
+	sensationDiagramFields := []string{}
 	
-	// Check form definition for body diagram type components
+	// First check form definition for bodydiagram2 type components
 	elements := extractElements(formDef)
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok {
-			// Check for SurveyJS body diagram component types
-			if elementType == "bodydiagram2" || elementType == "body_diagram_2" {
+			// Check specifically for bodydiagram2 type (sensation diagram)
+			if elementType == "bodydiagram2" {
 				if name, ok := element["name"].(string); ok {
-					bodyDiagramFields = append(bodyDiagramFields, name)
+					// Check if this field has data in responseData
+					if value, exists := responseData[name]; exists {
+						if _, isArray := value.([]interface{}); isArray {
+							sensationDiagramFields = append(sensationDiagramFields, name)
+						}
+					}
 				}
 			}
 		}
 	}
 	
-	// Also check response data for body diagram fields
-	for key, value := range responseData {
-		lowerKey := strings.ToLower(key)
-		if strings.Contains(lowerKey, "bodydiagram2") || 
-		   strings.Contains(lowerKey, "body_diagram_2") ||
-		   (strings.Contains(lowerKey, "body") && strings.Contains(lowerKey, "diagram")) {
-			// Check if value contains pain area data
-			if _, ok := value.([]interface{}); ok {
-				bodyDiagramFields = append(bodyDiagramFields, key)
+	// If no form definition, check response data for fields that look like bodydiagram2 data
+	if len(sensationDiagramFields) == 0 {
+		for key, value := range responseData {
+			// Check if it's an array with sensation data structure
+			if arr, ok := value.([]interface{}); ok && len(arr) > 0 {
+				if item, ok := arr[0].(map[string]interface{}); ok {
+					// Check if it has sensation field (key differentiator)
+					if _, hasSensation := item["sensation"]; hasSensation {
+						if _, hasX := item["x"]; hasX {
+							if _, hasY := item["y"]; hasY {
+								sensationDiagramFields = append(sensationDiagramFields, key)
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 	
-	if len(bodyDiagramFields) > 0 {
+	if len(sensationDiagramFields) > 0 {
 		return true, PatternMetadata{
-			PatternType:  "body_diagram_2",
-			ElementNames: bodyDiagramFields,
+			PatternType:  "sensation_areas_diagram", // Use the renderer name
+			ElementNames: sensationDiagramFields,
 			TemplateData: map[string]interface{}{
-				"diagramFields": bodyDiagramFields,
+				"diagramFields": sensationDiagramFields,
 			},
 		}
 	}
@@ -373,55 +393,54 @@ func (m *BodyDiagram2Matcher) Match(formDef, responseData map[string]interface{}
 	return false, PatternMetadata{}
 }
 
-func (m *BodyDiagram2Matcher) GetPatternType() string { return "body_diagram_2" }
+func (m *BodyDiagram2Matcher) GetPatternType() string { return "sensation_areas_diagram" }
 func (m *BodyDiagram2Matcher) GetPriority() int       { return 7 }
 
-// 8. Body Pain Diagram 2 Matcher
+// 8. Body Pain Diagram 2 Matcher (Pain Intensity Diagram - uses bodypaindiagram type)
 type BodyPainDiagram2Matcher struct{}
 
 func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	painDiagramFields := []string{}
 	
-	// Check form definition for body pain diagram type components
+	// First check form definition for bodypaindiagram type components
 	elements := extractElements(formDef)
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok {
-			// Check for SurveyJS body pain diagram component types
-			if elementType == "bodypaindiagram" || elementType == "body_pain_diagram" {
+			// Check specifically for bodypaindiagram type (pain intensity diagram)
+			if elementType == "bodypaindiagram" {
 				if name, ok := element["name"].(string); ok {
-					painDiagramFields = append(painDiagramFields, name)
+					// Check if this field has data in responseData
+					if value, exists := responseData[name]; exists {
+						if _, isArray := value.([]interface{}); isArray {
+							painDiagramFields = append(painDiagramFields, name)
+						}
+					}
 				}
 			}
 		}
 	}
 	
-	// Also check response data for pain diagram fields
-	for key, value := range responseData {
-		lowerKey := strings.ToLower(key)
-		if strings.Contains(lowerKey, "sensation_areas") || strings.Contains(lowerKey, "bodypaindiagram") || 
-		   strings.Contains(lowerKey, "body_pain_diagram") ||
-		   strings.Contains(lowerKey, "paindiagram") ||
-		   (strings.Contains(lowerKey, "pain") && strings.Contains(lowerKey, "diagram")) {
-			// Check if value contains pain area data (array of pain points)
-			if painArray, ok := value.([]interface{}); ok {
-				// Verify it has pain point structure
-				if len(painArray) > 0 {
-					if point, ok := painArray[0].(map[string]interface{}); ok {
-						// Check for x, y coordinates which indicate pain points
-						if _, hasX := point["x"]; hasX {
-							if _, hasY := point["y"]; hasY {
+	// Also check for the standard pain_areas field name
+	if value, exists := responseData["pain_areas"]; exists {
+		if _, isArray := value.([]interface{}); isArray {
+			if !contains(painDiagramFields, "pain_areas") {
+				painDiagramFields = append(painDiagramFields, "pain_areas")
+			}
+		}
+	}
+	
+	// If no form definition, check response data for fields with pain intensity structure
+	if len(painDiagramFields) == 0 {
+		for key, value := range responseData {
+			// Check if it's an array with pain intensity data structure
+			if arr, ok := value.([]interface{}); ok && len(arr) > 0 {
+				if item, ok := arr[0].(map[string]interface{}); ok {
+					// Check if it has intensity field (key differentiator)
+					if _, hasIntensity := item["intensity"]; hasIntensity {
+						if _, hasX := item["x"]; hasX {
+							if _, hasY := item["y"]; hasY {
 								painDiagramFields = append(painDiagramFields, key)
 							}
-						}
-					}
-				}
-			} else if painMapArray, ok := value.([]map[string]interface{}); ok {
-				// Handle the case where the data is a slice of maps
-				if len(painMapArray) > 0 {
-					point := painMapArray[0]
-					if _, hasX := point["x"]; hasX {
-						if _, hasY := point["y"]; hasY {
-							painDiagramFields = append(painDiagramFields, key)
 						}
 					}
 				}
@@ -442,8 +461,30 @@ func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interfa
 	return false, PatternMetadata{}
 }
 
+// Helper function to check if a slice contains a string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *BodyPainDiagram2Matcher) GetPatternType() string { return "body_pain_diagram_2" }
 func (m *BodyPainDiagram2Matcher) GetPriority() int       { return 8 }
+
+// Note: SensationAreasMatcher is now deprecated - handled by BodyDiagram2Matcher
+// Keeping for backward compatibility
+type SensationAreasMatcher struct{}
+
+func (m *SensationAreasMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// This is now handled by BodyDiagram2Matcher
+	return false, PatternMetadata{}
+}
+
+func (m *SensationAreasMatcher) GetPatternType() string { return "sensation_areas_diagram" }
+func (m *SensationAreasMatcher) GetPriority() int       { return 8 }
 
 // 9. Patient Vitals Matcher
 type PatientVitalsMatcher struct{}

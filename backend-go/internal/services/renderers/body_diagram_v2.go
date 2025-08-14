@@ -1,4 +1,4 @@
-package services
+package renderers
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"html"
 	"sort"
 	"strings"
+
+	"github.com/gemini/forms-api/internal/services"
 )
 
 // Embedded SVG body diagram (minified from frontend/public/assets/body-diagram-pain.svg)

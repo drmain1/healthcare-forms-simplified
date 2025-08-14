@@ -279,6 +279,14 @@ func renderPainPointsTable(painPoints []PainPoint) string {
 
 // Helper functions
 
+func getMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func getPainIntensityColor(intensity int) string {
 	// Match frontend colors: mild (1-3) = yellow, moderate (4-6) = orange, severe (7-10) = red
 	if intensity <= 3 {
@@ -298,4 +306,191 @@ func getIntensityLabel(intensity int) string {
 	} else {
 		return "Severe"
 	}
+}
+
+// SensationPoint represents a sensation point on the body diagram
+type SensationPoint struct {
+	X         float64 `json:"x"`
+	Y         float64 `json:"y"`
+	Sensation string  `json:"sensation"`
+	Area      string  `json:"area"`
+	Side      string  `json:"side"`
+}
+
+// SensationAreasRenderer renders body diagram with sensation points
+func SensationAreasRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
+	var result bytes.Buffer
+	
+	fmt.Printf("DEBUG SensationAreasRenderer: Called with metadata.ElementNames=%v\n", metadata.ElementNames)
+	fmt.Printf("DEBUG SensationAreasRenderer: Context.Answers keys=%v\n", getMapKeys(context.Answers))
+	
+	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="section-title">Body Diagram - Sensation Mapping</div>`)
+	
+	sensationPoints := extractSensationPoints(metadata.ElementNames, context.Answers)
+	
+	if len(sensationPoints) == 0 {
+		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
+		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No sensation areas were marked on the body diagram</p>`)
+		result.WriteString(`</div>`)
+	} else {
+		result.WriteString(renderVisualSensationDiagram(sensationPoints))
+		result.WriteString(`<div style="margin-top: 30px;">`)
+		result.WriteString(`<h4>Sensation Location Details</h4>`)
+		result.WriteString(renderSensationPointsTable(sensationPoints))
+		result.WriteString(`</div>`)
+	}
+	
+	result.WriteString(`</div>`)
+	
+	return result.String(), nil
+}
+
+func extractSensationPoints(elementNames []string, answers map[string]interface{}) []SensationPoint {
+	var allPoints []SensationPoint
+	
+	fmt.Printf("DEBUG extractSensationPoints: elementNames=%v\n", elementNames)
+	
+	for _, elementName := range elementNames {
+		if data, exists := answers[elementName]; exists {
+			fmt.Printf("DEBUG extractSensationPoints: Found data for field '%s', type=%T\n", elementName, data)
+			fmt.Printf("DEBUG extractSensationPoints: Raw data: %+v\n", data)
+			points := processSensationData(data)
+			fmt.Printf("DEBUG extractSensationPoints: Extracted %d points from field '%s'\n", len(points), elementName)
+			allPoints = append(allPoints, points...)
+		} else {
+			fmt.Printf("DEBUG extractSensationPoints: No data found for field '%s'\n", elementName)
+		}
+	}
+	
+	fmt.Printf("DEBUG extractSensationPoints: Total points extracted: %d\n", len(allPoints))
+	return allPoints
+}
+
+func processSensationData(data interface{}) []SensationPoint {
+	var points []SensationPoint
+	
+	fmt.Printf("DEBUG processSensationData: Input type=%T\n", data)
+	
+	processPoint := func(pointData map[string]interface{}) {
+		fmt.Printf("DEBUG processSensationData: Processing point data: %+v\n", pointData)
+		sp := SensationPoint{
+			X:         GetFloat64(pointData, "x"),
+			Y:         GetFloat64(pointData, "y"),
+			Sensation: GetString(pointData, "sensation"),
+			Area:      GetString(pointData, "area"),
+			Side:      GetString(pointData, "side"),
+		}
+		fmt.Printf("DEBUG processSensationData: Extracted SensationPoint: X=%.2f, Y=%.2f, Sensation=%s\n", sp.X, sp.Y, sp.Sensation)
+		if sp.X > 0 || sp.Y > 0 {
+			points = append(points, sp)
+			fmt.Printf("DEBUG processSensationData: Point added (X or Y > 0)\n")
+		} else {
+			fmt.Printf("DEBUG processSensationData: Point skipped (X=%.2f, Y=%.2f both <= 0)\n", sp.X, sp.Y)
+		}
+	}
+
+	if pointsArray, ok := data.([]interface{}); ok {
+		fmt.Printf("DEBUG processSensationData: Data is []interface{} with %d items\n", len(pointsArray))
+		for i, point := range pointsArray {
+			fmt.Printf("DEBUG processSensationData: Item %d type=%T\n", i, point)
+			if pointData, ok := point.(map[string]interface{}); ok {
+				processPoint(pointData)
+			} else {
+				fmt.Printf("DEBUG processSensationData: Item %d is not map[string]interface{}\n", i)
+			}
+		}
+	} else if painMapArray, ok := data.([]map[string]interface{}); ok {
+		fmt.Printf("DEBUG processSensationData: Data is []map[string]interface{} with %d items\n", len(painMapArray))
+		for _, pointData := range painMapArray {
+			processPoint(pointData)
+		}
+	} else {
+		fmt.Printf("DEBUG processSensationData: Data type not recognized, cannot process\n")
+	}
+	
+	fmt.Printf("DEBUG processSensationData: Returning %d points\n", len(points))
+	return points
+}
+
+func renderVisualSensationDiagram(sensationPoints []SensationPoint) string {
+	var result bytes.Buffer
+	
+	result.WriteString(`<div style="position: relative; display: inline-block; width: 100%; max-width: 500px; margin: 0 auto;">`)
+	result.WriteString(`<div style="width: 100%;">`)
+	result.WriteString(bodySVG)
+	result.WriteString(`</div>`)
+	
+	sensationColors := map[string]string{
+		"numbness":       "#3498db", // Blue
+		"aching":         "#e67e22", // Orange
+		"burning":        "#e74c3c", // Red
+		"pins_and_needles": "#f1c40f", // Yellow
+		"stabbing":       "#9b59b6", // Purple
+		"default":        "#95a5a6", // Gray
+	}
+
+	for i, point := range sensationPoints {
+		color, exists := sensationColors[strings.ToLower(point.Sensation)]
+		if !exists {
+			color = sensationColors["default"]
+		}
+		
+		result.WriteString(fmt.Sprintf(
+			`<div style="position: absolute; left: %.1f%%; top: %.1f%%; width: 24px; height: 24px; `+
+			`border-radius: 50%%; background-color: %s; border: 2px solid #fff; `+
+			`transform: translate(-50%%, -50%%); display: flex; align-items: center; `+
+			`justify-content: center; color: #fff; font-weight: bold; font-size: 14px; `+
+			`box-shadow: 0 2px 4px rgba(0,0,0,0.2);">%d</div>`,
+			point.X, point.Y, color, i+1))
+	}
+	
+	result.WriteString(`</div>`)
+	
+	// Add legend
+	result.WriteString(`<div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">`)
+	for sensation, color := range sensationColors {
+		if sensation != "default" {
+			result.WriteString(fmt.Sprintf(`<span><span style="display: inline-block; width: 12px; height: 12px; background: %s; border-radius: 50%; margin-right: 5px;"></span>%s</span>`, color, strings.Title(strings.ReplaceAll(sensation, "_", " "))))
+		}
+	}
+	result.WriteString(`</div>`)
+	
+	result.WriteString(`<div style="margin-top: 15px; text-align: center;">`)
+	result.WriteString(fmt.Sprintf(`<strong>Total Sensation Areas Marked:</strong> %d`, len(sensationPoints)))
+	result.WriteString(`</div>`)
+	
+	return result.String()
+}
+
+func renderSensationPointsTable(sensationPoints []SensationPoint) string {
+	var result bytes.Buffer
+	
+	result.WriteString(`<table class="data-table">`)
+	result.WriteString(`<thead><tr><th>Marker #</th><th>Body Area</th><th>Side</th><th>Sensation</th><th>Position (X,Y)</th></tr></thead>`)
+	result.WriteString(`<tbody>`)
+	
+	for i, point := range sensationPoints {
+		result.WriteString(`<tr>`)
+		result.WriteString(fmt.Sprintf(`<td>%d</td>`, i+1))
+		
+		area := point.Area
+		if area == "" { area = "-" }
+		result.WriteString(`<td>` + html.EscapeString(area) + `</td>`)
+		
+		side := point.Side
+		if side == "" { side = "-" }
+		result.WriteString(`<td>` + html.EscapeString(side) + `</td>`)
+		
+		sensation := point.Sensation
+		if sensation == "" { sensation = "N/A" }
+		result.WriteString(`<td>` + html.EscapeString(strings.Title(strings.ReplaceAll(sensation, "_", " "))) + `</td>`)
+		
+		result.WriteString(`<td>` + fmt.Sprintf("(%.1f, %.1f)", point.X, point.Y) + `</td>`)
+		result.WriteString(`</tr>`)
+	}
+	
+	result.WriteString(`</tbody></table>`)
+	
+	return result.String()
 }

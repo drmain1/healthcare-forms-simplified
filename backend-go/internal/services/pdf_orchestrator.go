@@ -63,10 +63,18 @@ func (o *PDFOrchestrator) GeneratePDF(ctx context.Context, responseID string, us
 	}
 	
 	// 2. Detect patterns and determine render order
+	log.Printf("DEBUG: Form definition survey JSON: %+v", pdfContext.FormDefinition)
+	log.Printf("DEBUG: Response answers keys: %v", getKeys(pdfContext.Answers))
+	
 	patterns, err := o.detector.DetectPatterns(pdfContext.FormDefinition, pdfContext.Answers)
 	if err != nil {
 		log.Printf("PDF_GENERATION_ERROR: user=%s, response=%s, request=%s, error=%v", userID, responseID, requestID, err)
 		return nil, fmt.Errorf("pattern detection failed: %w", err)
+	}
+	
+	log.Printf("DEBUG: Detected patterns: %d", len(patterns))
+	for _, p := range patterns {
+		log.Printf("DEBUG: Pattern type=%s, fields=%v", p.PatternType, p.ElementNames)
 	}
 	
 	// 3. Get custom render order from organization or use default
@@ -205,6 +213,7 @@ func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []Patt
 		"pain_assessment",
 		"body_diagram_2",
 		"body_pain_diagram_2",
+		"sensation_areas_diagram",  // Added sensation areas diagram
 		"insurance_card",
 		"signature",
 	}
@@ -321,6 +330,14 @@ func (o *PDFOrchestrator) assembleAndGeneratePDF(htmlSections map[string]string,
 func (o *PDFOrchestrator) calculateChecksum(data []byte) string {
 	hash := sha256.Sum256(data)
 	return fmt.Sprintf("%x", hash)[:16]
+}
+
+func getKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func getPatientName(answers map[string]interface{}) string {

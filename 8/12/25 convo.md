@@ -11,20 +11,7 @@
 
   When This Breaks:
 
-  # Works fine during development:
-  cd /project/backend-go
-  go run cmd/server/main.go  # CWD is /project/backend-go
-  # ✅ Finds: /project/backend-go/templates/pain_assessment_table.html
 
-  # But in production/Docker:
-  cd /
-  ./server  # Binary executed from root
-  # ❌ Looks for: /templates/pain_assessment_table.html (doesn't exist!)
-
-  # Or if someone runs from different directory:
-  cd /home/user
-  /project/backend-go/server
-  # ❌ Looks for: /home/user/templates/pain_assessment_table.html
 
   Why It Works Now:
 

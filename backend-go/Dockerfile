@@ -23,8 +23,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 # Copy the binary
 COPY --from=builder /app/server /server
 
-# Copy templates directory (required for pain assessment and form templates)
-COPY --from=builder /app/templates /templates
+# Templates are now embedded in the binary via go:embed
+# No need to copy separate template files
 
 # The nonroot image includes a non-root user by default (65532)
 # No need to create one!

@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
 
-	"github.com/gemini/forms-api/internal/data"
 	"github.com/gemini/forms-api/internal/services"
 )
 
@@ -23,9 +21,8 @@ type PDFGenerationRequest struct {
 	ResponseData map[string]interface{} `json:"responseData"`
 }
 
-// GeneratePDFHandler is the main orchestrator for the PDF generation process.
-// It fetches form and response data, sends it to an AI for HTML generation,
-// then sends that HTML to Gotenberg for PDF conversion.
+// GeneratePDFHandler uses the new PDFOrchestrator system for enhanced PDF generation.
+// Supports all 11 medical form types with security validation and performance optimization.
 func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		responseId := c.Param("responseId")
@@ -34,143 +31,73 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 			return
 		}
 		
-		log.Printf("Starting PDF generation for response ID: %s", responseId)
+		// Extract user ID from Firebase token for security validation
+		userID := "unknown-user"
+		if userClaims, exists := c.Get("user"); exists {
+			if claims, ok := userClaims.(map[string]interface{}); ok {
+				if uid, ok := claims["uid"].(string); ok {
+					userID = uid
+				}
+			}
+		}
+		
+		log.Printf("PDF_GENERATION_V2_START: user=%s, response=%s", userID, responseId)
 		startTime := time.Now()
+		
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
-		ctx := context.Background()
-
-		// 1. Fetch the response document
-		log.Printf("Fetching response document from form_responses collection")
-		responseDoc, err := client.Collection("form_responses").Doc(responseId).Get(ctx)
+		// Initialize the new PDF orchestrator with all components
+		orchestrator, err := services.NewPDFOrchestrator(client, gs)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Response not found"})
-			return
-		}
-		var responseData map[string]interface{}
-		if err := responseDoc.DataTo(&responseData); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse response data"})
-			return
-		}
-
-		// Extract form_id and response_data from the response document
-		// Note: The Firestore field is "form", not "form_id"
-		formID, ok := responseData["form"].(string)
-		if !ok || formID == "" {
-			// Log the actual structure for debugging
-			log.Printf("Response document structure: %+v", responseData)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Form ID not found in response document (looking for 'form' field)", "debug": responseData})
+			log.Printf("PDF_GENERATION_V2_ERROR: user=%s, response=%s, error=failed to initialize orchestrator: %v", userID, responseId, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "PDF system initialization failed",
+				"code": "INIT_ERROR",
+			})
 			return
 		}
 		
-		// Note: The Firestore field is "response_data" based on the models.go struct tags
-		answers, ok := responseData["response_data"].(map[string]interface{})
-		if !ok {
-			// Log the actual structure for debugging
-			log.Printf("Response data type: %T, value: %+v", responseData["response_data"], responseData["response_data"])
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Answer data not found in response document (looking for 'response_data' field)", "debug": responseData})
-			return
-		}
-		
-		// Extract organization ID from response
-		orgID, _ := responseData["organizationId"].(string)
-
-		// 2. Fetch the corresponding form document
-		formDoc, err := client.Collection("forms").Doc(formID).Get(ctx)
+		// Generate PDF using the new orchestrator system
+		pdfBytes, err := orchestrator.GeneratePDF(ctx, responseId, userID)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Form not found"})
-			return
-		}
-		var form map[string]interface{}
-		if err := formDoc.DataTo(&form); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse form data"})
-			return
-		}
-		
-		surveyJSON, ok := form["surveyJson"].(map[string]interface{})
-		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "surveyJson not found or is not the correct type in form document"})
-			return
-		}
-		
-		// 3. Fetch organization clinic info if available
-		var clinicInfo *data.ClinicInfo
-		if orgID != "" {
-			orgDoc, err := client.Collection("organizations").Doc(orgID).Get(ctx)
-			if err == nil {
-				// Debug: log raw organization data
-				orgData := orgDoc.Data()
-				log.Printf("DEBUG: Raw organization data: %+v", orgData)
-				
-				// Check if clinic_info field exists
-				if clinicData, exists := orgData["clinic_info"]; exists {
-					log.Printf("DEBUG: clinic_info field exists in Firestore: %+v", clinicData)
-				} else {
-					log.Printf("DEBUG: clinic_info field DOES NOT exist in Firestore document")
-				}
-				
-				var org data.Organization
-				if err := orgDoc.DataTo(&org); err == nil {
-					clinicInfo = &org.ClinicInfo
-					log.Printf("Successfully fetched clinic info for organization: %s", orgID)
-					log.Printf("DEBUG: Organization struct after parsing: %+v", org)
-					log.Printf("DEBUG: ClinicInfo specifically: %+v", org.ClinicInfo)
-				} else {
-					log.Printf("ERROR: Failed to parse organization data: %v", err)
-				}
+			log.Printf("PDF_GENERATION_V2_ERROR: user=%s, response=%s, error=%v", userID, responseId, err)
+			
+			// Enhanced error handling with specific error codes
+			errorResponse := gin.H{
+				"error": "PDF generation failed",
+				"details": err.Error(),
+				"code": "GENERATION_ERROR",
+			}
+			
+			// Check for specific error types
+			if strings.Contains(err.Error(), "not found") {
+				errorResponse["code"] = "NOT_FOUND"
+				c.JSON(http.StatusNotFound, errorResponse)
+			} else if strings.Contains(err.Error(), "timeout") {
+				errorResponse["code"] = "TIMEOUT"
+				c.JSON(http.StatusRequestTimeout, errorResponse)
+			} else if strings.Contains(err.Error(), "rate limit") {
+				errorResponse["code"] = "RATE_LIMIT"
+				c.JSON(http.StatusTooManyRequests, errorResponse)
+			} else if strings.Contains(err.Error(), "security") {
+				errorResponse["code"] = "SECURITY_ERROR"
+				c.JSON(http.StatusBadRequest, errorResponse)
 			} else {
-				log.Printf("Could not fetch organization info for ID %s: %v", orgID, err)
+				c.JSON(http.StatusInternalServerError, errorResponse)
 			}
-		}
-
-		// At this point, we have surveyJSON and answers.
-
-		// --- DEBUG LOGGING ---
-		log.Printf("--- DEBUG: Data Pulled from Firestore for PDF Generation ---")
-		log.Printf("Total answer fields: %d", len(answers))
-		for key, value := range answers {
-			if strings.Contains(key, "signature") {
-				if sigData, ok := value.(string); ok {
-					log.Printf("Signature field '%s' from Firestore has data length: %d", key, len(sigData))
-				} else {
-					log.Printf("Signature field '%s' from Firestore has non-string data type: %T", key, value)
-				}
-			} else if strings.Contains(key, "pain") || strings.Contains(key, "body") || strings.Contains(key, "diagram") {
-				log.Printf("Body/Pain field '%s': type=%T, value=%+v", key, value, value)
-			}
-		}
-		// --- END DEBUG LOGGING ---
-
-
-		// Step 3: Marshal the survey JSON to a string to pass to the new generator
-		surveyJSONString, err := json.Marshal(surveyJSON)
-		if err != nil {
-			log.Printf("ERROR: Failed to marshal surveyJSON: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process form structure"})
 			return
 		}
-
-		log.Printf("Generating dynamic HTML from form structure for response %s (elapsed: %v)", responseId, time.Since(startTime))
-		generatedHTML, err := services.GenerateDynamicHTML(string(surveyJSONString), answers, clinicInfo)
-		if err != nil {
-			log.Printf("ERROR: Failed to generate dynamic HTML: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate HTML from data", "details": err.Error()})
-			return
-		}
-
-		// Step 5: Call Gotenberg with AI-generated HTML.
-		gotenbergStart := time.Now()
-		log.Printf("Calling Gotenberg to convert HTML to PDF for response %s (elapsed: %v)", responseId, time.Since(startTime))
-		pdfBytes, err := gs.ConvertHTMLToPDF(generatedHTML)
-		if err != nil {
-			log.Printf("ERROR: Failed to convert HTML to PDF: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert HTML to PDF", "details": err.Error()})
-			return
-		}
-		log.Printf("Successfully generated PDF (%d bytes) - Gotenberg took: %v, Total time: %v", len(pdfBytes), time.Since(gotenbergStart), time.Since(startTime))
-
-		// Step 6: Return PDF to client.
+		
+		totalDuration := time.Since(startTime)
+		log.Printf("PDF_GENERATION_V2_SUCCESS: user=%s, response=%s, size=%d bytes, duration=%v", 
+			userID, responseId, len(pdfBytes), totalDuration)
+		
+		// Return PDF with security headers
 		c.Header("Content-Type", "application/pdf")
-		c.Header("Content-Disposition", "attachment; filename=response.pdf")
+		c.Header("Content-Disposition", "attachment; filename=medical-form-response.pdf")
+		c.Header("X-PDF-Generation-Time", totalDuration.String())
+		c.Header("X-PDF-System-Version", "v2")
 		c.Data(http.StatusOK, "application/pdf", pdfBytes)
 	}
 }

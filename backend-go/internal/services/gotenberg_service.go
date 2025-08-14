@@ -1,4 +1,3 @@
-
 package services
 
 import (
@@ -36,13 +35,19 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 	writer := multipart.NewWriter(body)
 
 	// Add the HTML file to the request.
-	part, err := writer.CreateFormFile("index.html", "index.html")
+	part, err := writer.CreateFormFile("files", "index.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create form file for index.html: %w", err)
 	}
 	if _, err = io.Copy(part, bytes.NewReader([]byte(htmlContent))); err != nil {
 		return nil, fmt.Errorf("failed to copy html content to form: %w", err)
 	}
+
+	// Add standard PDF options
+	_ = writer.WriteField("marginTop", "0.5")
+	_ = writer.WriteField("marginBottom", "0.5")
+	_ = writer.WriteField("marginLeft", "0.5")
+	_ = writer.WriteField("marginRight", "0.5")
 
 	// Close the writer.
 	if err = writer.Close(); err != nil {

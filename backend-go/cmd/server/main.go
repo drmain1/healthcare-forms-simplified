@@ -122,8 +122,7 @@ func main() {
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient))
 		authRequired.DELETE("/forms/:id/", api.DeleteForm(firestoreClient))
 		
-		// New HTML to PDF endpoint using Gotenberg
-		authRequired.POST("/forms/:id/export-html-to-pdf", api.ExportHTMLToPDF(firestoreClient))
+		
 		
 
 		// Share link routes

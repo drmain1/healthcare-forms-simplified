@@ -355,15 +355,4 @@ func getKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-func getPatientName(answers map[string]interface{}) string {
-	if name, ok := answers["patient_name"].(string); ok {
-		return name
-	}
-	if firstName, ok1 := answers["first_name"].(string); ok1 {
-		if lastName, ok2 := answers["last_name"].(string); ok2 {
-			return firstName + " " + lastName
-		}
-		return firstName
-	}
-	return "Patient"
-}
+// getPatientName is defined in patient_demographics.go

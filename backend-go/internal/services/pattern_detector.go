@@ -261,35 +261,27 @@ func (m *PatientDemographicsMatcher) GetPriority() int       { return 3 }
 type PainAssessmentMatcher struct{}
 
 func (m *PainAssessmentMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Look for the exact pain_assessment_panel element in form definition
+	// Look for panel with specific title "Visual Analog Scale & Pain Assessment"
 	elements := extractElements(formDef)
 	
 	for _, element := range elements {
-		// Check for panels with the exact name "pain_assessment_panel"
 		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
-			if name, ok := element["name"].(string); ok && name == "pain_assessment_panel" {
-				// Found the pain assessment panel - collect any pain-related fields from response
-				painFields := []string{}
-				for key := range responseData {
-					lowerKey := strings.ToLower(key)
-					// Collect fields that are part of pain assessment (has_X_pain, X_pain_intensity, etc)
-					if strings.Contains(lowerKey, "_pain") || 
-					   strings.Contains(lowerKey, "pain_intensity") ||
-					   strings.Contains(lowerKey, "pain_frequency") {
-						// But exclude synthetic fields and diagram fields
-						if key != "pain_areas" && key != "pain_assessment_data" && 
-						   !strings.Contains(lowerKey, "diagram") &&
-						   !strings.Contains(lowerKey, "body") {
-							painFields = append(painFields, key)
-						}
-					}
-				}
+			// Check for the specific title
+			if title, ok := element["title"].(string); ok && 
+			   title == "Visual Analog Scale & Pain Assessment" {
+				
+				// Found it! Get the panel name and structure
+				panelName, _ := element["name"].(string)
+				
+				// Log for debugging
+				fmt.Printf("DEBUG: Found pain assessment panel with title: %s, name: %s\n", title, panelName)
 				
 				return true, PatternMetadata{
 					PatternType:  "pain_assessment",
-					ElementNames: painFields,
+					ElementNames: []string{panelName},
 					TemplateData: map[string]interface{}{
-						"painFields": painFields,
+						"panel": element,
+						"answers": responseData,
 					},
 				}
 			}

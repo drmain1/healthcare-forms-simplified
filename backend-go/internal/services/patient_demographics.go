@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"strings"
-	"time"
 )
 
 // PatientDemographicsRenderer renders patient demographic information
@@ -166,43 +165,7 @@ func calculatePatientAge(answers map[string]interface{}) int {
 	return 0
 }
 
-// Reuse the existing age calculation logic from form_processor.go
-func calculateAgeFromDOB(dobStr string) int {
-	// Parse the date string - handle various formats
-	var dob time.Time
-	var err error
-	
-	// Try common date formats
-	formats := []string{
-		"2006-01-02",           // ISO format (most common from HTML date input)
-		"01/02/2006",           // US format
-		"02/01/2006",           // EU format
-		time.RFC3339,           // Full timestamp
-		"2006-01-02T15:04:05Z", // ISO 8601
-	}
-	
-	for _, format := range formats {
-		dob, err = time.Parse(format, dobStr)
-		if err == nil {
-			break
-		}
-	}
-	
-	if err != nil {
-		// If we couldn't parse the date, return -1
-		return -1
-	}
-	
-	now := time.Now()
-	age := now.Year() - dob.Year()
-	
-	// Check if birthday hasn't occurred this year
-	if now.Month() < dob.Month() || (now.Month() == dob.Month() && now.Day() < dob.Day()) {
-		age--
-	}
-	
-	return age
-}
+// calculateAgeFromDOB is defined in form_processor.go
 
 func formatPhoneNumber(phone string) string {
 	// Remove all non-digit characters

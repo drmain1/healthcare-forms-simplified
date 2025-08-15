@@ -5,71 +5,99 @@ import (
 	"fmt"
 	"html"
 	"strings"
-	"time"
 )
 
-// PainAreaData holds the structured data for a single row in the pain assessment table
-// Reusing the existing structure from custom_tables.go
-type PainAreaData struct {
-	Area           string
-	Side           string // For extremities: "LT", "RT", or "LT RT"
-	Severity       interface{}
-	Frequency      interface{}
-	FrequencyText  string  // Human-readable frequency description
-	FrequencyValue float64 // Numeric frequency value for positioning
-}
+// PainAreaData is defined in custom_tables.go
 
 // PainAssessmentRenderer renders comprehensive pain assessment data
 func PainAssessmentRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	var result bytes.Buffer
+	// Get the panel from metadata
+	panel, ok := metadata.TemplateData["panel"].(map[string]interface{})
+	if !ok {
+		// Fallback to old logic if panel not found
+		return generatePlaceholderHTML("Pain Assessment", metadata.ElementNames), nil
+	}
 	
-	result.WriteString(`<div class="form-section">`)
-	result.WriteString(`<div class="section-title">Pain Assessment</div>`)
+	// Extract the nested elements structure
+	panelElements, _ := panel["elements"].([]interface{})
 	
-	// Extract pain assessment data
-	painData, err := extractPainAssessmentData(metadata.ElementNames, context.Answers)
+	// Convert to Element structure for custom_tables
+	elements := convertToElements(panelElements)
+	
+	element := Element{
+		Name: "pain_assessment_panel",
+		Type: "panel",
+		Elements: elements,
+	}
+	
+	// Use the existing custom table renderer
+	html, err := RenderCustomTable(element, context.Answers)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract pain assessment data: %w", err)
+		// Log the error and show debug output
+		fmt.Printf("ERROR: Failed to render pain assessment table: %v\n", err)
+		return generateDebugOutput(metadata, context), nil
 	}
 	
-	if len(painData) == 0 {
-		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
-		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No pain assessment data found</p>`)
-		result.WriteString(`<p style="font-size: 11px; color: #999;">Fields checked: ` + strings.Join(metadata.ElementNames, ", ") + `</p>`)
-		result.WriteString(`</div>`)
-	} else {
-		// Render the pain assessment table
-		result.WriteString(renderPainAssessmentTable(painData))
-		
-		// Add summary
-		result.WriteString(renderPainSummary(painData))
-	}
-	
-	result.WriteString(`</div>`)
-	
-	return result.String(), nil
+	return string(html), nil
 }
 
-func extractPainAssessmentData(elementNames []string, answers map[string]interface{}) ([]PainAreaData, error) {
-	var painAreas []PainAreaData
+// convertToElements converts the panel elements from interface{} to Element struct
+func convertToElements(panelElements []interface{}) []Element {
+	var elements []Element
 	
-	// Process each pain-related element
-	for _, elementName := range elementNames {
-		if data, exists := answers[elementName]; exists && data != nil {
-			// Try to process as structured pain data first
-			if painArea := processStructuredPainElement(elementName, data); painArea != nil {
-				painAreas = append(painAreas, *painArea)
-				continue
+	for _, elem := range panelElements {
+		if elemMap, ok := elem.(map[string]interface{}); ok {
+			element := Element{
+				Type: getStringFromMap(elemMap, "type"),
+				Name: getStringFromMap(elemMap, "name"),
+				Title: getStringFromMap(elemMap, "title"),
 			}
 			
-			// Fall back to simple pain data processing
-			if painArea := processSimplePainElement(elementName, data); painArea != nil {
-				painAreas = append(painAreas, *painArea)
+			// Recursively convert nested elements
+			if nestedElems, ok := elemMap["elements"].([]interface{}); ok {
+				element.Elements = convertToElements(nestedElems)
 			}
+			
+			elements = append(elements, element)
 		}
 	}
 	
-	return painAreas, nil
+	return elements
+}
+
+// getStringFromMap safely extracts a string from a map
+func getStringFromMap(m map[string]interface{}, key string) string {
+	if val, ok := m[key].(string); ok {
+		return val
+	}
+	return ""
+}
+
+// generateDebugOutput creates debug output for troubleshooting
+func generateDebugOutput(metadata PatternMetadata, context *PDFContext) string {
+	var result bytes.Buffer
+	
+	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="section-title">Pain Assessment (Debug Mode)</div>`)
+	result.WriteString(`<div style="padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6;">`)
+	
+	// Show what fields we're looking for
+	result.WriteString(`<p><strong>Looking for pain fields:</strong></p>`)
+	result.WriteString(`<ul>`)
+	painFields := []string{"has_neck_pain", "neck_pain_intensity", "neck_pain_frequency"}
+	for _, field := range painFields {
+		if val, exists := context.Answers[field]; exists {
+			result.WriteString(fmt.Sprintf(`<li>%s = %v (type: %T)</li>`, field, val, val))
+		} else {
+			result.WriteString(fmt.Sprintf(`<li>%s = NOT FOUND</li>`, field))
+		}
+	}
+	result.WriteString(`</ul>`)
+	
+	result.WriteString(`</div>`)
+	result.WriteString(`</div>`)
+	
+	return result.String()
 }
 
 func processStructuredPainElement(elementName string, data interface{}) *PainAreaData {
@@ -239,7 +267,7 @@ func parseFrequencyValue(frequency interface{}) float64 {
 	return 0
 }
 
-func renderPainAssessmentTable(painData []PainAreaData) string {
+func renderPainDataTable(painData []PainAreaData) string {
 	var result bytes.Buffer
 	
 	result.WriteString(`<table class="data-table">`)

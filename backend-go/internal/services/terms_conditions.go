@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"html"
 	"strings"
-	"time"
 )
 
 // TermsConditionsRenderer renders full terms and conditions text
@@ -104,39 +103,8 @@ func processTermsContent(content string) string {
 }
 
 func sanitizeHTML(content string) string {
-	// Basic HTML sanitization - allow common formatting tags
-	allowedTags := map[string]bool{
-		"<p>":      true,
-		"</p>":     true,
-		"<br>":     true,
-		"<br/>":    true,
-		"<strong>": true,
-		"</strong>": true,
-		"<b>":      true,
-		"</b>":     true,
-		"<em>":     true,
-		"</em>":    true,
-		"<i>":      true,
-		"</i>":     true,
-		"<ul>":     true,
-		"</ul>":    true,
-		"<ol>":     true,
-		"</ol>":    true,
-		"<li>":     true,
-		"</li>":    true,
-		"<div>":    true,
-		"</div>":   true,
-		"<h1>":     true,
-		"</h1>":    true,
-		"<h2>":     true,
-		"</h2>":    true,
-		"<h3>":     true,
-		"</h3>":    true,
-		"<h4>":     true,
-		"</h4>":    true,
-	}
-	
-	// This is a very basic sanitization - in production, use a proper HTML sanitizer
+	// Basic HTML sanitization
+	// TODO: In production, use a proper HTML sanitizer that allows specific tags
 	// For now, we'll just escape everything to be safe
 	return `<div style="line-height: 1.6; font-size: 12px;">` + html.EscapeString(content) + `</div>`
 }

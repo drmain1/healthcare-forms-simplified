@@ -1,12 +1,8 @@
 package services
 
 import (
-	"bytes"
 	goctx "context"
-	"encoding/json"
 	"fmt"
-	"html/template"
-	"log"
 	"strings"
 	"time"
 
@@ -59,87 +55,8 @@ func (rr *RendererRegistry) registerRenderers() {
 	rr.renderers["terms_conditions"] = rr.wrapRenderer(TermsConditionsRenderer)
 	rr.renderers["patient_demographics"] = rr.wrapRenderer(PatientDemographicsRenderer)
 	
-	// Register pain assessment renderer with the embedded template
-	rr.renderers["pain_assessment"] = rr.wrapRenderer(func(metadata PatternMetadata, context *PDFContext) (string, error) {
-		// Use the metadata fields to create the pain assessment table
-		// The pattern detector already found the fields for us
-		
-		// Build the pain data from the fields
-		var painAreas []PainAreaData
-		
-		// Process the fields we found
-		for _, fieldName := range metadata.ElementNames {
-			// Skip synthetic fields
-			if fieldName == "pain_areas" || strings.Contains(fieldName, "diagram") {
-				continue
-			}
-			
-			// Check if this is a "has_X_pain" field
-			if strings.HasPrefix(fieldName, "has_") && strings.HasSuffix(fieldName, "_pain") {
-				// Extract the area name
-				areaName := strings.TrimSuffix(strings.TrimPrefix(fieldName, "has_"), "_pain")
-				
-				// Check if they have pain in this area
-				if hasPain, ok := context.Answers[fieldName]; ok && hasPain == "Yes" {
-					// Get intensity and frequency
-					intensityField := areaName + "_pain_intensity"
-					frequencyField := areaName + "_pain_frequency"
-					
-					// Handle special case for neck
-					if areaName == "neck" {
-						// Already correct format
-					}
-					
-					painArea := PainAreaData{
-						Area: strings.Title(strings.ReplaceAll(areaName, "_", " ")),
-					}
-					
-					if intensity, ok := context.Answers[intensityField]; ok {
-						painArea.Severity = intensity
-					}
-					
-					if frequency, ok := context.Answers[frequencyField]; ok {
-						painArea.Frequency = frequency
-						// Convert frequency to display values
-						if freqFloat, ok := frequency.(float64); ok {
-							painArea.FrequencyValue = freqFloat * 33.33 // Map 0-3 to 0-100%
-							switch int(freqFloat) {
-							case 0:
-								painArea.FrequencyText = "Occasional"
-							case 1:
-								painArea.FrequencyText = "Intermittent"
-							case 2:
-								painArea.FrequencyText = "Frequent"
-							case 3:
-								painArea.FrequencyText = "Constant"
-							}
-						}
-					}
-					
-					painAreas = append(painAreas, painArea)
-				}
-			}
-		}
-		
-		// If we found pain data, render the table
-		if len(painAreas) > 0 {
-			// Parse and execute the embedded template
-			tmpl, err := template.New("pain_assessment").Parse(PainAssessmentTableTemplate)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse pain assessment template: %w", err)
-			}
-			
-			var buf bytes.Buffer
-			if err := tmpl.Execute(&buf, painAreas); err != nil {
-				return "", fmt.Errorf("failed to execute pain assessment template: %w", err)
-			}
-			
-			return buf.String(), nil
-		}
-		
-		// Fallback to simple display
-		return generatePlaceholderHTML("Pain Assessment", metadata.ElementNames), nil
-	})
+	// Register pain assessment renderer - now uses the proper PainAssessmentRenderer
+	rr.renderers["pain_assessment"] = rr.wrapRenderer(PainAssessmentRenderer)
 
 	// Register new renderers
 	rr.renderers["neck_disability_index"] = rr.wrapRenderer(NeckDisabilityRenderer)
@@ -238,33 +155,7 @@ func (rr *RendererRegistry) generateErrorBlock(err RenderError) string {
 
 // Placeholder renderer functions - these will be implemented in separate files
 
-// Existing adapted renderers
-func TermsCheckboxRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Terms Checkbox", metadata.ElementNames), nil
-}
-
-func TermsConditionsRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Terms & Conditions", metadata.ElementNames), nil
-}
-
-func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Patient Demographics", metadata.ElementNames), nil
-}
-
-
-// New renderers - removed placeholders as actual implementations are imported
-
-func PatientVitalsRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Patient Vitals", metadata.ElementNames), nil
-}
-
-func InsuranceCardRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Insurance Card", metadata.ElementNames), nil
-}
-
-func SignatureRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Signature", metadata.ElementNames), nil
-}
+// Renderer implementations are now in separate files
 
 // Helper function for placeholder HTML generation
 func generatePlaceholderHTML(title string, elementNames []string) string {

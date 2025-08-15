@@ -115,8 +115,8 @@ func RenderBodyDiagram(painPoints interface{}) template.HTML {
 	return template.HTML(html.String())
 }
 
-// getIntensityColor returns the color for a given pain intensity
-func getIntensityColor(intensity float64) string {
+// getPainIntensityColor returns the color for a given pain intensity
+func getPainIntensityColor(intensity float64) string {
 	switch int(intensity) {
 	case 1:
 		return "#FFE082" // Mild - yellow

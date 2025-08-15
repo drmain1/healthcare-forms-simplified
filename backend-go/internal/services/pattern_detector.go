@@ -57,6 +57,22 @@ func (pd *PatternDetector) DetectPatterns(formDefinition, responseData map[strin
 func extractElements(formDef map[string]interface{}) []map[string]interface{} {
 	var elements []map[string]interface{}
 	
+	// Recursive helper to extract nested elements
+	var extractNestedElements func(elemMap map[string]interface{})
+	extractNestedElements = func(elemMap map[string]interface{}) {
+		// Add the current element
+		elements = append(elements, elemMap)
+		
+		// Check for nested elements (panels can contain elements)
+		if nestedElements, ok := elemMap["elements"].([]interface{}); ok {
+			for _, nested := range nestedElements {
+				if nestedMap, ok := nested.(map[string]interface{}); ok {
+					extractNestedElements(nestedMap)
+				}
+			}
+		}
+	}
+	
 	// Handle SurveyJS structure
 	if pages, ok := formDef["pages"].([]interface{}); ok {
 		for _, page := range pages {
@@ -64,7 +80,7 @@ func extractElements(formDef map[string]interface{}) []map[string]interface{} {
 				if pageElements, ok := pageMap["elements"].([]interface{}); ok {
 					for _, elem := range pageElements {
 						if elemMap, ok := elem.(map[string]interface{}); ok {
-							elements = append(elements, elemMap)
+							extractNestedElements(elemMap)
 						}
 					}
 				}
@@ -76,7 +92,7 @@ func extractElements(formDef map[string]interface{}) []map[string]interface{} {
 	if elementsArray, ok := formDef["elements"].([]interface{}); ok {
 		for _, elem := range elementsArray {
 			if elemMap, ok := elem.(map[string]interface{}); ok {
-				elements = append(elements, elemMap)
+				extractNestedElements(elemMap)
 			}
 		}
 	}
@@ -245,29 +261,38 @@ func (m *PatientDemographicsMatcher) GetPriority() int       { return 3 }
 type PainAssessmentMatcher struct{}
 
 func (m *PainAssessmentMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	painFields := []string{}
+	// Look for the exact pain_assessment_panel element in form definition
+	elements := extractElements(formDef)
 	
-	for key := range responseData {
-		lowerKey := strings.ToLower(key)
-		// Exclude body diagram fields from pain assessment
-		if key == "pain_areas" || key == "sensation_areas" {
-			continue // These are handled by specific diagram renderers
-		}
-		// Only match pain assessment fields (not diagram fields)
-		if strings.Contains(lowerKey, "pain") &&
-		   !strings.Contains(lowerKey, "body") &&
-		   !strings.Contains(lowerKey, "diagram") {
-			painFields = append(painFields, key)
-		}
-	}
-	
-	if len(painFields) > 0 {
-		return true, PatternMetadata{
-			PatternType:  "pain_assessment",
-			ElementNames: painFields,
-			TemplateData: map[string]interface{}{
-				"painFields": painFields,
-			},
+	for _, element := range elements {
+		// Check for panels with the exact name "pain_assessment_panel"
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			if name, ok := element["name"].(string); ok && name == "pain_assessment_panel" {
+				// Found the pain assessment panel - collect any pain-related fields from response
+				painFields := []string{}
+				for key := range responseData {
+					lowerKey := strings.ToLower(key)
+					// Collect fields that are part of pain assessment (has_X_pain, X_pain_intensity, etc)
+					if strings.Contains(lowerKey, "_pain") || 
+					   strings.Contains(lowerKey, "pain_intensity") ||
+					   strings.Contains(lowerKey, "pain_frequency") {
+						// But exclude synthetic fields and diagram fields
+						if key != "pain_areas" && key != "pain_assessment_data" && 
+						   !strings.Contains(lowerKey, "diagram") &&
+						   !strings.Contains(lowerKey, "body") {
+							painFields = append(painFields, key)
+						}
+					}
+				}
+				
+				return true, PatternMetadata{
+					PatternType:  "pain_assessment",
+					ElementNames: painFields,
+					TemplateData: map[string]interface{}{
+						"painFields": painFields,
+					},
+				}
+			}
 		}
 	}
 	
@@ -402,11 +427,12 @@ type BodyPainDiagram2Matcher struct{}
 func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	painDiagramFields := []string{}
 	
-	// First check form definition for bodypaindiagram type components
+	// ONLY check form definition for bodypaindiagram type components
+	// Do NOT match on synthetic pain_areas field from pain assessment
 	elements := extractElements(formDef)
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok {
-			// Check specifically for bodypaindiagram type (pain intensity diagram)
+			// Check specifically for bodypaindiagram type (actual diagram component)
 			if elementType == "bodypaindiagram" {
 				if name, ok := element["name"].(string); ok {
 					// Check if this field has data in responseData
@@ -420,33 +446,8 @@ func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interfa
 		}
 	}
 	
-	// Also check for the standard pain_areas field name
-	if value, exists := responseData["pain_areas"]; exists {
-		if _, isArray := value.([]interface{}); isArray {
-			if !contains(painDiagramFields, "pain_areas") {
-				painDiagramFields = append(painDiagramFields, "pain_areas")
-			}
-		}
-	}
-	
-	// If no form definition, check response data for fields with pain intensity structure
-	if len(painDiagramFields) == 0 {
-		for key, value := range responseData {
-			// Check if it's an array with pain intensity data structure
-			if arr, ok := value.([]interface{}); ok && len(arr) > 0 {
-				if item, ok := arr[0].(map[string]interface{}); ok {
-					// Check if it has intensity field (key differentiator)
-					if _, hasIntensity := item["intensity"]; hasIntensity {
-						if _, hasX := item["x"]; hasX {
-							if _, hasY := item["y"]; hasY {
-								painDiagramFields = append(painDiagramFields, key)
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	// Do NOT check for pain_areas in response data anymore
+	// That's synthetic data from pain assessment, not a real body diagram
 	
 	if len(painDiagramFields) > 0 {
 		return true, PatternMetadata{

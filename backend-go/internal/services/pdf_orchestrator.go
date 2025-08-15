@@ -28,6 +28,7 @@ type PDFContext struct {
 	OrganizationInfo *data.Organization
 	Answers          map[string]interface{}
 	RequestID        string
+	TemplateStore    *templates.TemplateStore
 }
 
 func NewPDFOrchestrator(client *firestore.Client, gotenberg *GotenbergService) (*PDFOrchestrator, error) {
@@ -198,6 +199,7 @@ func (o *PDFOrchestrator) fetchPDFContext(ctx context.Context, responseID, reque
 		OrganizationInfo: orgInfo,
 		Answers:          answers,
 		RequestID:        requestID,
+		TemplateStore:    o.templateStore,
 	}, nil
 }
 

@@ -34,6 +34,8 @@ import { ClinicalSummaryButton } from './ClinicalSummaryButton';
 import '../FormBuilder/BodyDiagramQuestion';
 import '../FormBuilder/BodyPainDiagramQuestion';
 import '../FormBuilder/BodyDiagram2Question';
+import '../FormBuilder/PatientDemographicsQuestion'; // Import to register the custom component
+
 import { BodyPainDiagram } from '../FormBuilder/BodyPainDiagram';
 import { BodyDiagram2 } from '../FormBuilder/BodyDiagram2';
 

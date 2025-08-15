@@ -133,6 +133,59 @@ export const PublicFormFill: React.FC = () => {
           console.log('[Survey onComplete] Plain data from getPlainData():', plainData);
           console.log('[Survey onComplete] Plain data keys:', Object.keys(plainData));
           
+          // Extract data from nested pain assessment panels
+          const extractPainAssessmentData = () => {
+            const painAreas: any[] = [];
+            
+            // Look for pain assessment panel and extract nested data
+            const allQuestions = sender.getAllQuestions();
+            const painAssessmentData: any = {};
+            
+            allQuestions.forEach((q: any) => {
+              const name = q.name;
+              const value = q.value;
+              
+              // Check if this is part of pain assessment
+              if (name && (
+                name.includes('pain') || 
+                name.includes('neck') || 
+                name.includes('back') || 
+                name.includes('shoulder') ||
+                name.includes('intensity') ||
+                name.includes('frequency')
+              )) {
+                console.log(`[Survey onComplete] Found pain-related field: ${name} = ${value}`);
+                painAssessmentData[name] = value;
+                
+                // If this is a pain intensity or has_pain field, add to pain_areas
+                if (name.includes('has_') && value === 'Yes') {
+                  const bodyPart = name.replace('has_', '').replace('_pain', '');
+                  painAreas.push({
+                    area: bodyPart,
+                    has_pain: true,
+                    intensity: plainData[`${bodyPart}_pain_intensity`] || 0,
+                    frequency: plainData[`${bodyPart}_pain_frequency`] || 'Unknown'
+                  });
+                }
+              }
+            });
+            
+            // Store the extracted pain data as pain_areas for backend compatibility
+            if (Object.keys(painAssessmentData).length > 0) {
+              console.log('[Survey onComplete] Extracted pain assessment data:', painAssessmentData);
+              
+              // Create pain_areas array from the extracted data
+              if (painAreas.length > 0) {
+                plainData.pain_areas = painAreas;
+                console.log('[Survey onComplete] Created pain_areas array:', painAreas);
+              }
+              
+              // Also preserve individual fields
+              Object.assign(plainData, painAssessmentData);
+            }
+          };
+          
+          // First try to find direct pain_areas question
           const painQuestion = sender.getQuestionByName('pain_areas');
           if (painQuestion) {
             console.log('[Survey onComplete] Found pain_areas question:', painQuestion);
@@ -153,6 +206,12 @@ export const PublicFormFill: React.FC = () => {
               plainData[q.name] = q.value;
             }
           });
+          
+          // Extract nested panel data if no direct pain_areas found
+          if (!plainData.pain_areas) {
+            console.log('[Survey onComplete] No direct pain_areas found, extracting from nested panels...');
+            extractPainAssessmentData();
+          }
 
           console.log('[Survey onComplete] Plain data before cleaning:', JSON.stringify(plainData, null, 2));
           const cleanedData = cleanSignatureData(plainData);

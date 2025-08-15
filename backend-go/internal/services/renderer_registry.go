@@ -2,6 +2,7 @@ package services
 
 import (
 	goctx "context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -158,7 +159,50 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 }
 
 func PainAssessmentRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	return generatePlaceholderHTML("Pain Assessment", metadata.ElementNames), nil
+	// 1. Find the raw element data for the pain_assessment_panel from the form definition.
+	var painPanelData map[string]interface{}
+
+	if pages, ok := context.FormDefinition["pages"].([]interface{}); ok {
+		for _, page := range pages {
+			if pageMap, ok := page.(map[string]interface{}); ok {
+				if elements, ok := pageMap["elements"].([]interface{}); ok {
+					for _, el := range elements {
+						if elemMap, ok := el.(map[string]interface{}); ok {
+							if name, ok := elemMap["name"].(string); ok && name == "pain_assessment_panel" {
+								painPanelData = elemMap
+								break
+							}
+						}
+					}
+				}
+			}
+			if painPanelData != nil {
+				break
+			}
+		}
+	}
+
+	if painPanelData == nil {
+		return generatePlaceholderHTML("Pain Assessment", []string{"pain_assessment_panel not found in form definition"}), nil
+	}
+
+	// 2. Convert the map[string]interface{} to an Element struct by marshalling and unmarshalling.
+	jsonBytes, err := json.Marshal(painPanelData)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal pain panel element: %w", err)
+	}
+	var painPanelElement Element
+	if err := json.Unmarshal(jsonBytes, &painPanelElement); err != nil {
+		return "", fmt.Errorf("failed to unmarshal pain panel element: %w", err)
+	}
+
+	// 3. Call the existing function from custom_tables.go to render the HTML.
+	html, err := renderPainAssessmentTable(painPanelElement, context.Answers)
+	if err != nil {
+		return "", fmt.Errorf("failed to render pain assessment table: %w", err)
+	}
+
+	return string(html), nil
 }
 
 // New renderers - removed placeholders as actual implementations are imported

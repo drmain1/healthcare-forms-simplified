@@ -67,7 +67,15 @@ func (o *PDFOrchestrator) GeneratePDF(ctx context.Context, responseID string, us
 	log.Printf("DEBUG: Form definition survey JSON: %+v", pdfContext.FormDefinition)
 	log.Printf("DEBUG: Response answers keys: %v", getKeys(pdfContext.Answers))
 	
-	patterns, err := o.detector.DetectPatterns(pdfContext.FormDefinition, pdfContext.Answers)
+	// Extract surveyJson for pattern detection
+	surveyJson, ok := pdfContext.FormDefinition["surveyJson"].(map[string]interface{})
+	if !ok {
+		surveyJson = pdfContext.FormDefinition // Fallback for backward compatibility
+		log.Printf("DEBUG: Using full form definition as surveyJson fallback")
+	} else {
+		log.Printf("DEBUG: Successfully extracted surveyJson from form definition")
+	}
+	patterns, err := o.detector.DetectPatterns(surveyJson, pdfContext.Answers)
 	if err != nil {
 		log.Printf("PDF_GENERATION_ERROR: user=%s, response=%s, request=%s, error=%v", userID, responseID, requestID, err)
 		return nil, fmt.Errorf("pattern detection failed: %w", err)
@@ -243,7 +251,12 @@ func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []Patt
 
 func (o *PDFOrchestrator) renderSections(context *PDFContext, renderOrder []string) (map[string]string, error) {
 	// Detect all patterns first
-	patterns, err := o.detector.DetectPatterns(context.FormDefinition, context.Answers)
+	// Extract surveyJson for pattern detection
+	surveyJson, ok := context.FormDefinition["surveyJson"].(map[string]interface{})
+	if !ok {
+		surveyJson = context.FormDefinition // Fallback
+	}
+	patterns, err := o.detector.DetectPatterns(surveyJson, context.Answers)
 	if err != nil {
 		return nil, err
 	}

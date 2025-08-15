@@ -1,9 +1,12 @@
 package services
 
 import (
+	"bytes"
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"strings"
 	"time"
 
@@ -41,12 +44,102 @@ func NewRendererRegistry(templateStore *templates.TemplateStore) *RendererRegist
 	return registry
 }
 
+// Helper function to get keys from a map
+func getMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func (rr *RendererRegistry) registerRenderers() {
 	// Register existing adapted renderers
 	rr.renderers["terms_checkbox"] = rr.wrapRenderer(TermsCheckboxRenderer)
 	rr.renderers["terms_conditions"] = rr.wrapRenderer(TermsConditionsRenderer)
 	rr.renderers["patient_demographics"] = rr.wrapRenderer(PatientDemographicsRenderer)
-	rr.renderers["pain_assessment"] = rr.wrapRenderer(PainAssessmentRenderer)
+	
+	// Register pain assessment renderer with the embedded template
+	rr.renderers["pain_assessment"] = rr.wrapRenderer(func(metadata PatternMetadata, context *PDFContext) (string, error) {
+		// Use the metadata fields to create the pain assessment table
+		// The pattern detector already found the fields for us
+		
+		// Build the pain data from the fields
+		var painAreas []PainAreaData
+		
+		// Process the fields we found
+		for _, fieldName := range metadata.ElementNames {
+			// Skip synthetic fields
+			if fieldName == "pain_areas" || strings.Contains(fieldName, "diagram") {
+				continue
+			}
+			
+			// Check if this is a "has_X_pain" field
+			if strings.HasPrefix(fieldName, "has_") && strings.HasSuffix(fieldName, "_pain") {
+				// Extract the area name
+				areaName := strings.TrimSuffix(strings.TrimPrefix(fieldName, "has_"), "_pain")
+				
+				// Check if they have pain in this area
+				if hasPain, ok := context.Answers[fieldName]; ok && hasPain == "Yes" {
+					// Get intensity and frequency
+					intensityField := areaName + "_pain_intensity"
+					frequencyField := areaName + "_pain_frequency"
+					
+					// Handle special case for neck
+					if areaName == "neck" {
+						// Already correct format
+					}
+					
+					painArea := PainAreaData{
+						Area: strings.Title(strings.ReplaceAll(areaName, "_", " ")),
+					}
+					
+					if intensity, ok := context.Answers[intensityField]; ok {
+						painArea.Severity = intensity
+					}
+					
+					if frequency, ok := context.Answers[frequencyField]; ok {
+						painArea.Frequency = frequency
+						// Convert frequency to display values
+						if freqFloat, ok := frequency.(float64); ok {
+							painArea.FrequencyValue = freqFloat * 33.33 // Map 0-3 to 0-100%
+							switch int(freqFloat) {
+							case 0:
+								painArea.FrequencyText = "Occasional"
+							case 1:
+								painArea.FrequencyText = "Intermittent"
+							case 2:
+								painArea.FrequencyText = "Frequent"
+							case 3:
+								painArea.FrequencyText = "Constant"
+							}
+						}
+					}
+					
+					painAreas = append(painAreas, painArea)
+				}
+			}
+		}
+		
+		// If we found pain data, render the table
+		if len(painAreas) > 0 {
+			// Parse and execute the embedded template
+			tmpl, err := template.New("pain_assessment").Parse(PainAssessmentTableTemplate)
+			if err != nil {
+				return "", fmt.Errorf("failed to parse pain assessment template: %w", err)
+			}
+			
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, painAreas); err != nil {
+				return "", fmt.Errorf("failed to execute pain assessment template: %w", err)
+			}
+			
+			return buf.String(), nil
+		}
+		
+		// Fallback to simple display
+		return generatePlaceholderHTML("Pain Assessment", metadata.ElementNames), nil
+	})
 
 	// Register new renderers
 	rr.renderers["neck_disability_index"] = rr.wrapRenderer(NeckDisabilityRenderer)
@@ -158,52 +251,6 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 	return generatePlaceholderHTML("Patient Demographics", metadata.ElementNames), nil
 }
 
-func PainAssessmentRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	// 1. Find the raw element data for the pain_assessment_panel from the form definition.
-	var painPanelData map[string]interface{}
-
-	if pages, ok := context.FormDefinition["pages"].([]interface{}); ok {
-		for _, page := range pages {
-			if pageMap, ok := page.(map[string]interface{}); ok {
-				if elements, ok := pageMap["elements"].([]interface{}); ok {
-					for _, el := range elements {
-						if elemMap, ok := el.(map[string]interface{}); ok {
-							if name, ok := elemMap["name"].(string); ok && name == "pain_assessment_panel" {
-								painPanelData = elemMap
-								break
-							}
-						}
-					}
-				}
-			}
-			if painPanelData != nil {
-				break
-			}
-		}
-	}
-
-	if painPanelData == nil {
-		return generatePlaceholderHTML("Pain Assessment", []string{"pain_assessment_panel not found in form definition"}), nil
-	}
-
-	// 2. Convert the map[string]interface{} to an Element struct by marshalling and unmarshalling.
-	jsonBytes, err := json.Marshal(painPanelData)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal pain panel element: %w", err)
-	}
-	var painPanelElement Element
-	if err := json.Unmarshal(jsonBytes, &painPanelElement); err != nil {
-		return "", fmt.Errorf("failed to unmarshal pain panel element: %w", err)
-	}
-
-	// 3. Call the existing function from custom_tables.go to render the HTML.
-	html, err := renderPainAssessmentTable(painPanelElement, context.Answers)
-	if err != nil {
-		return "", fmt.Errorf("failed to render pain assessment table: %w", err)
-	}
-
-	return string(html), nil
-}
 
 // New renderers - removed placeholders as actual implementations are imported
 

@@ -62,6 +62,22 @@ export const minimalToolboxItems = [
     }
   },
   
+  // Today's Date (auto-populates)
+  {
+    name: 'todays-date',
+    title: "Today's Date",
+    iconName: 'icon-text',
+    category: 'Patient Info',
+    json: {
+      type: 'todaysdate',
+      name: 'form_date',
+      title: "Today's Date",
+      autoPopulate: true,
+      readOnly: false,
+      isRequired: false
+    }
+  },
+  
   // Insurance Card Capture
   {
     name: 'insurance-card-capture',

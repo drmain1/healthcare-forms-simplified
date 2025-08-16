@@ -326,7 +326,7 @@ func (o *PDFOrchestrator) assembleAndGeneratePDF(htmlSections map[string]string,
 	layoutData := map[string]interface{}{
 		"PatientName":    getPatientName(context.Answers),
 		"ClinicInfo":     nil, // TODO: Extract from organization
-		"GenerationDate": time.Now().Format("January 2, 2006 at 3:04 PM"),
+		"GenerationDate": FormatTimestampUSA(),
 		"Content":        template.HTML(combinedHTML),
 		"RequestID":      context.RequestID,
 		"Checksum":       "", // Will be calculated after PDF generation

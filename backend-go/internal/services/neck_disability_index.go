@@ -12,7 +12,7 @@ import (
 func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
 	var result bytes.Buffer
 	
-	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="form-section" style="margin-bottom: 15px;">`)
 	result.WriteString(`<div class="section-title">Neck Disability Index (NDI) Assessment</div>`)
 	
 	// Standard NDI questions mapping
@@ -27,6 +27,22 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 		"ndi_driving":        "Driving",
 		"ndi_sleeping":       "Sleeping",
 		"ndi_recreation":     "Recreation",
+	}
+	
+	// Mapping for generic field names 
+	// Note: question1 is name, question2 might be date
+	// The actual NDI questions start from question3
+	genericQuestionMapping := map[string]string{
+		"question3":  "Pain Intensity",
+		"question4":  "Personal Care",
+		"question5":  "Lifting",
+		"question6":  "Reading",
+		"question7":  "Headaches",
+		"question8":  "Concentration",
+		"question9":  "Work",
+		"question10": "Driving",
+		"question11": "Sleeping",
+		"question12": "Recreation",
 	}
 	
 	// Calculate scores and collect responses
@@ -49,8 +65,22 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 		}
 	}
 	
+	// Print patient info if available
+	patientInfoHTML := ""
+	if patientName, exists := context.Answers["question1"]; exists {
+		patientInfoHTML += `<p style="margin: 2px 0; font-size: 11px;"><strong>Patient Name:</strong> ` + html.EscapeString(fmt.Sprintf("%v", patientName)) + `</p>`
+	}
+	if assessmentDate, exists := context.Answers["question2"]; exists {
+		patientInfoHTML += `<p style="margin: 2px 0; font-size: 11px;"><strong>Assessment Date:</strong> ` + html.EscapeString(fmt.Sprintf("%v", assessmentDate)) + `</p>`
+	}
+	if patientInfoHTML != "" {
+		result.WriteString(`<div style="margin-bottom: 10px;">`)
+		result.WriteString(patientInfoHTML)
+		result.WriteString(`</div>`)
+	}
+	
 	// Render the assessment table
-	result.WriteString(`<table class="data-table">`)
+	result.WriteString(`<table class="data-table" style="font-size: 10px;">`)
 	result.WriteString(`<thead>`)
 	result.WriteString(`<tr>`)
 	result.WriteString(`<th>Question Category</th>`)
@@ -60,7 +90,24 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 	result.WriteString(`</thead>`)
 	result.WriteString(`<tbody>`)
 	
-	// Display questions in standard order, but only those that were answered
+	// Display questions in order - check generic names first (question3-12)
+	displayOrder := []string{"question3", "question4", "question5", "question6", "question7", 
+	                        "question8", "question9", "question10", "question11", "question12"}
+	
+	for _, questionKey := range displayOrder {
+		if response, exists := responses[questionKey]; exists {
+			score := scores[questionKey]
+			questionLabel := genericQuestionMapping[questionKey]
+			
+			result.WriteString(`<tr>`)
+			result.WriteString(`<td>` + html.EscapeString(questionLabel) + `</td>`)
+			result.WriteString(`<td>` + html.EscapeString(formatNDIResponse(response)) + `</td>`)
+			result.WriteString(`<td style="text-align: center;">` + fmt.Sprintf("%d/5", score) + `</td>`)
+			result.WriteString(`</tr>`)
+		}
+	}
+	
+	// Also check standard NDI field names for backward compatibility
 	for questionKey, questionLabel := range ndiQuestions {
 		if response, exists := responses[questionKey]; exists {
 			score := scores[questionKey]
@@ -73,20 +120,6 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 		}
 	}
 	
-	// Check for any non-standard NDI questions
-	for _, elementName := range metadata.ElementNames {
-		if _, isStandard := ndiQuestions[elementName]; !isStandard {
-			if response, exists := responses[elementName]; exists {
-				score := scores[elementName]
-				
-				result.WriteString(`<tr>`)
-				result.WriteString(`<td>` + html.EscapeString(formatFieldLabel(elementName, "")) + `</td>`)
-				result.WriteString(`<td>` + html.EscapeString(formatNDIResponse(response)) + `</td>`)
-				result.WriteString(`<td style="text-align: center;">` + fmt.Sprintf("%d/5", score) + `</td>`)
-				result.WriteString(`</tr>`)
-			}
-		}
-	}
 	
 	result.WriteString(`</tbody>`)
 	result.WriteString(`</table>`)
@@ -96,16 +129,16 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 		maxPossibleScore := answeredQuestions * 5
 		disabilityPercent := float64(totalScore) / float64(maxPossibleScore) * 100
 		
-		result.WriteString(`<div style="margin-top: 20px; padding: 15px; background-color: #f0f8f7; border-left: 4px solid #38a169;">`)
-		result.WriteString(`<h4>NDI Score Summary</h4>`)
-		result.WriteString(`<p><strong>Total Score:</strong> ` + fmt.Sprintf("%d/%d", totalScore, maxPossibleScore) + ` (` + fmt.Sprintf("%.1f%%", disabilityPercent) + `)</p>`)
-		result.WriteString(`<p><strong>Questions Answered:</strong> ` + fmt.Sprintf("%d of 10", answeredQuestions) + `</p>`)
-		result.WriteString(`<p><strong>Interpretation:</strong> ` + interpretNDIScore(disabilityPercent) + `</p>`)
+		result.WriteString(`<div style="margin-top: 15px; padding: 10px; background-color: #f0f8f7; border-left: 4px solid #38a169;">`)
+		result.WriteString(`<h4 style="font-size: 13px; margin-bottom: 8px;">NDI Score Summary</h4>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Total Score:</strong> ` + fmt.Sprintf("%d/%d", totalScore, maxPossibleScore) + ` (` + fmt.Sprintf("%.1f%%", disabilityPercent) + `)</p>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Questions Answered:</strong> ` + fmt.Sprintf("%d of 10", answeredQuestions) + `</p>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Interpretation:</strong> ` + interpretNDIScore(disabilityPercent) + `</p>`)
 		
 		// Add scoring guide
-		result.WriteString(`<div style="margin-top: 15px; font-size: 11px; color: #666;">`)
-		result.WriteString(`<p><strong>NDI Disability Scale:</strong></p>`)
-		result.WriteString(`<ul style="margin-left: 20px;">`)
+		result.WriteString(`<div style="margin-top: 10px; font-size: 10px; color: #666;">`)
+		result.WriteString(`<p style="margin-bottom: 5px;"><strong>NDI Disability Scale:</strong></p>`)
+		result.WriteString(`<ul style="margin-left: 20px; margin: 5px 0;">`)
 		result.WriteString(`<li>0-8%: No disability</li>`)
 		result.WriteString(`<li>9-18%: Mild disability</li>`)
 		result.WriteString(`<li>19-34%: Moderate disability</li>`)
@@ -115,8 +148,35 @@ func NeckDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (stri
 		result.WriteString(`</div>`)
 		result.WriteString(`</div>`)
 	} else {
-		result.WriteString(`<div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107;">`)
+		result.WriteString(`<div style="margin-top: 15px; padding: 10px; background-color: #fff3cd; border-left: 4px solid #ffc107;">`)
 		result.WriteString(`<p>No valid NDI responses found for scoring calculation.</p>`)
+		result.WriteString(`</div>`)
+	}
+	
+	// Check if there's a signature field and render it inline
+	// Check all common signature field names including those found in logs
+	possibleSignatureFields := []string{"question19", "question38", "question12", "question13", "signature", "patient_signature", "sign"}
+	var signatureData string
+	for _, fieldName := range possibleSignatureFields {
+		if value, exists := context.Answers[fieldName]; exists {
+			if sigStr, ok := value.(string); ok && strings.HasPrefix(sigStr, "data:image/") {
+				signatureData = sigStr
+				break
+			}
+		}
+	}
+	
+	// If we found a signature, render it at the bottom
+	if signatureData != "" {
+		result.WriteString(`<div style="margin-top: 15px;">`)
+		result.WriteString(`<p style="font-weight: bold; margin-bottom: 5px; font-size: 11px;">Patient Signature:</p>`)
+		
+		// The signature image with underline, mimicking paper signature
+		result.WriteString(`<div style="position: relative; margin: 8px 0;">`)
+		result.WriteString(`<img src="` + html.EscapeString(signatureData) + `" alt="Signature" style="max-width: 180px; height: 45px; object-fit: contain; display: block;">`)
+		result.WriteString(`<div style="border-bottom: 1px solid #000; margin-top: -3px; width: 220px;"></div>`)
+		result.WriteString(`</div>`)
+		
 		result.WriteString(`</div>`)
 	}
 	

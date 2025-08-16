@@ -231,13 +231,34 @@ type PatientDemographicsMatcher struct{}
 func (m *PatientDemographicsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	demographicFields := []string{
 		"patient_name", "first_name", "last_name", "date_of_birth", "dob",
-		"gender", "phone", "email", "address", "emergency_contact",
+		"sex_at_birth", "gender", "sex", "phone", "phone_number", "email", "email_address", 
+		"address", "street_address", "city", "state", "zip", "zip_code", 
+		"postal_code", "emergency_contact", "emergency_phone",
 	}
 	
 	foundFields := []string{}
 	for _, field := range demographicFields {
 		if _, exists := responseData[field]; exists {
 			foundFields = append(foundFields, field)
+		}
+	}
+	
+	// Also check for any field containing these keywords
+	for key := range responseData {
+		lowerKey := strings.ToLower(key)
+		if !contains(foundFields, key) {
+			if strings.Contains(lowerKey, "name") ||
+			   strings.Contains(lowerKey, "birth") ||
+			   strings.Contains(lowerKey, "gender") ||
+			   strings.Contains(lowerKey, "sex") ||
+			   strings.Contains(lowerKey, "phone") ||
+			   strings.Contains(lowerKey, "email") ||
+			   strings.Contains(lowerKey, "address") ||
+			   strings.Contains(lowerKey, "city") ||
+			   strings.Contains(lowerKey, "state") ||
+			   strings.Contains(lowerKey, "zip") {
+				foundFields = append(foundFields, key)
+			}
 		}
 	}
 	
@@ -298,23 +319,43 @@ func (m *PainAssessmentMatcher) GetPriority() int       { return 6 }
 type NeckDisabilityMatcher struct{}
 
 func (m *NeckDisabilityMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	ndiQuestions := []string{}
+	// Look for panel with specific title "Neck Disability Index Questionnaire"
+	elements := extractElements(formDef)
 	
-	for key := range responseData {
-		if strings.Contains(strings.ToLower(key), "ndi_") || 
-		   strings.Contains(strings.ToLower(key), "neck_disability") {
-			ndiQuestions = append(ndiQuestions, key)
-		}
-	}
-	
-	if len(ndiQuestions) >= 5 { // At least 5 NDI questions
-		return true, PatternMetadata{
-			PatternType:  "neck_disability_index",
-			ElementNames: ndiQuestions,
-			TemplateData: map[string]interface{}{
-				"questions": ndiQuestions,
-				"responses": filterResponseData(responseData, ndiQuestions),
-			},
+	for _, element := range elements {
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			// Check for the specific title
+			if title, ok := element["title"].(string); ok && 
+			   title == "Neck Disability Index Questionnaire" {
+				
+				// Found the NDI panel - collect all question fields
+				ndiQuestions := []string{}
+				
+				// Look for question3-12 in responseData 
+				// question1 is name, question2 might be date
+				// question3-12 are the actual NDI assessment questions
+				for i := 3; i <= 12; i++ {
+					fieldName := fmt.Sprintf("question%d", i)
+					if _, exists := responseData[fieldName]; exists {
+						ndiQuestions = append(ndiQuestions, fieldName)
+					}
+				}
+				
+				// Log for debugging
+				fmt.Printf("DEBUG: Found NDI form with title: %s, detected %d questions\n", title, len(ndiQuestions))
+				
+				if len(ndiQuestions) > 0 {
+					return true, PatternMetadata{
+						PatternType:  "neck_disability_index",
+						ElementNames: ndiQuestions,
+						TemplateData: map[string]interface{}{
+							"panel": element,
+							"questions": ndiQuestions,
+							"responses": filterResponseData(responseData, ndiQuestions),
+						},
+					}
+				}
+			}
 		}
 	}
 	

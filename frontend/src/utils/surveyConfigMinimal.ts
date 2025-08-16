@@ -1313,6 +1313,24 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   
   creator.toolbox.addItem(dateOfBirthComponent);
   
+  // Add Today's Date Component
+  const todaysDateComponent = {
+    name: 'todays-date',
+    title: "Today's Date",
+    iconName: 'icon-text',
+    category: 'Patient Info',
+    json: {
+      type: 'todaysdate',
+      name: 'form_date',
+      title: "Today's Date",
+      autoPopulate: true,
+      readOnly: false,
+      isRequired: false
+    }
+  };
+  
+  creator.toolbox.addItem(todaysDateComponent);
+  
   // Add Patient Demographics Component
   const patientDemographicsComponent = {
     name: 'patient-demographics',

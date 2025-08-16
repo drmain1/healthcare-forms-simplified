@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"fmt"
 	"html"
 	"strings"
 	"time"
@@ -97,5 +98,19 @@ func formatFieldLabel(fieldName, label string) string {
 }
 
 func getCurrentTimestamp() string {
-	return time.Now().Format("January 2, 2006 at 3:04 PM MST")
+	now := time.Now()
+	hour := now.Hour()
+	ampm := "AM"
+	if hour >= 12 {
+		ampm = "PM"
+	}
+	if hour > 12 {
+		hour = hour - 12
+	}
+	if hour == 0 {
+		hour = 12
+	}
+	return fmt.Sprintf("%d-%d-%d at %d:%02d %s",
+		int(now.Month()), now.Day(), now.Year(),
+		hour, now.Minute(), ampm)
 }

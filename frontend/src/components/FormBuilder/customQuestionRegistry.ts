@@ -3,6 +3,7 @@
 
 // Import all custom question types
 import './DateOfBirthQuestion';
+import './TodaysDateQuestion';
 import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
 import './PatientDemographicsQuestion';
@@ -11,6 +12,7 @@ import './BodyDiagramQuestion';
 // List of all custom question type names for reference
 export const CUSTOM_QUESTION_TYPES = {
   DATE_OF_BIRTH: 'dateofbirth',
+  TODAYS_DATE: 'todaysdate',
   BODY_PAIN_DIAGRAM: 'bodypaindiagram',
   BODY_DIAGRAM: 'bodydiagram',
   BODY_DIAGRAM_2: 'bodydiagram2',
@@ -49,6 +51,10 @@ export interface CustomQuestionData {
   [CUSTOM_QUESTION_TYPES.DATE_OF_BIRTH]?: {
     dob: string;
     age?: number;
+  };
+  [CUSTOM_QUESTION_TYPES.TODAYS_DATE]?: {
+    value: string;
+    formatted?: string;
   };
 }
 

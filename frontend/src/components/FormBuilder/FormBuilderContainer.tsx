@@ -15,6 +15,7 @@ import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
 import './HeightWeightSlider';
 import './DateOfBirthQuestion';
+import './TodaysDateQuestion';
 import './CustomDropdownItem';
 
 export interface FormBuilderData {
@@ -153,6 +154,14 @@ export const FormBuilderContainer: React.FC = () => {
     try {
       const surveyJson = JSON.parse(creator.text);
       const survey = createMinimalSurveyModel(surveyJson);
+      
+      // Update form_date field to today's date if it exists
+      const formDateQuestion = survey.getQuestionByName('form_date');
+      if (formDateQuestion) {
+        const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        formDateQuestion.defaultValue = today;
+        formDateQuestion.value = today;
+      }
       
       // Configure survey for preview mode
       survey.mode = 'edit';

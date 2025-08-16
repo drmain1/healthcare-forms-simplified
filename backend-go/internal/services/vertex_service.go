@@ -97,8 +97,8 @@ func (s *VertexAIService) GeneratePDFHTMLWithClinic(ctx context.Context, questio
 		}
 	}
 	
-	// Get current date
-	currentDate := time.Now().Format("January 2, 2006")
+	// Get current date in USA format
+	currentDate := fmt.Sprintf("%d-%d-%d", int(time.Now().Month()), time.Now().Day(), time.Now().Year())
 
 	// Construct the detailed prompt with clinic header instructions.
 	prompt := genai.Text(fmt.Sprintf(`

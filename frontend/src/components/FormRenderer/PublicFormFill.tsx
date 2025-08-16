@@ -100,6 +100,15 @@ export const PublicFormFill: React.FC = () => {
         
         const surveyModel = createSurveyModel(surveyJson, { isBuilder: false, isPreview: false });
         
+        // Update form_date field to today's date if it exists
+        const formDateQuestion = surveyModel.getQuestionByName('form_date');
+        if (formDateQuestion) {
+          const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+          formDateQuestion.defaultValue = today;
+          formDateQuestion.value = today;
+          console.log('Updated form_date to today:', today);
+        }
+        
         applySurveyTheme(surveyModel, true);
         
         surveyModel.showCompletedPage = true;

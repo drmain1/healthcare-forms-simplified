@@ -106,7 +106,22 @@ func getVitalSignDefinitions() map[string]VitalSign {
 
 func extractVitalReadings(elementNames []string, answers map[string]interface{}, definitions map[string]VitalSign) map[string]VitalReading {
 	readings := make(map[string]VitalReading)
-	timestamp := time.Now().Format("01/02/2006 15:04")
+	now := time.Now()
+	hour := now.Hour()
+	ampm := "AM"
+	displayHour := hour
+	if hour >= 12 {
+		ampm = "PM"
+	}
+	if hour > 12 {
+		displayHour = hour - 12
+	}
+	if hour == 0 {
+		displayHour = 12
+	}
+	timestamp := fmt.Sprintf("%d/%d/%d %d:%02d %s",
+		int(now.Month()), now.Day(), now.Year(),
+		displayHour, now.Minute(), ampm)
 	
 	// Process known vital signs
 	for _, elementName := range elementNames {

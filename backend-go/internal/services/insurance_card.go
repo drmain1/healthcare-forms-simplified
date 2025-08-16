@@ -56,7 +56,9 @@ func InsuranceCardRenderer(metadata PatternMetadata, context *PDFContext) (strin
 func extractInsuranceData(elementNames []string, answers map[string]interface{}) InsuranceCardData {
 	cardData := InsuranceCardData{
 		ExtractedInfo:    make(map[string]string),
-		CaptureTimestamp: time.Now().Format("January 2, 2006 at 3:04 PM"),
+		CaptureTimestamp: fmt.Sprintf("%d-%d-%d at %d:%02d %s",
+			int(time.Now().Month()), time.Now().Day(), time.Now().Year(),
+			time.Now().Hour()%12, time.Now().Minute(), getAMPM(time.Now().Hour())),
 	}
 	
 	// Process each insurance-related field

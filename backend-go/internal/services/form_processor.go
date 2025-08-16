@@ -189,6 +189,59 @@ func calculateAgeFromDOB(dobStr string) int {
 	return age
 }
 
+// FormatDateUSA formats a date string to USA format (M-D-YYYY)
+func FormatDateUSA(dateStr string) string {
+	// Try to parse common date formats and convert to USA format
+	var parsedDate time.Time
+	var err error
+	
+	// Try common input formats
+	formats := []string{
+		"2006-01-02",           // ISO format (YYYY-MM-DD)
+		"01/02/2006",           // US format
+		"02/01/2006",           // EU format  
+		time.RFC3339,           // Full timestamp
+		"2006-01-02T15:04:05Z", // ISO 8601
+	}
+	
+	for _, format := range formats {
+		parsedDate, err = time.Parse(format, dateStr)
+		if err == nil {
+			// Successfully parsed - format as USA date
+			month := int(parsedDate.Month())
+			day := parsedDate.Day()
+			year := parsedDate.Year()
+			return fmt.Sprintf("%d-%d-%d", month, day, year)
+		}
+	}
+	
+	// If can't parse, return original
+	return dateStr
+}
+
+// FormatTimestampUSA formats current timestamp in USA format
+func FormatTimestampUSA() string {
+	now := time.Now()
+	return fmt.Sprintf("%d-%d-%d at %d:%02d %s",
+		int(now.Month()), now.Day(), now.Year(),
+		now.Hour()%12, now.Minute(), getAMPM(now.Hour()))
+}
+
+// FormatDateTimeUSA formats a time.Time to USA format with time
+func FormatDateTimeUSA(t time.Time) string {
+	return fmt.Sprintf("%d-%d-%d at %d:%02d %s",
+		int(t.Month()), t.Day(), t.Year(),
+		t.Hour()%12, t.Minute(), getAMPM(t.Hour()))
+}
+
+// Helper function to get AM/PM
+func getAMPM(hour int) string {
+	if hour >= 12 {
+		return "PM"
+	}
+	return "AM"
+}
+
 // checkVisibility evaluates a SurveyJS `visibleIf` expression against the response data.
 // NOTE: This is a simplified placeholder. A real implementation requires a proper
 // SurveyJS expression parser, which is complex. For this iteration, we will

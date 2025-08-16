@@ -11,11 +11,11 @@ import (
 func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
 	var result bytes.Buffer
 	
-	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="form-section" style="margin-bottom: 15px;">`)
 	result.WriteString(`<div class="section-title">Patient Demographics</div>`)
 	
 	// Patient identification section
-	result.WriteString(`<table class="data-table">`)
+	result.WriteString(`<table class="data-table" style="font-size: 10px;">`)
 	result.WriteString(`<thead>`)
 	result.WriteString(`<tr>`)
 	result.WriteString(`<th>Field</th>`)
@@ -34,13 +34,20 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 		{"last_name", "Last Name"},
 		{"date_of_birth", "Date of Birth"},
 		{"dob", "Date of Birth"},
+		{"sex_at_birth", "Sex Assigned at Birth"},
 		{"gender", "Gender"},
+		{"sex", "Gender"},
 		{"phone", "Phone Number"},
+		{"phone_number", "Phone Number"},
 		{"email", "Email Address"},
+		{"email_address", "Email Address"},
 		{"address", "Address"},
+		{"street_address", "Street Address"},
 		{"city", "City"},
 		{"state", "State"},
 		{"zip", "ZIP Code"},
+		{"zip_code", "ZIP Code"},
+		{"postal_code", "ZIP Code"},
 		{"emergency_contact", "Emergency Contact"},
 		{"emergency_phone", "Emergency Phone"},
 	}
@@ -79,7 +86,24 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 		if value, exists := context.Answers[elementName]; exists && value != nil {
 			displayValue := formatDemographicValue(elementName, value)
 			if displayValue != "" {
-				label := formatFieldLabel(elementName, "")
+				// Map common field names to proper labels
+				label := elementName
+				switch strings.ToLower(elementName) {
+				case "sex_at_birth":
+					label = "Sex Assigned at Birth"
+				case "gender", "sex":
+					label = "Gender"
+				case "phone", "phone_number":
+					label = "Phone Number"
+				case "email", "email_address":
+					label = "Email Address"
+				case "zip", "zip_code", "postal_code":
+					label = "ZIP Code"
+				case "dob", "date_of_birth":
+					label = "Date of Birth"
+				default:
+					label = formatFieldLabel(elementName, "")
+				}
 				result.WriteString(`<tr>`)
 				result.WriteString(`<td><strong>` + html.EscapeString(label) + `</strong></td>`)
 				result.WriteString(`<td>` + html.EscapeString(displayValue) + `</td>`)
@@ -90,26 +114,6 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 	
 	result.WriteString(`</tbody>`)
 	result.WriteString(`</table>`)
-	
-	// Add summary section
-	patientName := getPatientName(context.Answers)
-	age := calculatePatientAge(context.Answers)
-	
-	if patientName != "Patient" || age > 0 {
-		result.WriteString(`<div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #2c5282;">`)
-		result.WriteString(`<h4>Patient Summary</h4>`)
-		
-		if patientName != "Patient" {
-			result.WriteString(`<p><strong>Patient:</strong> ` + html.EscapeString(patientName) + `</p>`)
-		}
-		
-		if age > 0 {
-			result.WriteString(`<p><strong>Age:</strong> ` + fmt.Sprintf("%d years old", age) + `</p>`)
-		}
-		
-		result.WriteString(`<p><strong>Information collected:</strong> ` + getCurrentTimestamp() + `</p>`)
-		result.WriteString(`</div>`)
-	}
 	
 	result.WriteString(`</div>`)
 	
@@ -123,13 +127,15 @@ func formatDemographicValue(fieldKey string, value interface{}) string {
 	
 	strValue := fmt.Sprintf("%v", value)
 	
-	// Handle date of birth with age calculation
+	// Handle date of birth with age calculation and USA format
 	if strings.Contains(strings.ToLower(fieldKey), "birth") || 
 	   strings.Contains(strings.ToLower(fieldKey), "dob") {
+		formattedDate := FormatDateUSA(strValue)
 		age := calculateAgeFromDOB(strValue)
 		if age >= 0 {
-			return fmt.Sprintf("%s (Age: %d)", strValue, age)
+			return fmt.Sprintf("%s (Age: %d)", formattedDate, age)
 		}
+		return formattedDate
 	}
 	
 	// Handle phone number formatting

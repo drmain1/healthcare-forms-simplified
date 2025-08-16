@@ -74,7 +74,7 @@ func extractSignatureData(elementNames []string, answers map[string]interface{})
 					ImageData:  sigData,
 					IsValid:    validateSignatureData(sigData),
 					SignedBy:   extractSignerName(elementName, answers),
-					SignedDate: time.Now().Format("01/02/2006"),
+					SignedDate: fmt.Sprintf("%d/%d/%d", int(time.Now().Month()), time.Now().Day(), time.Now().Year()),
 					Purpose:    determinePurpose(elementName),
 					ImageSize:  calculateImageSize(sigData),
 					ImageType:  extractImageType(sigData),

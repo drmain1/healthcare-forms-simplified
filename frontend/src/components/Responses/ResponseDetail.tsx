@@ -30,11 +30,8 @@ import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
 import { ClinicalSummaryButton } from './ClinicalSummaryButton';
-// Import custom question types
-import '../FormBuilder/BodyDiagramQuestion';
-import '../FormBuilder/BodyPainDiagramQuestion';
-import '../FormBuilder/BodyDiagram2Question';
-import '../FormBuilder/PatientDemographicsQuestion'; // Import to register the custom component
+// Import centralized custom question registry - registers all custom questions
+import '../FormBuilder/customQuestionRegistry';
 
 import { BodyPainDiagram } from '../FormBuilder/BodyPainDiagram';
 import { BodyDiagram2 } from '../FormBuilder/BodyDiagram2';
@@ -58,6 +55,17 @@ export const ResponseDetail: React.FC = () => {
       console.log('[ResponseDetail] response.response_data:', response.response_data);
       console.log('[ResponseDetail] response.patient_data:', response.patient_data);
       
+      // Check for patient demographics specifically
+      if (response.response_data?.patient_demographics) {
+        console.log('[ResponseDetail] Found patient_demographics:', response.response_data.patient_demographics);
+      }
+      if (response.response_data?.first_name || response.response_data?.last_name) {
+        console.log('[ResponseDetail] Found flattened patient name:', {
+          first_name: response.response_data.first_name,
+          last_name: response.response_data.last_name
+        });
+      }
+      
       // Check ALL possible locations for the data
       console.log('[ResponseDetail] Checking all fields for pain_areas:');
       Object.keys(response).forEach(key => {
@@ -80,6 +88,15 @@ export const ResponseDetail: React.FC = () => {
       
       surveyModel.data = mergedData;
       surveyModelRef.current = surveyModel;
+      
+      // Debug: Check what custom questions are recognized
+      console.log('[ResponseDetail] All questions in survey:');
+      surveyModel.getAllQuestions().forEach((q: any) => {
+        console.log(`  - ${q.name} (type: ${q.getType()}, value exists: ${!!q.value})`);
+        if (q.getType() === 'patient_demographics' && q.value) {
+          console.log('    Patient demographics value:', q.value);
+        }
+      });
 
       // Simplified logic to find and store body diagram data
       const findBodyDiagrams = () => {

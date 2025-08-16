@@ -32,9 +32,9 @@ import '../../styles/mobile-minimal.css';
 import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
 import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
-import '../FormBuilder/DateOfBirthQuestion';
-import '../FormBuilder/BodyPainDiagramQuestion';
-import '../FormBuilder/BodyDiagram2Question';
+// Import centralized custom question registry - registers all custom questions
+import '../FormBuilder/customQuestionRegistry';
+import { extractCustomQuestionData } from '../FormBuilder/customQuestionRegistry';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -128,10 +128,16 @@ export const PublicFormFill: React.FC = () => {
           console.log('[Survey onComplete] All question values:', 
             sender.getAllQuestions().map((q: any) => ({ name: q.name, value: q.value })));
           
-          // Get plain data from SurveyJS (not the proxy object)
-          const plainData = sender.getPlainData();
-          console.log('[Survey onComplete] Plain data from getPlainData():', plainData);
-          console.log('[Survey onComplete] Plain data keys:', Object.keys(plainData));
+          // Start with the simple key-value data object.
+          // We use a spread to create a mutable copy.
+          let plainData = { ...sender.data };
+          console.log('[Survey onComplete] Starting with survey.data:', plainData);
+
+          // If there's a nested patient_demographics object, flatten its values into the main object.
+          // This preserves the logic described in your summary.
+          if (plainData.patient_demographics && typeof plainData.patient_demographics === 'object') {
+            Object.assign(plainData, plainData.patient_demographics);
+          }
           
           // Extract data from nested pain assessment panels
           const extractPainAssessmentData = () => {

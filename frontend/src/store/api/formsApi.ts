@@ -34,7 +34,7 @@ export const formsApi = baseApi.injectEndpoints({
 
     // Get single form by ID
     getForm: builder.query<Form, string>({
-      query: (id) => `/forms/${id}/`,
+      query: (id) => `/forms/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Form', id }],
     }),
 

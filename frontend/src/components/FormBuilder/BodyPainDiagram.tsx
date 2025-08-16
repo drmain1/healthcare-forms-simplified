@@ -119,8 +119,8 @@ export const BodyPainDiagram: React.FC<BodyPainDiagramProps> = ({
 
     // Get SVG dimensions
     const svgRect = svg.getBoundingClientRect();
-    
-    // Calculate relative position (0-100%)
+
+    // Calculate relative position (0-100%) (already simple, unchanged for Option 1)
     const x = ((event.clientX - svgRect.left) / svgRect.width) * 100;
     const y = ((event.clientY - svgRect.top) / svgRect.height) * 100;
 

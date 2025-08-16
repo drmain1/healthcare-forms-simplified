@@ -360,17 +360,20 @@ type BodyDiagram2Matcher struct{}
 func (m *BodyDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	sensationDiagramFields := []string{}
 	
-	// First check form definition for bodydiagram2 type components
+	// First check form definition for bodydiagram2 type components with name "sensation_areas"
 	elements := extractElements(formDef)
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok {
 			// Check specifically for bodydiagram2 type (sensation diagram)
 			if elementType == "bodydiagram2" {
 				if name, ok := element["name"].(string); ok {
-					// Check if this field has data in responseData
-					if value, exists := responseData[name]; exists {
-						if _, isArray := value.([]interface{}); isArray {
-							sensationDiagramFields = append(sensationDiagramFields, name)
+					// Only match if name is "sensation_areas"
+					if name == "sensation_areas" {
+						// Check if this field has data in responseData
+						if value, exists := responseData[name]; exists {
+							if _, isArray := value.([]interface{}); isArray {
+								sensationDiagramFields = append(sensationDiagramFields, name)
+							}
 						}
 					}
 				}
@@ -419,7 +422,7 @@ type BodyPainDiagram2Matcher struct{}
 func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	painDiagramFields := []string{}
 	
-	// ONLY check form definition for bodypaindiagram type components
+	// ONLY check form definition for bodypaindiagram type components with name "pain_areas"
 	// Do NOT match on synthetic pain_areas field from pain assessment
 	elements := extractElements(formDef)
 	for _, element := range elements {
@@ -427,10 +430,13 @@ func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interfa
 			// Check specifically for bodypaindiagram type (actual diagram component)
 			if elementType == "bodypaindiagram" {
 				if name, ok := element["name"].(string); ok {
-					// Check if this field has data in responseData
-					if value, exists := responseData[name]; exists {
-						if _, isArray := value.([]interface{}); isArray {
-							painDiagramFields = append(painDiagramFields, name)
+					// Only match if name is "pain_areas"
+					if name == "pain_areas" {
+						// Check if this field has data in responseData
+						if value, exists := responseData[name]; exists {
+							if _, isArray := value.([]interface{}); isArray {
+								painDiagramFields = append(painDiagramFields, name)
+							}
 						}
 					}
 				}

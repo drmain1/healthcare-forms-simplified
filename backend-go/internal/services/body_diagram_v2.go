@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-// Embedded SVG body diagram (minified from frontend/public/assets/body-diagram-pain.svg)
-const bodySVG = `<svg width="100%" height="auto" viewBox="0 0 310 360" xmlns="http://www.w3.org/2000/svg">
-<g transform="translate(3.1692)" fill="#fff" stroke="#000" stroke-miterlimit="2.5">
-<path d="m230.23 50.585h-10.174c0.0383 4.5859-1.3849 8.2321-6.5382 11.407-7.5804 4.6708-9.7655 1.5888-16.504 5.3637-7.1799 4.0224-9.8386 16.322-12.894 25.271-2.7012 7.9136-3.1169 16.701-4.6417 24.653-0.96103 5.0114-3.7277 6.4291-4.6417 12.172-1.7566 11.036-3.522 24.117-4.5952 34.051-0.27661 2.5604-2.5916 3.4207-3.8745 4.5368-1.2186 1.0601-2.2195 1.8891-3.9986 3.6422-0.54323 0.53532-0.6719 1.6779-1.1926 2.7517-0.44354 0.91465-1.5193 1.5385-1.8071 2.3511-0.81641 2.3051-3.163 3.6622-2.5489 4.5482 0.57059 0.82329 2.962-0.16453 4.1095-0.98104 0.73525-0.52319 1.3618-1.3514 1.4568-2.2818 0.91637-0.33136 2.1079-2.7713 2.6956-2.6583 0.2556 0.0492 0.35815 4.4609-0.57415 7.5085-0.36349 1.1882-0.67013 1.7463-0.67471 2.5278-6e-3 1.0064-0.16012 3.3385-0.28049 4.41-0.17688 1.5746 0.3089 3.0319 1.2564 3.1043 0.2217 0.0169 1.3403-0.28271 1.3483-2.0176 3e-3 -0.6329 0.0793-1.1267 0.19558-1.9402 0.20135-1.4089 1.4945-4.1371 1.7256-5.3596 0.073-0.38605 0.3515-1.3762 0.61896-1.344 0.0826 0.01-0.40406 2.9015-0.68479 4.1135-0.31129 1.3439 0.1444 2.2688-3e-3 5.0324-0.12892 2.425 0.035 3.8104 1.2662 3.8576 0.38804 0.0149 1.5578 0.0126 1.5878-3.5364 9e-3 -1.045 0.36561-2.9089 0.63286-4.717 0.19628-1.328 0.21257-2.719 1.0351-4.2976-0.0453 1.6713-0.14439 1.8897-0.22861 3.5175-0.0517 0.9997-0.40445 6.6088-0.10479 4.2507 0.12642-0.99481-1.2494 4.0514 0.93922 4.1496 0.73189 0.0328 1.7038-0.88901 2.1277-7.1342 0.12408-1.8281 0.43591-4.2876 0.91977-5.6605 0.2785 1.1986 0.34294 1.7202 0.34104 2.3095-1e-3 0.41753 0.18169 1.7707-9e-3 3.1186-0.2748 1.9387-0.42344 3.2399 0.59083 3.3532 0.56222 0.0628 1.2424-0.68608 1.6571-2.0254 0.14497-0.4682 0.10129-1.1388 0.25401-1.6788 0.51646-1.826 0.18898-3.7333 0.36462-4.9573 0.23905-1.6659 0.53634-2.4919 0.76803-3.2137 0.23777-0.7407 0.55776-2.9404 0.58628-5.338 0.0285-2.3976-0.96797-2.4648-0.5835-8.9176s8.1542-18.314 9.7382-27.921c0.47262-2.8665 1.9201-5.4484 2.6611-8.237 1.2761-4.8019 1.5258-9.8628 3.0634-14.587 1.1382-3.4976 4.5216-10.065 4.5216-10.065s3.1819 11.689 3.8182 15.85c1.9844 12.977-3.5664 24.173-6.0413 38.02-1.97 11.022-4.0324 18.866-3.9032 33.362 0.15311 17.179 3.7934 32.78 4.0845 42.012 0.0368 1.1667-1.2632 5.7722-1.0497 10.691 0.21358 4.9187-0.91238 11.933-0.84669 18.338 0.154 15.018 4.941 26.356 6.8561 33.113 0.93943 3.315 2.0135 8.4987 2.0723 11.147 0.0776 3.4882-1.0545 3.8634-1.2902 5.849-0.17169 1.4466 1.4034 3.9802 1.4322 4.5296 0 0-1.0438 1.2389-1.2138 2-0.23875 1.0687 0.40999 2.0442-0.0647 2.7635-0.95041 1.44-0.88729 0.80009-1.3764 1.5759-0.50549 0.8018-3.6547 4.0599-4.223 5.2385-0.44783 0.92873-0.32767 1.6046-0.15165 2.6407 0.24437 1.4385 0.80996 2.8068 2.3579 2.3976 0.47824 0.32134 1.0649 1.0267 1.4852 0.33322 0.11699 0.79456 1.6844 0.86262 2.4438 0.51393 1.0893 0.99188 3.1024 0.85398 4.167-8e-3 1.4228 1.2236 5.6128 0.64265 5.9599-1.6887 1.3576-0.59255 1.7169-1.7586 1.4963-3.0556-0.36938-2.1718-0.33452-4.0602-0.71226-6.2306-0.29426-1.6908-0.15632-4.057 0.78349-5.4986 1.4851-2.2781 0.7763-6.1973 0.32284-6.9851s-0.21976-15.214 0.0775-23.764c0.27597-7.9383 2.6943-15.697 3.0634-23.632 0.15711-3.378-0.51187-6.7599-0.36469-10.138 0.19832-4.5522 1.2546-9.0294 1.6776-13.566 0.38891-4.1719 0.2632-8.3884 0.7898-12.545 1.8806-14.845 6.8935-16.859 8.4407-44.09m2.4e-4 0c1.5472 27.231 6.5601 29.245 8.4407 44.09 0.5266 4.1568 0.40089 8.3733 0.7898 12.545 0.42293 4.5369 1.4792 9.0141 1.6776 13.566 0.14718 3.3784-0.5218 6.7603-0.36469 10.138 0.36904 7.9345 2.7874 15.693 3.0634 23.632 0.29726 8.5507 0.53096 22.976 0.0775 23.764s-1.1623 4.707 0.32284 6.9851c0.93981 1.4416 1.0778 3.8079 0.78349 5.4986-0.37774 2.1704-0.34288 4.0588-0.71226 6.2306-0.2206 1.2971 0.13864 2.4631 1.4963 3.0556 0.34705 2.3313 4.5371 2.9123 5.9599 1.6887 1.0646 0.86198 3.0777 0.99988 4.167 8e-3 0.75931 0.34869 2.3268 0.28063 2.4438-0.51393 0.42024 0.69345 1.0069-0.0119 1.4852-0.33322 1.5479 0.40914 2.1135-0.95913 2.3579-2.3976 0.17602-1.0361 0.29618-1.7119-0.15165-2.6407-0.5683-1.1786-3.7176-4.4367-4.223-5.2385-0.48911-0.77583-0.42599-0.13593-1.3764-1.5759-0.47469-0.71923 0.17405-1.6948-0.0647-2.7635-0.17003-0.76107-1.2138-2-1.2138-2 0.0288-0.54935 1.6039-3.083 1.4322-4.5296-0.23568-1.9856-1.3678-2.3609-1.2902-5.849 0.0589-2.6479 1.1329-7.8317 2.0723-11.147 1.915-6.7575 6.7021-18.096 6.8561-33.113 0.0657-6.4056-1.0603-13.419-0.84669-18.338 0.21357-4.9187-1.0865-9.5242-1.0497-10.691 0.29104-9.2314 3.9314-24.833 4.0845-42.012 0.12921-14.497-1.9332-22.34-3.9032-33.362-2.4749-13.847-8.0257-25.043-6.0413-38.02 0.63636-4.1613 3.8182-15.85 3.8182-15.85s3.3834 6.5673 4.5216 10.065c1.5376 4.7246 1.7873 9.7856 3.0634 14.587 0.74105 2.7886 2.1885 5.3705 2.6611 8.237 1.584 9.607 9.3537 21.468 9.7382 27.921s-0.612 6.5199-0.5835 8.9176 0.34851 4.5973 0.58628 5.338c0.23169 0.72176 0.52898 1.5478 0.76803 3.2137 0.17564 1.224-0.15184 3.1313 0.36462 4.9573 0.15272 0.53996 0.10904 1.2106 0.25401 1.6788 0.41469 1.3393 1.0949 2.0882 1.6571 2.0254 1.0143-0.11329 0.86563-1.4145 0.59083-3.3532-0.19069-1.3479-8e-3 -2.7011-9e-3 -3.1186-2e-3 -0.58935 0.0625-1.111 0.34104-2.3095 0.48386 1.3728 0.79569 3.8324 0.91977 5.6605 0.42386 6.2452 1.3958 7.167 2.1277 7.1342 2.1886-0.0982 0.8128-5.1444 0.93922-4.1496 0.29966 2.3581-0.0531-3.251-0.10479-4.2507-0.0842-1.6278-0.18331-1.8462-0.22861-3.5175 0.82252 1.5787 0.83881 2.9697 1.0351 4.2976 0.26725 1.8082 0.62386 3.672 0.63286 4.717 0.03 3.549 1.1997 3.5512 1.5878 3.5364 1.2312-0.0472 1.3951-1.4326 1.2662-3.8576-0.1474-2.7636 0.30829-3.6885-3e-3 -5.0324-0.28073-1.212-0.76739-4.1035-0.68479-4.1135 0.26746-0.0322 0.54596 0.95795 0.61896 1.344 0.23116 1.2225 1.5243 3.9506 1.7256 5.3596 0.11628 0.81353 0.19258 1.3073 0.19558 1.9402 8e-3 1.7349 1.1266 2.0345 1.3483 2.0176 0.94755-0.0724 1.4333-1.5297 1.2564-3.1043-0.12037-1.0715-0.27449-3.4036-0.28049-4.41-5e-3 -0.78149-0.31122-1.3395-0.67471-2.5278-0.9323-3.0476-0.82975-7.4593-0.57415-7.5085 0.58769-0.11305 1.7793 2.3269 2.6956 2.6583 0.0951 0.9304 0.72158 1.7586 1.4568 2.2818 1.1475 0.81651 3.5389 1.8043 4.1095 0.98104 0.61409-0.88607-1.7325-2.2431-2.5489-4.5482-0.28781-0.81262-1.3636-1.4364-1.8071-2.3511-0.52068-1.0738-0.64935-2.2164-1.1926-2.7517-1.7791-1.7532-2.78-2.5821-3.9986-3.6422-1.2829-1.1161-3.5979-1.9764-3.8745-4.5368-1.0732-9.9335-2.8386-23.014-4.5952-34.051-0.91397-5.7424-3.6807-7.1602-4.6417-12.172-1.5248-7.9512-1.9404-16.739-4.6417-24.653-3.055-8.9498-5.7136-21.249-12.894-25.271-6.7382-3.775-8.9234-0.69292-16.504-5.3637-5.1533-3.1753-6.5765-6.8215-6.5382-11.407h-10.174"/>
-<path d="m230.23 55.7c-3.9137 0-7.3233-2.6443-10.174-5.1153-0.86087-0.7462-1.1973-4.0335-1.9143-4.8656-0.7474 0.2234-2.4158-0.19574-2.946-1.32-0.73606-1.5608-2.2567-4.2932-2.1936-7.2658 0.0288-1.3549 0.96098-3.1117 2.9085-3.1043-0.28331-9.9132 5.8165-16.699 14.317-16.7 8.501 1.77e-4 14.601 6.7855 14.319 16.699 1.9475-0.0077 2.8799 1.749 2.9088 3.104 0.0634 2.9726-1.4569 5.7052-2.1928 7.266-0.53009 1.1243-2.1985 1.5436-2.9459 1.3203-0.71691 0.83223-1.053 4.1196-1.9138 4.8658-2.8505 2.4713-6.2598 5.1159-10.173 5.1163-3.9137-4.08e-4 -7.323-2.645-10.173-5.1163-0.86079-0.74629-1.1969-4.0336-1.9138-4.8658-0.74742 0.22332-2.4158-0.19599-2.9459-1.3203-0.7359-1.5609-2.2562-4.2935-2.1928-7.266 0.0289-1.3549 0.9613-3.1117 2.9088-3.104-0.28228-9.9132 5.8182-16.699 14.319-16.699 8.501 0.0011 14.601 6.7871 14.317 16.7 1.9475-0.0075 2.8797 1.7493 2.9085 3.1043 0.0631 2.9726-1.4575 5.705-2.1936 7.2658-0.53021 1.1243-2.1986 1.5434-2.946 1.32-0.717 0.83215-1.0534 4.1194-1.9143 4.8656-2.8507 2.471-6.2603 5.1153-10.174 5.1153"/>
-</g>
+// Embedded SVG body diagram from frontend BodyDiagram2.tsx
+const bodySVG = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" version="1.0" viewBox="0 0 300 300" style="max-width: 100%; height: auto;">
+  <path d="M227 19c-6 3-8 15-4 23l2 8c0 3-1 4-12 10s-12 7-14 10l-2 12a210 210 0 0 1-8 45c-3 14-4 17-6 20-6 5-10 15-6 14l2-2-1-1h-1l2-1c2 0 2 1 0 7v7h2c0-2 3-3 3-1h-1l-1 1c0 2 1 2 2 2l3-1 1-2h3c2-4 3-11 4-18l4-14 8-28c1-10 2-11 2-9 4 11 3 23-1 40-2 6-1 28 2 41 2 12 3 18 1 27-1 7 0 11 5 26 2 9 3 10 2 34v5l4 3c6 3 8 3 8-1l1-4v-6c-1-5-1-10 1-10 1 0 2 3 2 9l1 10c1 4 3 6 5 4l5-3 2-3-1-15c-2-17-2-15 2-33 2-7 2-14 1-22v-14c7-34 7-34 6-49l-3-22c0-10 2-21 3-17l2 8c0 9 2 14 6 24a127 127 0 0 1 9 31c1 4 3 5 3 2 0-2 1-2 4-2l5 1-4 1h-4c0 2 1 4 3 4v-1l2-2c2 0 2 0 1 1l-1 2c2 2 3 1 3-1s0-2 1-1h3l-2-2v-1c2 0 2-1 1-3-1-5-1-6 2-5l2-1c0-2-4-8-5-8l-4-3c-3-3-3-5-7-24l-3-11c-2-3-2-9-3-32-1-6-1-9-3-11l-12-8c-11-6-11-6-12-9l2-8c2-4 3-12 1-18s-10-9-18-5zm15 2c2 3 2 4 2 11l-1 7-6 2 3 1h2c-2 2-1 11 0 12l12 7 11 7c1 0 2 4 2 9l3 33c2 2 3 7 5 19 2 13 3 15 8 19 5 3 6 6 2 4l-1 4c1 5 0 6-2 3v1c0 3-2 4-3 1l-1-2v2c0 3-1 2-3 0l-1-1-1 2-3-14-5-14c-5-11-6-14-7-24l-2-12c-1-5-1-7 2-15l-1-2-1 2a777 777 0 0 0-7 25c-2 0-2 0-1 1 2 1 2 3 3 8v6l-3-1c-4 0-10 3-10 5 0 1 1 1 3-1s7-3 9-1a100 100 0 0 1 1 48 457 457 0 0 0-6 22h-1l-3 1c-3 0-4 0-4 3-1 3-3 4-3 1v-24l-1-22 3 2 6 2c3 0 9-3 9-4h-3c-3 3-9 2-12 0s-3-3-3-9v-7l-1 7c0 7 0 7-3 9-4 2-9 3-13 1l-3-1c0 2 6 4 9 4l6-2 4-2-2 12-2 22c1 13 0 17-3 11l-1-6-1-3c-1 0-1 3 1 6 0 2 0 2-3 1l-4-2-1-1-1 2v1l-2-8-2-11-2-16c-1-13-1-14 1-22l2-11c0-2 2-4 6-5 2 0 3 0 6 3l3 2c0-2-5-6-7-6h-5c-2 1-2 1-2-5l1-7 1 2c0 2 1 1 5-2l2-3-3 2c-2 2-5 2-3 0l-1-1c-2 0-3-1-4-8l-3-12-1-5v4c1 6 0 11-1 19l-2 7c0-2-4-3-4-1l2 1 1 2-2 4 1-1c3-4 2-1 0 7a578 578 0 0 0-15 37v-2l-1 1c-1 3-3 2-2 0 0-2 0-2-1 0-2 3-3 2-2-2 1-5 1-7-1-5h-2l4-5c5-5 6-10 8-23 1-5 2-11 4-13l2-13 4-31 7-5 15-9 4-2v-6l-1-7 4 1 4-1-2-1c-5 0-9-1-8-2v-2l-1-6c0-3 0-4 3-7 3-4 4-4 9-4 4 0 6 1 8 3zm-10 161 1 20v9l-1 12 2 24c-2 9-5-2-4-14l-1-25v-6l1-16c0-13 1-22 2-21v17zm14 16 2 9c1 9 1 12-3 26-2 8-2 11-2 21 1 7 1 7-3-2v-6l-1-2-1 2-1 2c-2 1-2 1-1-2v-10l-1-8c-2-1 0-21 3-28 0-2 4-3 6-2h2zm-22 2c4 4 7 24 4 28l-1 3 1 9-1 9-1-1-1-3-1 2c1 2 0 5-1 8l-2 6h-1v-3c2-5-1-17-6-33-2-6-2-8-1-16l1-10 10 1zm7 51c1 2-1 6-3 7l-1 1 2 2 1 7v5h-4l-6-2c-2-1-2-2-2-5l2-3 4-7c0-4 5-7 6-5zm9 5 4 6 1 1v4c1 3-1 6-6 6-4 1-5-1-4-6l1-6c-1-1 0-2 1-2l1-1-2-1c-2 0-3-2-3-5 0-2 1-2 3-2s3 1 4 6z" fill="#666"/>
+  <path d="M221 66v3c-2 1-2 1-7-1-4-2-6-3-6-1 0 1 10 5 13 5l1 2-1 12c0 2-3 2-5 0l-2-1 1 2c3 3 6 4 7 1l2-9c1-9 0-15-3-15v1zm22 1c-3 6 0 23 3 23 2 0 7-5 6-6l-3 2c-1 2-4 3-4 0l-1-16v2h3l9-7-5 3c-4 2-5 2-6 0-1-1 0-2 1-3v-1l-3 3zm-8 38 8 7-4-4c-2-3-4-4-4-3zm-9 4-5 3-1 1c0 2 3 1 7-3 3-3 4-5 3-5l-4 4zm18 1 4 2-5-5 1 3zm16 2c0 3 2 8 3 8v-3c-2-3-2-4 0-4l2-1-2-1-2-1c-1-1-1 0-1 2zm-31 18 4 1 4-1-4-1c-3 0-5 0-4 1zm-3 3c0 2 3 6 4 6v-2l-2-3-1-2-1 1zm10 2c-2 4-2 6 1 3l1-6-2 3zm-14 133c0 1 3 2 5 1s1-2-2-2l-3 1zm15 0 3 1 3-1-3-1c-3 0-4 0-3 1zM148 20c-2 2-3 8-1 9 2 2 1 6-1 9l-2 6-2 6c-3 6-4 10-5 22l-1 15c-1 1 0 3 1 4 2 2 6 2 6-2 0-1 0-2 1-1 1 0 2 0 2-2l1-1 1 9v9l-1 8c-2 7-2 9-1 14v16c-2 3 0 4 8 4s12-1 12-3l-2-1-5-2c-4-1-4-2-4-5l5-33c2-7 2-12 2-31V48l-3-5c-3-5-3-7 0-8 3 0 2-2-1-2-2 0-3 0-2 1v3c-2 2-4 2-4 0l-2-1 1 3 3 2c2-1 3 0 4 4l2 5v1c2 0 1 8-1 11-1 2-2 2-6 2-6-1-6-2-3-9 3-5 3-5 6-3 2 2 3 2 3 1l-7-4-3 6-4 5c-2 0-2 1-1 3l-1 9v8c2 2-1 7-3 8-2 0-3-3-2-8l1-10 1-7 1-3c-1-2 0-6 3-9l1-6 2-6 2-5c0-2 1-2 2-2 4 0 4-2 1-2-4-1-6-3-4-7 0-2 1-3 5-3 3 0 5 0 6 2 1 1 1 1-2 4l-3 2h4c3-1 3-1 2 1l1 3v-8c0-5-10-8-13-4zm0 47-2 8-2 5 1-6 1-13 2 6zm12 12a174 174 0 0 1-4 37 490 490 0 0 1-2 21l4 3c4 2 3 3-5 3l-6-1 3-1c2 0 2 0 1-1l-1-2v-2l-1 2c-1 1-1 0-1-2v-24c1-4 2-5 3-3h2c1-1 1-1-1-1-2-1-3-7-3-17l-1-7c-2-2-2-5-1-10l4-3c3 0 7 2 7 5 1 2 1 2 1 0 0-3-4-7-8-7l-2-2 4-1 6-2 1-1v16zM65 21c-7 2-11 6-10 13v4l1 6 3 9 1 3 1-2h2c2 3 8 3 10 0 2-1 2-1 2 2v3c1-1 2 0 4 1l8 4c11 3 12 4 14 7 2 4 3 14 1 14l1 4v19c0 2-1 2-3 2l-3 1c0 2 5 1 8-1 2-1 2-1 3 1l3 13a98 98 0 0 0 3 19l2 1c2 0 7 5 7 8l1 1 1 2-3-2-4-2-3-1c-2-2-4-1-4 2-1 4-3 3-4-2-1-4 0-4 3-5 2-1 3-1 2-2h-2l-2 1c-3 0-10-21-13-36l-2-8-1-9c0-5 0-6 2-7l2-2-4-3v1c0 1-2 7-5 10-3 2-1 3 1 0 2-2 2-1 2 5-1 8-4 16-5 16-2 0-6-5-9-11l-4-5 8 15c5 4 7 4 8-2l2-8 1-2 3 13 6 21 6 18c0 5 3 15 4 17 2 1 3 0 2-2l2 2c1 2 2 3 5 3 2 0 3 0 2-1l2-4v2h1v-5c-2-5-2-6 0-5l2-1c1-1-3-8-7-12s-7-13-7-20l-4-16c-2-4-3-14-3-26-1-11-2-14-8-17l-6-2-8-3-7-3v-4l3-9 1-7v-6c-1-7-7-12-15-10zm7 2c5 2 6 5 6 12 0 12-4 19-10 19-5 0-9-5-11-14-1-9-1-10 1-13 1-2 3-3 6-4l5-1 3 1zm49 134c1 2 1 3-1 3l-1-1-1-1v1c1 2 1 3-1 3l-1-1c0-1-1-2-3-2s-3 0-2 1l-1 1-1-1-1-2c0-2 1-2 5-2l4-1 1-1 3 3z" fill="#666"/>
+  <path d="M62 39c-1 1 0 1 2 1l4-1h-6zm7 0 2 1 4-1-3-1-3 1zm0 3c1 1 0 2-1 2v-1l-1-1-1 3 3 1c2 0 3-2 1-4h-1zm-3 6-2 1 2 1h4c2-2 2-2 0-2h-4zm-7 10-10 6c-14 6-14 8-15 26-1 17-2 20-4 25-1 3-3 9-3 14-3 15-4 17-7 20-5 3-8 8-8 11 0 2 2 3 4 1s1 0 0 6c-2 5-1 7 1 5h3v1l-2 1c1 1 6 1 8-1 1-3 1-4-1-3l-1-1 2-1 2 2 1 2 3-7c1-3 1-3-1-2 0 2-1 2-1 1l-1-1-2 2-1 2v-2l-1-2c-1 0-2 1-1 2 0 1 0 2-2 2v-2l-1-2-1 2-1 1c-2 0-2-1-1-3l1-4h2l2 1h11v-6l3-14c4-10 5-14 5-21l2-12 1-5 2 6c3 10 3 9-1 40-2 14-2 15-1 25l4 17 1 18c0 14 1 19 6 32 4 11 4 17-2 32-1 3 4 8 7 8h1v1c1 2 3 0 5-4 1-2 2-5 1-8l1-6c2-3 2-3 4-1l1 6c0 4 1 6 3 9l4 4 4-4 4-5-3-10c-5-9-5-14-1-30 3-10 3-12 2-19l1-22c3-8 6-34 4-42a3346 3346 0 0 1-6-26c1 4 1 5-2 8-2 3-3 8-1 8l1-2c-1-2 0-3 1-5 2-3 3-3 3 1l1 10 2 11c1 6-2 32-4 36l-1 19c0 15-1 18-3 27-4 12-4 18 0 24l2 5 2 3v1l-1 1-1 1v1h-1c-2-1-5 0-5 1 0 2 2 1 2 0 1-1 1 0 2 1v1h-3c-2 2-4-1-4-6l-2-7c-2-3-2-4-1-5v-62l-1-10-3-29c-1 0-2 7-3 25l-1 15v15l3 13v13l1 16v8l-2 8c0 7-1 8-4 8-2 0-3-1-2-2l-1-2-3-1h-1v1c-1 0-1-2 1-4l1-3 1-4c2-3 2-11 1-15l-4-14c-4-9-4-10-4-23 0-11 0-15-2-20-4-15-5-27-2-49l2-9 2 2 2 4 1 3 1-3c0-2-1-4-3-5l-3-2 1-7c0-7 1-8 3-10l7-9 5-9 1-1c0 3 2 2 4 0 2-4 3-11 1-12v2c0 2 0 4-2 7l-2 2-1-2-1-2h-1v3l-4 8c-5 10-8 13-10 13l-1-1-2-8-2-10c0-3 0-3 2-2 2 2 2 0 0-3l-4-5c0-2 0-2-2-1-1 2-1 3 1 3 3 0 3 9-1 21-1 5-2 6-4 6-3-1-3-3-3-12V89c0-9 1-14 4-17 2-3 11-7 20-11 3-2 4-3 1-4l-1 1zm-19 57c2 0 2 0 2 2l-2 7-3 12-3 9-2 3-8-2 3-12 4-16 1-5 3 2h5zm-10 34c2 1 3 1 3 4 0 4 0 4-2 4l-3-3c-1-3-1-3-4 0l-5 2c-2 0-3 1-3 2l-2 2c-2 0 1-4 5-8 2-3 4-4 5-3h5zm-4 8c-2 1-2 1 0 1h5c1 1 1 1-2 1-5 0-11-2-7-2l3-2h2l-2 2zm44 24 1 18c1 10 0 22-1 22l-2-6-1-17v-13l1-10c1-10 2-6 2 6zm2 61c0 9-1 12-2 6v-19l1-7v7l1 13z" fill="#666"/>
+  <path d="M69 66h-7c1 2 6 2 9 1l3-2c0-2-4-1-5 1zm8-1 3 1 2-1-3-1c-2 0-3 0-2 1zm-23 2h5c1-2 0-2-2-2s-3 1-3 2zm29 0c-2 0-1 2 1 2 2 1 2 0 2-1 0-2 0-2-3-1zm-22 5c2 3 3 3 3 0l-2-2c-2-1-2-1-1 1zm10 0v3l1 2 1-3c0-4-2-5-2-2zm-7 4c-2 3-1 6 1 4v-4l1-2-2 2zm-1 9 1 3 1-1v-5c-1 0-2 1-2 3zm4 57c-4 0-5 1-3 1 3 1 11 0 11-1l-1-1-7 1zm-6 4 6 8c2 0 1-2-3-6l-3-2zm12 0-3 8 2-2 2-4c2-3 1-4-1-2zm73 7c-4 3-4 17 0 17 2 0 2 3 0 8l-3 4v23l3 31 3 8 1 5 2 12v9l-5 3-5 4 18 1c2-1 2-1 2-4-2-7-2-12-1-16 1-5 0-12-3-17-1-2 0-22 1-21h3l1 3 2 2c4 0 5-2 5-7l-2-15c0-8-1-12-3-16l-3-9-3-6c-2-2-2-4-2-6 2-8 2-9 1-12-2-2-3-2-6-2l-6 1zm11 4c2 3 0 7-3 7-1 0-2 0-1-2 0-2 0-2-2-2h-4c-4-4-1-6 5-6 3 0 4 0 5 3zm-6 6c0 3-6 7-6 4v-3c-1-2 0-2 3-2l3 1zm4 5 3 5 1 4 3 8 3 7c-1 1 0 3 1 3l1 7v11c2 5 2 6-2 7l-2-2-1-2v-23c-2 0-7-6-7-7 1-1 0-2-1-3-2-1-3-1-5 1-1 2 0 3 2 1 0-1 2 0 4 3 3 5 3 8-1 9-2 1-5 0-8-2-2-3-3-8-1-9v-2l2-5c2-5 3-5 3-3s2 3 2 0l2-3c1-1 2-3 0-3l-2 2-1 1-1-2-1-1 1-2c2-4 4-4 5 0zm7 41c1 4-1 4-3-2-2-5-2-7-1-11 1-2 1-2 2 4l2 9zm-15-11 6 1c2 0 3 0 3 2l-2 2c-3 0-8 4-8 6l1 2 1-2c0-4 7-6 9-2 2 3 3 9 1 11l-1 6-2 16-2 1v1h3l3 6v20l-1 2-1 1c-1 1 0 2 1 2 5 1 2 2-3 3-7 1-9-1-5-3 3-1 4-2 3-7a94 94 0 0 0-4-25l-2-7-1-15-1-17v-6l2 2zm-73 3 3 7 2-1c1-1 1-1-1-1l-2-3-1-3-1 1zm-11 1-1 2-1 2-2 1 2 1c1 0 2-1 2-3v-3zm-4 15 2 11 2 10 1 3v-3l-4-24-1 3zm19 3-1 12v6l1-5c2-16 2-19 1-19l-1 6z" fill="#666"/>
 </svg>`
 
 // PainPoint represents a pain point on the body diagram
@@ -23,6 +23,14 @@ type PainPoint struct {
 	Intensity int     `json:"intensity"`
 	Area      string  `json:"area"`
 	Side      string  `json:"side"`
+}
+
+// SensationPoint represents a sensation point on the body diagram
+type SensationPoint struct {
+	X         float64 `json:"x"`
+	Y         float64 `json:"y"`
+	Sensation string  `json:"sensation"` // numbness, aching, burning, pins_and_needles, stabbing
+	ID        string  `json:"id"`
 }
 
 // BodyDiagramV2Renderer renders body diagram with pain points
@@ -71,11 +79,14 @@ func BodyPainDiagramV2Renderer(metadata PatternMetadata, context *PDFContext) (s
 		result.WriteString(`</div>`)
 	} else {
 		// Render visual body diagram with pain markers
+		// Ensure we render with percentage-based coordinates directly
+		// so that the markers stay aligned with UI placement
 		result.WriteString(renderVisualBodyDiagram(painPoints))
 		
 		// Add pain points table as supplementary information
 		result.WriteString(`<div style="margin-top: 30px;">`)
 		result.WriteString(`<h4>Pain Location Details</h4>`)
+		// Similarly ensure sensation points use % coordinates
 		result.WriteString(renderPainPointsTable(painPoints))
 		result.WriteString(`</div>`)
 	}
@@ -106,6 +117,7 @@ func processPainData(data interface{}) []PainPoint {
 		for _, point := range pointsArray {
 			if pointData, ok := point.(map[string]interface{}); ok {
 				pp := PainPoint{
+					// Keep coordinates as percentages (0–100) for direct use in SVG
 					X:         GetFloat64(pointData, "x"),
 					Y:         GetFloat64(pointData, "y"),
 					Area:      GetString(pointData, "area"),
@@ -140,32 +152,16 @@ func processPainData(data interface{}) []PainPoint {
 	return points
 }
 
-// renderVisualBodyDiagram creates an HTML representation with SVG and overlaid pain markers
+// renderVisualBodyDiagram creates an HTML representation with SVG and embedded pain markers
 func renderVisualBodyDiagram(painPoints []PainPoint) string {
 	var result bytes.Buffer
 	
 	// Container for the diagram
-	result.WriteString(`<div style="position: relative; display: inline-block; width: 100%; max-width: 500px; margin: 0 auto;">`)
+	result.WriteString(`<div style="display: inline-block; width: 100%; max-width: 488px; margin: 0 auto;">`)
 	
-	// Add the SVG body diagram
-	result.WriteString(`<div style="width: 100%;">`)
-	result.WriteString(bodySVG)
-	result.WriteString(`</div>`)
-	
-	// Add pain markers as absolutely positioned elements
-	for i, point := range painPoints {
-		color := getIntensityColor(point.Intensity)
-		
-		// Create marker positioned absolutely over the SVG
-		result.WriteString(fmt.Sprintf(
-			`<div style="position: absolute; left: %.1f%%; top: %.1f%%; width: 24px; height: 24px; `+
-			`border-radius: 50%%; background-color: %s; border: 2px solid #fff; `+
-			`transform: translate(-50%%, -50%%); display: flex; align-items: center; `+
-			`justify-content: center; color: #fff; font-weight: bold; font-size: 14px; `+
-			`box-shadow: 0 2px 4px rgba(0,0,0,0.2);">%d</div>`,
-			point.X, point.Y, color, i+1))
-	}
-	
+	// Build SVG with embedded markers
+	svgWithMarkers := embedMarkersInSVG(bodySVG, painPoints, "pain")
+	result.WriteString(svgWithMarkers)
 	result.WriteString(`</div>`)
 	
 	// Add legend
@@ -269,8 +265,245 @@ func getIntensityLabel(intensity int) string {
 	}
 }
 
-// SensationAreasRenderer is deprecated - delegates to BodyDiagramV2Renderer
+// SensationAreasRenderer handles sensation areas (numbness, tingling, etc.)
 func SensationAreasRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
-	// Delegate to BodyDiagramV2Renderer as sensation areas are now handled there
-	return BodyDiagramV2Renderer(metadata, context)
+	var result bytes.Buffer
+	
+	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="section-title">Mark Sensation Areas</div>`)
+	
+	// Extract sensation points from the diagram data
+	sensationPoints := extractSensationPoints(metadata.ElementNames, context.Answers)
+	
+	if len(sensationPoints) == 0 {
+		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
+		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No sensation areas marked</p>`)
+		result.WriteString(`</div>`)
+	} else {
+		// Render visual body diagram with sensation markers
+		result.WriteString(renderVisualSensationDiagram(sensationPoints))
+		
+		// Add sensation points table as supplementary information
+		result.WriteString(`<div style="margin-top: 30px;">`)
+		result.WriteString(`<h4>Sensation Location Details</h4>`)
+		result.WriteString(renderSensationPointsTable(sensationPoints))
+		result.WriteString(`</div>`)
+	}
+	
+	result.WriteString(`</div>`)
+	
+	return result.String(), nil
+}
+
+// extractSensationPoints extracts sensation data from the response
+func extractSensationPoints(elementNames []string, answers map[string]interface{}) []SensationPoint {
+	var allPoints []SensationPoint
+	
+	for _, elementName := range elementNames {
+		if data, exists := answers[elementName]; exists {
+			points := processSensationData(data)
+			allPoints = append(allPoints, points...)
+		}
+	}
+	
+	return allPoints
+}
+
+// processSensationData processes sensation data from the form
+func processSensationData(data interface{}) []SensationPoint {
+	var points []SensationPoint
+	
+	// Handle array of sensation points
+	if pointsArray, ok := data.([]interface{}); ok {
+		for _, point := range pointsArray {
+			if pointData, ok := point.(map[string]interface{}); ok {
+				sp := SensationPoint{
+					// Store as raw percentage values (0–100); rendering will use % units in SVG
+					X:         GetFloat64(pointData, "x"),
+					Y:         GetFloat64(pointData, "y"),
+					Sensation: GetString(pointData, "sensation"),
+					ID:        GetString(pointData, "id"),
+				}
+				
+				// Validate sensation point data
+				if (sp.X > 0 || sp.Y > 0) && sp.Sensation != "" {
+					points = append(points, sp)
+				}
+			}
+		}
+	}
+	
+	return points
+}
+
+// Sensation colors matching the frontend
+var sensationColors = map[string]string{
+	"numbness":         "#9E9E9E", // Gray
+	"aching":           "#FF9800", // Orange  
+	"burning":          "#F44336", // Red
+	"pins_and_needles": "#9C27B0", // Purple
+	"stabbing":         "#FF5722", // Deep Orange/Red
+}
+
+// Sensation labels matching the frontend
+var sensationLabels = map[string]string{
+	"numbness":         "Numbness",
+	"aching":           "Aching",
+	"burning":          "Burning",
+	"pins_and_needles": "Pins & Needles",
+	"stabbing":         "Stabbing",
+}
+
+// renderVisualSensationDiagram creates an HTML representation with SVG and embedded sensation markers
+func renderVisualSensationDiagram(sensationPoints []SensationPoint) string {
+	var result bytes.Buffer
+	
+	// Container for the diagram
+	result.WriteString(`<div style="display: inline-block; width: 100%; max-width: 488px; margin: 0 auto;">`)
+	
+	// Build SVG with embedded markers
+	svgWithMarkers := embedSensationMarkersInSVG(bodySVG, sensationPoints)
+	result.WriteString(svgWithMarkers)
+	result.WriteString(`</div>`)
+	
+	// Add legend with all sensation types
+	result.WriteString(`<div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">`)
+	for sensation, label := range sensationLabels {
+		color := sensationColors[sensation]
+		result.WriteString(fmt.Sprintf(
+			`<span><span style="display: inline-block; width: 12px; height: 12px; background: %s; border-radius: 50%%; margin-right: 5px;"></span>%s</span>`,
+			color, label))
+	}
+	result.WriteString(`</div>`)
+	
+	// Add summary
+	result.WriteString(`<div style="margin-top: 15px; text-align: center;">`)
+	result.WriteString(fmt.Sprintf(`<strong>Total Sensation Areas Marked:</strong> %d`, len(sensationPoints)))
+	result.WriteString(`</div>`)
+	
+	return result.String()
+}
+
+// renderSensationPointsTable creates a table of sensation points
+func renderSensationPointsTable(sensationPoints []SensationPoint) string {
+	var result bytes.Buffer
+	
+	// Sort sensation points by type
+	sortedPoints := make([]SensationPoint, len(sensationPoints))
+	copy(sortedPoints, sensationPoints)
+	sort.Slice(sortedPoints, func(i, j int) bool {
+		return sortedPoints[i].Sensation < sortedPoints[j].Sensation
+	})
+	
+	result.WriteString(`<table class="data-table">`)
+	result.WriteString(`<thead>`)
+	result.WriteString(`<tr>`)
+	result.WriteString(`<th>Location</th>`)
+	result.WriteString(`<th>Sensation Type</th>`)
+	result.WriteString(`</tr>`)
+	result.WriteString(`</thead>`)
+	result.WriteString(`<tbody>`)
+	
+	for i, point := range sortedPoints {
+		label := sensationLabels[point.Sensation]
+		if label == "" {
+			label = point.Sensation
+		}
+		
+		result.WriteString(`<tr>`)
+		result.WriteString(fmt.Sprintf(`<td>Point %d</td>`, i+1))
+		result.WriteString(fmt.Sprintf(`<td>%s</td>`, html.EscapeString(label)))
+		result.WriteString(`</tr>`)
+	}
+	
+	result.WriteString(`</tbody>`)
+	result.WriteString(`</table>`)
+	
+	return result.String()
+}
+
+// embedMarkersInSVG embeds pain markers directly into the SVG as circle elements
+func embedMarkersInSVG(svgContent string, painPoints []PainPoint, markerType string) string {
+	// Find the closing </svg> tag
+	closingTag := "</svg>"
+	insertPos := strings.LastIndex(svgContent, closingTag)
+	if insertPos == -1 {
+		return svgContent // Return unchanged if no closing tag found
+	}
+	
+	var markersHTML bytes.Buffer
+	
+	// Add a group for all markers
+	markersHTML.WriteString(`<g id="pain-markers">`)
+	
+	for i, point := range painPoints {
+		color := getIntensityColor(point.Intensity)
+		
+		// Convert percentage coordinates (0-100) to SVG viewBox coordinates (0-300)
+		cx := (point.X / 100.0) * 300
+		cy := (point.Y / 100.0) * 300
+		
+		// Add circle element for the marker
+		markersHTML.WriteString(fmt.Sprintf(
+			`<circle cx="%.1f" cy="%.1f" r="12" fill="%s" stroke="#fff" stroke-width="2" opacity="0.9"/>`,
+			cx, cy, color))
+		
+		// Add text label
+		markersHTML.WriteString(fmt.Sprintf(
+			`<text x="%.1f" y="%.1f" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="14" font-weight="bold">%d</text>`,
+			cx, cy, i+1))
+	}
+	
+	markersHTML.WriteString(`</g>`)
+	
+	// Insert markers before the closing </svg> tag
+	result := svgContent[:insertPos] + markersHTML.String() + svgContent[insertPos:]
+	return result
+}
+
+// embedSensationMarkersInSVG embeds sensation markers directly into the SVG as circle elements
+func embedSensationMarkersInSVG(svgContent string, sensationPoints []SensationPoint) string {
+	// Find the closing </svg> tag
+	closingTag := "</svg>"
+	insertPos := strings.LastIndex(svgContent, closingTag)
+	if insertPos == -1 {
+		return svgContent // Return unchanged if no closing tag found
+	}
+	
+	var markersHTML bytes.Buffer
+	
+	// Add a group for all markers
+	markersHTML.WriteString(`<g id="sensation-markers">`)
+	
+	for _, point := range sensationPoints {
+		color := sensationColors[point.Sensation]
+		label := sensationLabels[point.Sensation]
+		if color == "" {
+			color = "#666666" // Default gray
+		}
+		if label == "" {
+			label = "Unknown"
+		}
+		
+		// Convert percentage coordinates (0-100) to SVG viewBox coordinates (0-300)
+		cx := (point.X / 100.0) * 300
+		cy := (point.Y / 100.0) * 300
+		
+		// Add circle element for the marker
+		markersHTML.WriteString(fmt.Sprintf(
+			`<circle cx="%.1f" cy="%.1f" r="12" fill="%s" stroke="#fff" stroke-width="2" opacity="0.9"/>`,
+			cx, cy, color))
+		
+		// Add text label (first letter of sensation type)
+		firstLetter := string(label[0])
+		markersHTML.WriteString(fmt.Sprintf(
+			`<text x="%.1f" y="%.1f" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="14" font-weight="bold">%s</text>`,
+			cx, cy, firstLetter))
+	}
+	
+	markersHTML.WriteString(`</g>`)
+	
+	// Insert markers before the closing </svg> tag
+	result := svgContent[:insertPos] + markersHTML.String() + svgContent[insertPos:]
+	return result
 }

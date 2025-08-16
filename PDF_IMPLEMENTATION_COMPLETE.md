@@ -146,9 +146,9 @@ The form structure is consistent - we can rely on the panel title instead of try
 | Pain Assessment | `pain_assessment.go` | ✅ Working | Title-based detection, delegates to custom_tables |
 | NDI Assessment | `neck_disability_index.go` | ✅ Working | Clinical scoring functional |
 | Oswestry Assessment | `oswestry_disability.go` | ✅ Working | Disability index calculation |
-| Body Diagram V2 | `body_diagram_v2.go` | ✅ Working | Pain visualization |
-| Body Pain Diagram V2 | `body_diagram_v2.go` | ✅ Working | Alternative pain view |
-| Sensation Areas | `body_diagram_v2.go:273-276` | ✅ Working | Delegates to Body Diagram |
+| Body Diagram V2 | `body_diagram_v2.go` | ✅ Working | Pain visualization with intensity |
+| Body Pain Diagram | `body_diagram_v2.go` | ✅ Working | Pain areas with intensity markers |
+| Sensation Areas | `body_diagram_v2.go:273-476` | ✅ Working | Sensation types (numbness, tingling, etc.) |
 | Patient Vitals | `patient_vitals.go` | ✅ Working | Vital signs display |
 | Insurance Card | `insurance_card.go` | ✅ Working | Image handling |
 | Signature | `signature.go` | ✅ Working | Digital signature display |
@@ -343,7 +343,59 @@ Special cases:
 3. Test: Generate PDF from frontend dashboard
 4. Debug: Check logs with pattern/pain keywords
 
+## 🎯 Body Diagram Implementation (August 15, 2025)
+
+### Two Distinct Body Diagram Functions
+
+#### 1. **Pain Areas Diagram** (`pain_areas`)
+- **Type**: `bodypaindiagram`
+- **Data Structure**: Contains `intensity` field (numeric 0-10)
+- **Renderer**: `BodyPainDiagramV2Renderer`
+- **Display**: Shows pain intensity with colored markers (yellow/orange/red)
+- **Detection**: Looks for `type="bodypaindiagram"` AND `name="pain_areas"`
+
+#### 2. **Sensation Areas Diagram** (`sensation_areas`) 
+- **Type**: `bodydiagram2`
+- **Data Structure**: Contains `sensation` field with values:
+  - `numbness` (Gray #9E9E9E)
+  - `aching` (Orange #FF9800)
+  - `burning` (Red #F44336)
+  - `pins_and_needles` (Purple #9C27B0)
+  - `stabbing` (Deep Orange #FF5722)
+- **Renderer**: `SensationAreasRenderer`
+- **Display**: Shows sensation types with colored markers and first letter labels
+- **Detection**: Looks for `type="bodydiagram2"` AND `name="sensation_areas"`
+
+### Implementation Details
+
+#### Pattern Detection Updates
+- Modified `BodyDiagram2Matcher` to check for `name="sensation_areas"`
+- Modified `BodyPainDiagram2Matcher` to check for `name="pain_areas"`
+- Both use name field for accurate detection instead of type alone
+
+#### Rendering Components
+- Created `SensationPoint` struct for sensation data
+- Implemented `extractSensationPoints` and `processSensationData` functions
+- Built `renderVisualSensationDiagram` with proper color mapping
+- Added `renderSensationPointsTable` for detailed sensation listing
+
+#### Coordinate Mapping Issue (Partially Resolved)
+- Frontend uses SVG with `transform: scale(1.22)` 
+- Implemented coordinate adjustment formula:
+  ```go
+  emptySpace := (100.0 - (100.0 / scale)) / 2.0
+  adjustedX := emptySpace + (point.X / scale)
+  adjustedY := emptySpace + (point.Y / scale)
+  ```
+- **Known Issue**: Coordinates still slightly misaligned - may need further refinement
+
+### Testing Notes
+- Body diagrams now correctly differentiate between pain and sensation data
+- Each diagram type renders with appropriate visualization
+- Legend shows all available sensation types or pain levels
+- Title displays correctly: "Mark Sensation Areas" vs "Body Pain Diagram"
+
 ---
 
-*Last Updated: August 15, 2025 - Pain Assessment Fix Complete*
+*Last Updated: August 15, 2025 - Body Diagram Differentiation Complete*
 *Generated with [Claude Code](https://claude.ai/code) - Healthcare Forms PDF Migration Project*

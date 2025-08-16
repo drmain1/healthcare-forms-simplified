@@ -12,10 +12,26 @@ import (
 func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
 	var result bytes.Buffer
 	
-	result.WriteString(`<div class="form-section">`)
+	result.WriteString(`<div class="form-section" style="margin-bottom: 15px;">`)
 	result.WriteString(`<div class="section-title">Oswestry Disability Index (ODI) Assessment</div>`)
 	
-	// Standard ODI questions mapping
+	// Map generic question names to section titles
+	// question1 and question2 are name/date fields
+	// question3-12 are the actual ODI assessment questions
+	genericQuestionMapping := map[string]string{
+		"question3":  "Pain Intensity",
+		"question4":  "Personal Care (washing, dressing, etc.)",
+		"question5":  "Lifting",
+		"question6":  "Walking",
+		"question7":  "Sitting",
+		"question8":  "Standing",
+		"question9":  "Sleeping",
+		"question10": "Sex Life (if applicable)",
+		"question11": "Social Life",
+		"question12": "Traveling",
+	}
+	
+	// Standard ODI questions mapping (keep for backward compatibility)
 	odiQuestions := map[string]string{
 		"oswestry_pain_intensity": "Pain Intensity",
 		"oswestry_personal_care":  "Personal Care (washing, dressing, etc.)",
@@ -63,8 +79,29 @@ func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (
 		}
 	}
 	
+	// Check if we have name and date fields
+	var patientName, assessmentDate string
+	if name, exists := context.Answers["question1"]; exists {
+		patientName = fmt.Sprintf("%v", name)
+	}
+	if date, exists := context.Answers["question2"]; exists {
+		assessmentDate = fmt.Sprintf("%v", date)
+	}
+	
+	// Display patient info if available
+	if patientName != "" || assessmentDate != "" {
+		result.WriteString(`<div style="margin-bottom: 15px;">`)
+		if patientName != "" {
+			result.WriteString(`<p><strong>Patient Name:</strong> ` + html.EscapeString(patientName) + `</p>`)
+		}
+		if assessmentDate != "" {
+			result.WriteString(`<p><strong>Assessment Date:</strong> ` + html.EscapeString(assessmentDate) + `</p>`)
+		}
+		result.WriteString(`</div>`)
+	}
+	
 	// Render the assessment table
-	result.WriteString(`<table class="data-table">`)
+	result.WriteString(`<table class="data-table" style="font-size: 10px;">`)
 	result.WriteString(`<thead>`)
 	result.WriteString(`<tr>`)
 	result.WriteString(`<th>Question Category</th>`)
@@ -74,7 +111,24 @@ func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (
 	result.WriteString(`</thead>`)
 	result.WriteString(`<tbody>`)
 	
-	// Display questions in standard order, but only those that were answered
+	// Display questions in order - check generic names first (question3-12)
+	displayOrder := []string{"question3", "question4", "question5", "question6", "question7", 
+	                        "question8", "question9", "question10", "question11", "question12"}
+	
+	for _, questionKey := range displayOrder {
+		if response, exists := responses[questionKey]; exists {
+			score := scores[questionKey]
+			questionLabel := genericQuestionMapping[questionKey]
+			
+			result.WriteString(`<tr>`)
+			result.WriteString(`<td>` + html.EscapeString(questionLabel) + `</td>`)
+			result.WriteString(`<td>` + html.EscapeString(formatOswestryResponse(response)) + `</td>`)
+			result.WriteString(`<td style="text-align: center;">` + fmt.Sprintf("%d/5", score) + `</td>`)
+			result.WriteString(`</tr>`)
+		}
+	}
+	
+	// Also check standard ODI field names for backward compatibility
 	for questionKey, questionLabel := range odiQuestions {
 		if response, exists := responses[questionKey]; exists {
 			score := scores[questionKey]
@@ -103,23 +157,6 @@ func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (
 		}
 	}
 	
-	// Check for any non-standard ODI questions
-	for _, elementName := range metadata.ElementNames {
-		if _, isStandard := odiQuestions[elementName]; !isStandard {
-			if _, isAlt := alternativeNames[elementName]; !isAlt {
-				if response, exists := responses[elementName]; exists {
-					score := scores[elementName]
-					
-					result.WriteString(`<tr>`)
-					result.WriteString(`<td>` + html.EscapeString(formatFieldLabel(elementName, "")) + `</td>`)
-					result.WriteString(`<td>` + html.EscapeString(formatOswestryResponse(response)) + `</td>`)
-					result.WriteString(`<td style="text-align: center;">` + fmt.Sprintf("%d/5", score) + `</td>`)
-					result.WriteString(`</tr>`)
-				}
-			}
-		}
-	}
-	
 	result.WriteString(`</tbody>`)
 	result.WriteString(`</table>`)
 	
@@ -128,17 +165,17 @@ func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (
 		// ODI calculation: (total score / (answered questions * 5)) * 100
 		disabilityIndex := float64(totalScore) / (float64(answeredQuestions) * 5.0) * 100
 		
-		result.WriteString(`<div style="margin-top: 20px; padding: 15px; background-color: #f0f8f7; border-left: 4px solid #38a169;">`)
-		result.WriteString(`<h4>ODI Score Summary</h4>`)
-		result.WriteString(`<p><strong>Total Score:</strong> ` + fmt.Sprintf("%d", totalScore) + ` points</p>`)
-		result.WriteString(`<p><strong>Questions Answered:</strong> ` + fmt.Sprintf("%d of 10", answeredQuestions) + `</p>`)
-		result.WriteString(`<p><strong>Disability Index:</strong> ` + fmt.Sprintf("%.1f%%", disabilityIndex) + `</p>`)
-		result.WriteString(`<p><strong>Interpretation:</strong> ` + interpretOswestryScore(disabilityIndex) + `</p>`)
+		result.WriteString(`<div style="margin-top: 15px; padding: 10px; background-color: #f0f8f7; border-left: 4px solid #38a169;">`)
+		result.WriteString(`<h4 style="font-size: 13px; margin-bottom: 8px;">ODI Score Summary</h4>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Total Score:</strong> ` + fmt.Sprintf("%d", totalScore) + ` points</p>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Questions Answered:</strong> ` + fmt.Sprintf("%d of 10", answeredQuestions) + `</p>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Disability Index:</strong> ` + fmt.Sprintf("%.1f%%", disabilityIndex) + `</p>`)
+		result.WriteString(`<p style="margin: 4px 0; font-size: 11px;"><strong>Interpretation:</strong> ` + interpretOswestryScore(disabilityIndex) + `</p>`)
 		
 		// Add scoring guide
-		result.WriteString(`<div style="margin-top: 15px; font-size: 11px; color: #666;">`)
-		result.WriteString(`<p><strong>ODI Disability Scale:</strong></p>`)
-		result.WriteString(`<ul style="margin-left: 20px;">`)
+		result.WriteString(`<div style="margin-top: 10px; font-size: 10px; color: #666;">`)
+		result.WriteString(`<p style="margin-bottom: 5px;"><strong>ODI Disability Scale:</strong></p>`)
+		result.WriteString(`<ul style="margin-left: 20px; margin: 5px 0;">`)
 		result.WriteString(`<li>0-20%: Minimal disability</li>`)
 		result.WriteString(`<li>21-40%: Moderate disability</li>`)
 		result.WriteString(`<li>41-60%: Severe disability</li>`)
@@ -151,6 +188,33 @@ func OswestryDisabilityRenderer(metadata PatternMetadata, context *PDFContext) (
 	} else {
 		result.WriteString(`<div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107;">`)
 		result.WriteString(`<p>No valid ODI responses found for scoring calculation.</p>`)
+		result.WriteString(`</div>`)
+	}
+	
+	// Check if there's a signature field and render it inline
+	// Check all common signature field names including those found in logs
+	possibleSignatureFields := []string{"question19", "question38", "question13", "signature", "patient_signature", "sign"}
+	var signatureData string
+	for _, fieldName := range possibleSignatureFields {
+		if value, exists := context.Answers[fieldName]; exists {
+			if sigStr, ok := value.(string); ok && strings.HasPrefix(sigStr, "data:image/") {
+				signatureData = sigStr
+				break
+			}
+		}
+	}
+	
+	// If we found a signature, render it at the bottom
+	if signatureData != "" {
+		result.WriteString(`<div style="margin-top: 15px;">`)
+		result.WriteString(`<p style="font-weight: bold; margin-bottom: 5px; font-size: 11px;">Patient Signature:</p>`)
+		
+		// The signature image with underline, mimicking paper signature
+		result.WriteString(`<div style="position: relative; margin: 8px 0;">`)
+		result.WriteString(`<img src="` + html.EscapeString(signatureData) + `" alt="Signature" style="max-width: 180px; height: 45px; object-fit: contain; display: block;">`)
+		result.WriteString(`<div style="border-bottom: 1px solid #000; margin-top: -3px; width: 220px;"></div>`)
+		result.WriteString(`</div>`)
+		
 		result.WriteString(`</div>`)
 	}
 	

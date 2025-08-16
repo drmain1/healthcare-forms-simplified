@@ -328,23 +328,43 @@ func (m *NeckDisabilityMatcher) GetPriority() int       { return 4 }
 type OswestryDisabilityMatcher struct{}
 
 func (m *OswestryDisabilityMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	oswestryQuestions := []string{}
+	// Look for panel with specific title "Oswestry Low Back Pain Disability Index"
+	elements := extractElements(formDef)
 	
-	for key := range responseData {
-		if strings.Contains(strings.ToLower(key), "oswestry") ||
-		   strings.Contains(strings.ToLower(key), "odi_") {
-			oswestryQuestions = append(oswestryQuestions, key)
-		}
-	}
-	
-	if len(oswestryQuestions) >= 5 { // At least 5 Oswestry questions
-		return true, PatternMetadata{
-			PatternType:  "oswestry_disability",
-			ElementNames: oswestryQuestions,
-			TemplateData: map[string]interface{}{
-				"questions": oswestryQuestions,
-				"responses": filterResponseData(responseData, oswestryQuestions),
-			},
+	for _, element := range elements {
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			// Check for the specific title
+			if title, ok := element["title"].(string); ok && 
+			   title == "Oswestry Low Back Pain Disability Index" {
+				
+				// Found the Oswestry panel - collect all question fields
+				oswestryQuestions := []string{}
+				
+				// Look for question1-12 in responseData (question1 and question2 are name/date)
+				// question3-12 are the actual ODI assessment questions
+				// Skip question13+ as those might be signatures or other fields
+				for i := 1; i <= 12; i++ {
+					fieldName := fmt.Sprintf("question%d", i)
+					if _, exists := responseData[fieldName]; exists {
+						oswestryQuestions = append(oswestryQuestions, fieldName)
+					}
+				}
+				
+				// Log for debugging
+				fmt.Printf("DEBUG: Found Oswestry form with title: %s, detected %d questions\n", title, len(oswestryQuestions))
+				
+				if len(oswestryQuestions) > 0 {
+					return true, PatternMetadata{
+						PatternType:  "oswestry_disability",
+						ElementNames: oswestryQuestions,
+						TemplateData: map[string]interface{}{
+							"panel": element,
+							"questions": oswestryQuestions,
+							"responses": filterResponseData(responseData, oswestryQuestions),
+						},
+					}
+				}
+			}
 		}
 	}
 	
@@ -564,17 +584,29 @@ type SignatureMatcher struct{}
 func (m *SignatureMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	signatureFields := []string{}
 	
-	for key, value := range responseData {
-		lowerKey := strings.ToLower(key)
-		if strings.Contains(lowerKey, "signature") ||
-		   strings.Contains(lowerKey, "sign") {
-			// Check if it's image data (base64)
-			if strValue, ok := value.(string); ok {
-				if strings.HasPrefix(strValue, "data:image/") {
-					signatureFields = append(signatureFields, key)
+	// First check form definition for signaturepad type elements
+	elements := extractElements(formDef)
+	for _, element := range elements {
+		if elementType, ok := element["type"].(string); ok {
+			if elementType == "signaturepad" {
+				if name, ok := element["name"].(string); ok {
+					// Check if this field has data in responseData
+					if value, exists := responseData[name]; exists {
+						if strValue, ok := value.(string); ok {
+							// Verify it's base64 image data
+							if strings.HasPrefix(strValue, "data:image/") {
+								signatureFields = append(signatureFields, name)
+							}
+						}
+					}
 				}
 			}
 		}
+	}
+	
+	// Log for debugging
+	if len(signatureFields) > 0 {
+		fmt.Printf("DEBUG: Found %d signature fields from signaturepad elements\n", len(signatureFields))
 	}
 	
 	if len(signatureFields) > 0 {

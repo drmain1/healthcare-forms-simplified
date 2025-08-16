@@ -21,30 +21,41 @@ type SignatureData struct {
 	ImageType   string
 }
 
-// SignatureRenderer renders enhanced signature validation and display
+// SignatureRenderer renders minimal signature display - just the signature over a line
 func SignatureRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
+	// Check if this signature is part of an Oswestry form
+	// If so, let the Oswestry renderer handle it to avoid duplication
+	if _, hasOswestry := context.Answers["question3"]; hasOswestry {
+		// Check if it looks like an Oswestry form (has question3-12 which are the ODI questions)
+		if _, hasQuestion4 := context.Answers["question4"]; hasQuestion4 {
+			// This is likely part of an Oswestry form, skip standalone rendering
+			return "", nil
+		}
+	}
+	
 	var result bytes.Buffer
 	
 	result.WriteString(`<div class="form-section">`)
-	result.WriteString(`<div class="section-title">Digital Signatures</div>`)
+	result.WriteString(`<div class="section-title">Signature</div>`)
 	
-	// Extract signature data
-	signatures := extractSignatureData(metadata.ElementNames, context.Answers)
-	
-	if len(signatures) == 0 {
-		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
-		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No signatures found</p>`)
-		result.WriteString(`<p style="font-size: 11px; color: #999;">Fields checked: ` + strings.Join(metadata.ElementNames, ", ") + `</p>`)
-		result.WriteString(`</div>`)
-	} else {
-		// Render signature validation summary
-		result.WriteString(renderSignatureValidationSummary(signatures))
-		
-		// Render individual signatures
-		result.WriteString(renderSignatureDetails(signatures))
-		
-		// Add legal disclaimer
-		result.WriteString(renderSignatureLegalSection(signatures))
+	// Simply render each signature with minimal styling
+	hasSignature := false
+	for _, elementName := range metadata.ElementNames {
+		if value, exists := context.Answers[elementName]; exists {
+			if sigData, ok := value.(string); ok && strings.HasPrefix(sigData, "data:image/") {
+				if !hasSignature {
+					// Add "Patient Signature:" header like in Oswestry
+					result.WriteString(`<p style="font-weight: bold; margin-bottom: 10px;">Patient Signature:</p>`)
+					hasSignature = true
+				}
+				
+				// Render signature with underline, mimicking paper signature
+				result.WriteString(`<div style="margin: 20px 0; position: relative;">`)
+				result.WriteString(`<img src="` + html.EscapeString(sigData) + `" alt="Signature" style="max-width: 250px; height: 60px; object-fit: contain; display: block;">`)
+				result.WriteString(`<div style="border-bottom: 1px solid #000; margin-top: -5px; width: 300px;"></div>`)
+				result.WriteString(`</div>`)
+			}
+		}
 	}
 	
 	result.WriteString(`</div>`)

@@ -18,7 +18,7 @@ import { Survey } from 'survey-react-ui';
 import { Model } from 'survey-core';
 import { createSurveyModel } from '../../utils/surveyConfig';
 import { useInsuranceCardProcessor } from '../../hooks/useInsuranceCardProcessor';
-import insuranceCardGeminiService from '../../services/insuranceCardGeminiService';
+import insuranceCardService from '../../services/insuranceCardService';
 import { designTokens } from '../../styles/design-tokens';
 import { applySurveyTheme } from '../../config/surveyThemes';
 import { addSignatureValidation, cleanSignatureData } from '../../utils/signatureValidation';
@@ -63,7 +63,8 @@ export const PublicFormFill: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const formContainerRef = useRef<HTMLDivElement>(null);
-  const { processInsuranceCard, isProcessing } = useInsuranceCardProcessor(surveyModelRef.current);
+  const [surveyModel, setSurveyModel] = useState<Model | null>(null);
+  const { processInsuranceCard, isProcessing } = useInsuranceCardProcessor(surveyModel);
 
   useEffect(() => {
     const loadForm = async () => {
@@ -297,9 +298,14 @@ export const PublicFormFill: React.FC = () => {
               }
               
               try {
+                console.log('processInsuranceCard available:', !!processInsuranceCard);
+                console.log('File to process:', file);
+                console.log('Side:', side);
+                
                 if (processInsuranceCard) {
                   console.log('Using real insurance card processor...');
-                  await processInsuranceCard(file, side);
+                  const result = await processInsuranceCard(file, side);
+                  console.log('Insurance card processing result:', result);
                 } else {
                   console.log('Using mock processing...');
                   await new Promise(resolve => setTimeout(resolve, 1500));
@@ -434,14 +440,24 @@ export const PublicFormFill: React.FC = () => {
                 fileToProcess = new File([blob], file.name || `insurance_card_${side}.jpg`, { type: file.type || 'image/jpeg' });
               }
               
-              console.log('Processing with Gemini insurance card service...');
+              console.log('=== INSURANCE CARD PROCESSING (onValueChanged) ===');
+              console.log('Processing with backend insurance card service...');
               console.log('File to process:', fileToProcess);
+              console.log('processInsuranceCard function available:', !!processInsuranceCard);
+              
+              if (!processInsuranceCard) {
+                console.error('processInsuranceCard function is not available!');
+                throw new Error('Insurance card processor not initialized');
+              }
+              
+              // Create a direct service call since survey might not be available in hook yet
+              console.log('Calling insurance card service directly...');
               
               try {
-                const extractedData = await insuranceCardGeminiService.parseInsuranceCard(fileToProcess, side);
+                const extractedData = await insuranceCardService.parseInsuranceCard(fileToProcess, side);
                 console.log('Extracted data:', extractedData);
                 
-                if (parentPanel && parentPanel.elements) {
+                if (extractedData && parentPanel && parentPanel.elements) {
                   const fieldMapping: Record<string, string> = {
                     'Member ID': extractedData.memberId || '',
                     'Member Name': extractedData.memberName || '',
@@ -468,6 +484,21 @@ export const PublicFormFill: React.FC = () => {
                     }
                   });
                   
+                  // Also update via survey.setValue for persistence
+                  if (extractedData.memberId) sender.setValue('insurance_member_id', extractedData.memberId);
+                  if (extractedData.memberName) sender.setValue('insurance_member_name', extractedData.memberName);
+                  if (extractedData.groupNumber) sender.setValue('insurance_group_number', extractedData.groupNumber);
+                  if (extractedData.issuerName) sender.setValue('insurance_issuer_name', extractedData.issuerName);
+                  if (extractedData.planType) sender.setValue('insurance_plan_type', extractedData.planType);
+                  if (extractedData.rxBin) sender.setValue('insurance_rx_bin', extractedData.rxBin);
+                  if (extractedData.rxPcn) sender.setValue('insurance_rx_pcn', extractedData.rxPcn);
+                  if (extractedData.rxGroup) sender.setValue('insurance_rx_group', extractedData.rxGroup);
+                  if (extractedData.copayPcp) sender.setValue('insurance_copay_pcp', extractedData.copayPcp);
+                  if (extractedData.copaySpecialist) sender.setValue('insurance_copay_specialist', extractedData.copaySpecialist);
+                  if (extractedData.copayEmergency) sender.setValue('insurance_copay_emergency', extractedData.copayEmergency);
+                  if (extractedData.deductible) sender.setValue('insurance_deductible', extractedData.deductible);
+                  if (extractedData.outOfPocketMax) sender.setValue('insurance_oop_max', extractedData.outOfPocketMax);
+                  
                   sender.render();
                 }
                 
@@ -491,6 +522,7 @@ export const PublicFormFill: React.FC = () => {
         });
         
         surveyModelRef.current = surveyModel;
+        setSurveyModel(surveyModel); // Set state for the hook
         setIsSurveyReady(true);
         setError(null);
       } catch (err: any) {

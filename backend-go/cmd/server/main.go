@@ -51,6 +51,10 @@ func main() {
 	// 3. The model is available in the us-central1 region
 	vertexService := services.NewVertexAIService(vertexClient, "gemini-2.5-flash-lite")
 	gotenbergService := services.NewGotenbergService()
+	
+	// Initialize insurance card service with Vertex AI
+	insuranceCardService := services.NewInsuranceCardService(vertexClient)
+	insuranceCardHandler := api.NewInsuranceCardHandler(insuranceCardService)
 
 	r := gin.New()
 	// Per Gin documentation, this is required when running behind a proxy
@@ -148,6 +152,12 @@ func main() {
 
 		// PDF Generation Route
 		api.RegisterPDFRoutes(authRequired, firestoreClient, gotenbergService)
+		
+		// Insurance Card Processing Routes
+		authRequired.POST("/insurance-card/extract", insuranceCardHandler.ProcessInsuranceCard)
+		authRequired.POST("/insurance-card/extract/", insuranceCardHandler.ProcessInsuranceCard)
+		authRequired.POST("/insurance-card/upload", insuranceCardHandler.ProcessInsuranceCardMultipart)
+		authRequired.POST("/insurance-card/upload/", insuranceCardHandler.ProcessInsuranceCardMultipart)
 	}
 
 	// Start the server

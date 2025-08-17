@@ -29,9 +29,8 @@ func InsuranceCardRenderer(metadata PatternMetadata, context *PDFContext) (strin
 	hasContent := cardData.FrontImage != "" || cardData.BackImage != "" || len(cardData.ExtractedInfo) > 0
 	
 	if !hasContent {
-		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
-		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No insurance information found</p>`)
-		result.WriteString(`<p style="font-size: 11px; color: #999;">Fields checked: ` + strings.Join(metadata.ElementNames, ", ") + `</p>`)
+		result.WriteString(`<div style="text-align: center; padding: 20px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
+		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No insurance information provided</p>`)
 		result.WriteString(`</div>`)
 	} else {
 		// Render insurance card images if available
@@ -43,9 +42,6 @@ func InsuranceCardRenderer(metadata PatternMetadata, context *PDFContext) (strin
 		if len(cardData.ExtractedInfo) > 0 {
 			result.WriteString(renderInsuranceInformation(cardData))
 		}
-		
-		// Add capture metadata
-		result.WriteString(renderInsuranceCaptureInfo(cardData))
 	}
 	
 	result.WriteString(`</div>`)
@@ -160,18 +156,20 @@ func renderInsuranceInformation(cardData InsuranceCardData) string {
 	result.WriteString(`<table class="data-table">`)
 	result.WriteString(`<thead>`)
 	result.WriteString(`<tr>`)
-	result.WriteString(`<th>Information Type</th>`)
+	result.WriteString(`<th>Field</th>`)
 	result.WriteString(`<th>Value</th>`)
 	result.WriteString(`</tr>`)
 	result.WriteString(`</thead>`)
 	result.WriteString(`<tbody>`)
 	
-	// Define preferred order for insurance fields
+	// Define preferred order for insurance fields with proper labels
 	preferredOrder := []string{
-		"insurance_company", "insurance_provider", "insurance_carrier",
-		"policy_number", "policy_id", "member_id", "member_number",
-		"group_number", "group_id", "plan_name", "plan_type",
-		"subscriber_name", "subscriber_id", "effective_date",
+		"insurance_member_id", "insurance_member_name", "insurance_issuer_name",
+		"insurance_group_number", "insurance_plan_type", 
+		"insurance_rx_bin", "insurance_rx_pcn", "insurance_rx_group",
+		"insurance_copay_pcp", "insurance_copay_specialist", "insurance_copay_emergency",
+		"insurance_deductible", "insurance_oop_max", "insurance_effective_date",
+		"insurance_customer_service_phone",
 	}
 	
 	// Track processed fields
@@ -270,23 +268,21 @@ func renderInsuranceCaptureInfo(cardData InsuranceCardData) string {
 func formatInsuranceFieldLabel(fieldName string) string {
 	// Convert field names to readable labels
 	labelMap := map[string]string{
-		"insurance_company":  "Insurance Company",
-		"insurance_provider": "Insurance Provider",
-		"insurance_carrier":  "Insurance Carrier",
-		"policy_number":      "Policy Number",
-		"policy_id":          "Policy ID",
-		"member_id":          "Member ID",
-		"member_number":      "Member Number",
-		"group_number":       "Group Number",
-		"group_id":           "Group ID",
-		"plan_name":          "Plan Name",
-		"plan_type":          "Plan Type",
-		"subscriber_name":    "Subscriber Name",
-		"subscriber_id":      "Subscriber ID",
-		"effective_date":     "Effective Date",
-		"expiration_date":    "Expiration Date",
-		"copay":              "Co-pay",
-		"deductible":         "Deductible",
+		"insurance_member_id":          "Member ID",
+		"insurance_member_name":        "Member Name",
+		"insurance_issuer_name":        "Insurance Company",
+		"insurance_group_number":       "Group Number",
+		"insurance_plan_type":          "Plan Type",
+		"insurance_rx_bin":             "RX BIN",
+		"insurance_rx_pcn":             "RX PCN",
+		"insurance_rx_group":           "RX Group",
+		"insurance_copay_pcp":          "Primary Care Copay",
+		"insurance_copay_specialist":   "Specialist Copay",
+		"insurance_copay_emergency":    "Emergency Room Copay",
+		"insurance_deductible":         "Annual Deductible",
+		"insurance_oop_max":            "Out-of-Pocket Maximum",
+		"insurance_effective_date":     "Effective Date",
+		"insurance_customer_service_phone": "Customer Service",
 	}
 	
 	if label, exists := labelMap[strings.ToLower(fieldName)]; exists {

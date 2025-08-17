@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { SurveyModel } from 'survey-core';
 import documentAIService from '../services/documentAIService';
-import insuranceCardGeminiService from '../services/insuranceCardGeminiService';
+import insuranceCardService from '../services/insuranceCardService';
 
 interface ProcessingStatus {
   isProcessing: boolean;
@@ -17,28 +17,34 @@ export const useInsuranceCardProcessor = (survey: SurveyModel | null) => {
   });
 
   const processInsuranceCard = useCallback(async (file: File, side: 'front' | 'back') => {
-    if (!survey) return;
+    console.log('=== useInsuranceCardProcessor.processInsuranceCard ===');
+    console.log('Survey available:', !!survey);
+    console.log('File:', file);
+    console.log('Side:', side);
+    
+    if (!survey) {
+      console.error('Survey not available, cannot process insurance card');
+      return;
+    }
 
     setStatus({ isProcessing: true, error: null, processedData: null });
 
     try {
-      // Check if we have Gemini API key
-      const hasGeminiKey = !!process.env.REACT_APP_GEMINI_API_KEY;
-      const hasHealthInsuranceProcessor = !!process.env.REACT_APP_GCP_HEALTH_INSURANCE_PROCESSOR_ID;
+      // Use backend API for insurance card processing (Vertex AI with Gemini)
+      console.log('Processing insurance card via backend API...');
+      const extractedData = await insuranceCardService.parseInsuranceCard(file, side);
+      console.log('Extracted data from service:', extractedData);
       
-      let extractedData;
-      if (hasGeminiKey) {
-        // Use Gemini for insurance card processing (preferred)
-        console.log('Using Gemini API for insurance card processing...');
-        extractedData = await insuranceCardGeminiService.parseInsuranceCard(file, side);
-      } else if (hasHealthInsuranceProcessor) {
-        // Fall back to Document AI if available
-        console.log('Using Document AI for insurance card processing...');
-        extractedData = await documentAIService.parseInsuranceCard(file, side);
-      } else {
-        // Fall back to generic OCR
-        console.log('Using generic OCR for insurance card processing...');
-        extractedData = await documentAIService.parseInsuranceCardGeneric(file);
+      // Fallback options if needed
+      if (!extractedData || Object.keys(extractedData).length === 0) {
+        const hasHealthInsuranceProcessor = !!process.env.REACT_APP_GCP_HEALTH_INSURANCE_PROCESSOR_ID;
+        
+        if (hasHealthInsuranceProcessor) {
+          // Fall back to Document AI if available
+          console.log('Falling back to Document AI for insurance card processing...');
+          const fallbackData = await documentAIService.parseInsuranceCard(file, side);
+          Object.assign(extractedData, fallbackData);
+        }
       }
 
       // Update survey fields with extracted data
@@ -96,13 +102,14 @@ export const useInsuranceCardProcessor = (survey: SurveyModel | null) => {
 
       return extractedData;
     } catch (error) {
+      console.error('Error in processInsuranceCard:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to process insurance card';
       setStatus({
         isProcessing: false,
         error: errorMessage,
         processedData: null
       });
-      
+      throw error; // Re-throw to see it in the calling code
     }
   }, [survey]);
 

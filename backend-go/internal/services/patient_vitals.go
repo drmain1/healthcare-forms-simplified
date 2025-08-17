@@ -31,28 +31,62 @@ func PatientVitalsRenderer(metadata PatternMetadata, context *PDFContext) (strin
 	var result bytes.Buffer
 	
 	result.WriteString(`<div class="form-section">`)
-	result.WriteString(`<div class="section-title">Patient Vital Signs</div>`)
+	result.WriteString(`<div class="section-title">Patient Vitals</div>`)
 	
-	// Define standard vital signs
-	vitalDefinitions := getVitalSignDefinitions()
+	// Simple rendering for height and weight
+	height := context.Answers["patient_height"]
+	weight := context.Answers["patient_weight"]
 	
-	// Extract and process vital signs data
-	vitalReadings := extractVitalReadings(metadata.ElementNames, context.Answers, vitalDefinitions)
-	
-	if len(vitalReadings) == 0 {
+	if height == nil && weight == nil {
 		result.WriteString(`<div style="text-align: center; padding: 30px; background-color: #f8f9fa; border: 1px dashed #dee2e6;">`)
 		result.WriteString(`<p style="color: #6c757d; font-style: italic;">No vital signs data found</p>`)
-		result.WriteString(`<p style="font-size: 11px; color: #999;">Fields checked: ` + strings.Join(metadata.ElementNames, ", ") + `</p>`)
 		result.WriteString(`</div>`)
 	} else {
-		// Render vital signs by category
-		result.WriteString(renderVitalSignsByCategory(vitalReadings))
+		result.WriteString(`<table class="data-table">`)
+		result.WriteString(`<thead><tr><th>Measurement</th><th>Value</th></tr></thead>`)
+		result.WriteString(`<tbody>`)
 		
-		// Add alerts for abnormal values
-		result.WriteString(renderVitalAlertsSection(vitalReadings))
+		// Height
+		if height != nil {
+			heightValue := fmt.Sprintf("%v", height)
+			heightInches, _ := strconv.ParseFloat(heightValue, 64)
+			feet := int(heightInches / 12)
+			inches := int(heightInches) % 12
+			result.WriteString(`<tr>`)
+			result.WriteString(`<td><strong>Height</strong></td>`)
+			result.WriteString(fmt.Sprintf(`<td>%d' %d" (%s inches)</td>`, feet, inches, heightValue))
+			result.WriteString(`</tr>`)
+		}
 		
-		// Add vital signs summary
-		result.WriteString(renderVitalsSummary(vitalReadings))
+		// Weight
+		if weight != nil {
+			weightValue := fmt.Sprintf("%v", weight)
+			result.WriteString(`<tr>`)
+			result.WriteString(`<td><strong>Weight</strong></td>`)
+			result.WriteString(fmt.Sprintf(`<td>%s lbs</td>`, weightValue))
+			result.WriteString(`</tr>`)
+		}
+		
+		// Calculate BMI if both height and weight are available
+		if height != nil && weight != nil {
+			heightStr := fmt.Sprintf("%v", height)
+			weightStr := fmt.Sprintf("%v", weight)
+			if h, err1 := strconv.ParseFloat(heightStr, 64); err1 == nil {
+				if w, err2 := strconv.ParseFloat(weightStr, 64); err2 == nil && h > 0 {
+					bmi := (w * 703) / (h * h)
+					bmiStatus := assessBMIStatus(bmi)
+					statusColor := getVitalStatusColor(bmiStatus)
+					
+					result.WriteString(`<tr>`)
+					result.WriteString(`<td><strong>BMI</strong></td>`)
+					result.WriteString(fmt.Sprintf(`<td>%.1f <span style="color: %s;">(%s)</span></td>`, bmi, statusColor, bmiStatus))
+					result.WriteString(`</tr>`)
+				}
+			}
+		}
+		
+		result.WriteString(`</tbody>`)
+		result.WriteString(`</table>`)
 	}
 	
 	result.WriteString(`</div>`)

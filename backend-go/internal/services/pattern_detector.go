@@ -202,23 +202,44 @@ func (m *TermsCheckboxMatcher) GetPriority() int       { return 1 }
 type TermsConditionsMatcher struct{}
 
 func (m *TermsConditionsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// Look for panels with consent/terms/policy related titles
 	elements := extractElements(formDef)
+	var consentPanels []map[string]interface{}
+	
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok && (elementType == "html" || elementType == "text") {
-			if name, ok := element["name"].(string); ok {
-				if strings.Contains(strings.ToLower(name), "terms") ||
-				   strings.Contains(strings.ToLower(name), "conditions") {
-					return true, PatternMetadata{
-						PatternType:  "terms_conditions",
-						ElementNames: []string{name},
-						TemplateData: map[string]interface{}{
-							"content": element["html"],
-						},
-					}
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			// Check for titles containing consent/terms/policy keywords
+			if title, ok := element["title"].(string); ok {
+				titleLower := strings.ToLower(title)
+				if strings.Contains(titleLower, "consent") ||
+				   strings.Contains(titleLower, "acknowledgment") ||
+				   strings.Contains(titleLower, "financial responsibility") ||
+				   strings.Contains(titleLower, "privacy") ||
+				   strings.Contains(titleLower, "terms") ||
+				   strings.Contains(titleLower, "agreement") ||
+				   strings.Contains(titleLower, "policies") {
+					
+					// Found a consent/terms panel
+					consentPanels = append(consentPanels, element)
+					
+					// Log for debugging
+					fmt.Printf("DEBUG: Found terms/consent panel: %s\n", title)
 				}
 			}
 		}
 	}
+	
+	if len(consentPanels) > 0 {
+		return true, PatternMetadata{
+			PatternType:  "terms_conditions",
+			ElementNames: []string{}, // Will be populated with element names from panels
+			TemplateData: map[string]interface{}{
+				"panels": consentPanels,
+				"answers": responseData,
+			},
+		}
+	}
+	
 	return false, PatternMetadata{}
 }
 
@@ -550,38 +571,69 @@ func (m *SensationAreasMatcher) GetPriority() int       { return 8 }
 type PatientVitalsMatcher struct{}
 
 func (m *PatientVitalsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	vitalFields := []string{
-		"blood_pressure", "heart_rate", "temperature", "weight", "height",
-		"bmi", "oxygen_saturation", "respiratory_rate",
-	}
-	
-	foundVitals := []string{}
-	for _, field := range vitalFields {
-		if _, exists := responseData[field]; exists {
-			foundVitals = append(foundVitals, field)
+	elements := extractElements(formDef)
+	var foundVitals []string
+
+	// Look for a panel with "Vitals" in the title or name
+	for _, element := range elements {
+		if elemType, ok := element["type"].(string); ok && elemType == "panel" {
+			name, _ := element["name"].(string)
+			title, _ := element["title"].(string)
+
+			// Corrected case-sensitivity for title check
+			if strings.Contains(strings.ToLower(name), "vitals") || strings.Contains(strings.ToLower(title), "vitals") {
+				// Panel found, now extract the names of the elements inside it
+				if panelElements, ok := element["elements"].([]interface{}); ok {
+					for _, panelElem := range panelElements {
+						if pe, ok := panelElem.(map[string]interface{}); ok {
+							// Only consider elements that are not just for display
+							if t, ok := pe["type"].(string); ok && t != "html" {
+								if n, ok := pe["name"].(string); ok {
+									foundVitals = append(foundVitals, n)
+								}
+							}
+						}
+					}
+				}
+				// Once we find a vitals panel, we assume it's the one and stop looking.
+				goto CheckAndReturn
+			}
 		}
 	}
-	
-	// Also check for variations
-	for key := range responseData {
-		lowerKey := strings.ToLower(key)
-		if strings.Contains(lowerKey, "vital") ||
-		   strings.Contains(lowerKey, "bp_") ||
-		   strings.Contains(lowerKey, "hr_") {
-			foundVitals = append(foundVitals, key)
+
+	// Fallback: if no panel was found, look for individual slider elements
+	for _, element := range elements {
+		if elemType, ok := element["type"].(string); ok {
+			if elemType == "heightslider" || elemType == "weightslider" {
+				if name, ok := element["name"].(string); ok {
+					if !contains(foundVitals, name) {
+						foundVitals = append(foundVitals, name)
+					}
+				}
+			}
 		}
 	}
-	
-	if len(foundVitals) >= 2 { // At least 2 vital signs
+
+CheckAndReturn:
+	// If we found potential vitals fields in the form definition, we consider it a match.
+	// The renderer can handle cases where no data was submitted.
+	if len(foundVitals) > 0 {
+		var fieldsWithData []string
+		for _, fieldName := range foundVitals {
+			if _, exists := responseData[fieldName]; exists {
+				fieldsWithData = append(fieldsWithData, fieldName)
+			}
+		}
+
 		return true, PatternMetadata{
 			PatternType:  "patient_vitals",
-			ElementNames: foundVitals,
+			ElementNames: foundVitals, // Return all potential fields from the form definition
 			TemplateData: map[string]interface{}{
-				"vitalFields": foundVitals,
+				"vitalFields": fieldsWithData, // Pass only fields that have data
 			},
 		}
 	}
-	
+
 	return false, PatternMetadata{}
 }
 
@@ -625,12 +677,51 @@ type SignatureMatcher struct{}
 func (m *SignatureMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	signatureFields := []string{}
 	
-	// First check form definition for signaturepad type elements
+	// Get signatures that are part of consent/terms panels to exclude them
+	consentSignatures := make(map[string]bool)
+	
+	// Check panels for consent/terms related signatures
 	elements := extractElements(formDef)
+	for _, element := range elements {
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			// Check if this is a consent/terms panel
+			if title, ok := element["title"].(string); ok {
+				titleLower := strings.ToLower(title)
+				if strings.Contains(titleLower, "consent") ||
+				   strings.Contains(titleLower, "acknowledgment") ||
+				   strings.Contains(titleLower, "financial responsibility") ||
+				   strings.Contains(titleLower, "privacy") ||
+				   strings.Contains(titleLower, "terms") ||
+				   strings.Contains(titleLower, "agreement") ||
+				   strings.Contains(titleLower, "policies") {
+					
+					// This is a consent panel - extract signature fields within it
+					if panelElements, ok := element["elements"].([]interface{}); ok {
+						for _, panelElem := range panelElements {
+							if panelElement, ok := panelElem.(map[string]interface{}); ok {
+								if elemType, ok := panelElement["type"].(string); ok && elemType == "signaturepad" {
+									if name, ok := panelElement["name"].(string); ok {
+										consentSignatures[name] = true
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// Now collect standalone signatures (not part of consent panels)
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok {
 			if elementType == "signaturepad" {
 				if name, ok := element["name"].(string); ok {
+					// Skip if this signature is part of a consent panel
+					if consentSignatures[name] {
+						continue
+					}
+					
 					// Check if this field has data in responseData
 					if value, exists := responseData[name]; exists {
 						if strValue, ok := value.(string); ok {
@@ -647,7 +738,7 @@ func (m *SignatureMatcher) Match(formDef, responseData map[string]interface{}) (
 	
 	// Log for debugging
 	if len(signatureFields) > 0 {
-		fmt.Printf("DEBUG: Found %d signature fields from signaturepad elements\n", len(signatureFields))
+		fmt.Printf("DEBUG: Found %d standalone signature fields (excluding consent panel signatures)\n", len(signatureFields))
 	}
 	
 	if len(signatureFields) > 0 {

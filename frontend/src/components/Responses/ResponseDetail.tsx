@@ -86,6 +86,18 @@ export const ResponseDetail: React.FC = () => {
       console.log('[ResponseDetail] Merged data for survey:', mergedData);
       console.log('[ResponseDetail] pain_areas in merged data:', mergedData.pain_areas);
       
+      // Debug patient vitals data
+      console.log('[ResponseDetail] Checking for patient vitals:');
+      console.log('  - patient_height:', mergedData.patient_height);
+      console.log('  - patient_weight:', mergedData.patient_weight);
+      console.log('  - patient_vitals object:', mergedData.patient_vitals);
+      
+      // Handle potentially nested patient vitals data for backward compatibility
+      if (mergedData.patient_vitals && typeof mergedData.patient_vitals === 'object') {
+        console.log('[ResponseDetail] Flattening nested patient_vitals data for display');
+        Object.assign(mergedData, mergedData.patient_vitals);
+      }
+      
       surveyModel.data = mergedData;
       surveyModelRef.current = surveyModel;
       

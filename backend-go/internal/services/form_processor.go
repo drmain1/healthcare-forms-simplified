@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -62,6 +63,18 @@ func processElements(elements interface{}, responseData map[string]interface{}) 
 		element, ok := elData.(map[string]interface{})
 		if !ok {
 			continue
+		}
+
+		// Check visibility condition before processing
+		if visibleIf, ok := element["visibleIf"].(string); ok && visibleIf != "" {
+			visible, err := checkVisibility(visibleIf, responseData)
+			if err != nil {
+				// Log error but continue processing
+				fmt.Printf("Error evaluating visibility for element: %v\n", err)
+			}
+			if !visible {
+				continue // Skip this element and its children if not visible
+			}
 		}
 
 		// If it's a panel or a question with nested elements, process them recursively
@@ -243,16 +256,294 @@ func getAMPM(hour int) string {
 }
 
 // checkVisibility evaluates a SurveyJS `visibleIf` expression against the response data.
-// NOTE: This is a simplified placeholder. A real implementation requires a proper
-// SurveyJS expression parser, which is complex. For this iteration, we will
-// perform a basic check. A more robust solution might involve a small, embedded
-// JavaScript engine or a dedicated Go library for SurveyJS logic if one exists.
+// This implementation handles common SurveyJS expression patterns.
 func checkVisibility(expression string, data map[string]interface{}) (bool, error) {
-	// This is a placeholder for a very complex piece of logic.
-	// SurveyJS expressions can be like: "{question1} = 'Yes' and {question2} > 5"
-	// A full implementation is out of scope for this step. For now, we assume
-	// that if a question has an answer in `responseData`, it was visible.
-	// The recursive processing loop already handles this by checking `answerExists`.
-	// Therefore, we can safely return true here and rely on the answer check.
+	if expression == "" {
+		return true, nil // No condition means always visible
+	}
+
+	// Handle common SurveyJS expression patterns
+	// Examples:
+	// "{question1} = 'value'"
+	// "{question1} != 'value'"
+	// "{question1} > 5"
+	// "{question1} empty"
+	// "{question1} notempty"
+	// "{question1} = 'value1' or {question1} = 'value2'"
+	// "{question1} = 'Yes' and {question2} > 5"
+
+	return evaluateSurveyJSExpression(expression, data)
+}
+
+// evaluateSurveyJSExpression parses and evaluates SurveyJS conditional expressions
+func evaluateSurveyJSExpression(expr string, data map[string]interface{}) (bool, error) {
+	expr = strings.TrimSpace(expr)
+	
+	// Handle logical operators (and, or)
+	if strings.Contains(expr, " or ") {
+		parts := strings.Split(expr, " or ")
+		for _, part := range parts {
+			result, err := evaluateSurveyJSExpression(strings.TrimSpace(part), data)
+			if err != nil {
+				return false, err
+			}
+			if result {
+				return true, nil // OR: return true if any part is true
+			}
+		}
+		return false, nil
+	}
+	
+	if strings.Contains(expr, " and ") {
+		parts := strings.Split(expr, " and ")
+		for _, part := range parts {
+			result, err := evaluateSurveyJSExpression(strings.TrimSpace(part), data)
+			if err != nil {
+				return false, err
+			}
+			if !result {
+				return false, nil // AND: return false if any part is false
+			}
+		}
+		return true, nil
+	}
+	
+	// Handle negation
+	if strings.HasPrefix(expr, "not ") {
+		result, err := evaluateSurveyJSExpression(strings.TrimPrefix(expr, "not "), data)
+		return !result, err
+	}
+	
+	// Handle special functions
+	if strings.Contains(expr, " empty") {
+		varName := extractVariableName(strings.TrimSuffix(expr, " empty"))
+		value, exists := data[varName]
+		if !exists {
+			return true, nil // Non-existent is considered empty
+		}
+		return isEmptyValue(value), nil
+	}
+	
+	if strings.Contains(expr, " notempty") {
+		varName := extractVariableName(strings.TrimSuffix(expr, " notempty"))
+		value, exists := data[varName]
+		if !exists {
+			return false, nil // Non-existent is considered empty
+		}
+		return !isEmptyValue(value), nil
+	}
+	
+	// Handle comparison operators
+	comparisons := []struct {
+		op string
+		fn func(left, right interface{}) bool
+	}{
+		{" != ", func(l, r interface{}) bool { return !compareValues(l, r, "=") }},
+		{" <= ", func(l, r interface{}) bool { return compareValues(l, r, "<=") }},
+		{" >= ", func(l, r interface{}) bool { return compareValues(l, r, ">=") }},
+		{" = ", func(l, r interface{}) bool { return compareValues(l, r, "=") }},
+		{" < ", func(l, r interface{}) bool { return compareValues(l, r, "<") }},
+		{" > ", func(l, r interface{}) bool { return compareValues(l, r, ">") }},
+	}
+	
+	for _, comp := range comparisons {
+		if strings.Contains(expr, comp.op) {
+			parts := strings.SplitN(expr, comp.op, 2)
+			if len(parts) != 2 {
+				continue
+			}
+			
+			leftVar := extractVariableName(strings.TrimSpace(parts[0]))
+			rightValue := parseValue(strings.TrimSpace(parts[1]))
+			
+			leftValue, exists := data[leftVar]
+			if !exists {
+				// Variable doesn't exist in data
+				return comp.op == " != ", nil // Only != returns true for non-existent
+			}
+			
+			return comp.fn(leftValue, rightValue), nil
+		}
+	}
+	
+	// Handle contains function
+	if strings.Contains(expr, " contains ") {
+		parts := strings.SplitN(expr, " contains ", 2)
+		if len(parts) == 2 {
+			leftVar := extractVariableName(strings.TrimSpace(parts[0]))
+			rightValue := parseValue(strings.TrimSpace(parts[1]))
+			
+			leftValue, exists := data[leftVar]
+			if !exists {
+				return false, nil
+			}
+			
+			return containsValue(leftValue, rightValue), nil
+		}
+	}
+	
+	// If no operators found, check if it's a simple variable reference
+	// In SurveyJS, a simple {variable} evaluates to true if it has a truthy value
+	if strings.HasPrefix(expr, "{") && strings.HasSuffix(expr, "}") {
+		varName := extractVariableName(expr)
+		value, exists := data[varName]
+		if !exists {
+			return false, nil
+		}
+		return !isEmptyValue(value), nil
+	}
+	
+	// Default to true if we can't parse the expression
+	// This maintains backward compatibility
 	return true, nil
+}
+
+// extractVariableName extracts the variable name from {variable} format
+func extractVariableName(expr string) string {
+	expr = strings.TrimSpace(expr)
+	if strings.HasPrefix(expr, "{") && strings.HasSuffix(expr, "}") {
+		return expr[1 : len(expr)-1]
+	}
+	return expr
+}
+
+// parseValue parses a value from the expression (handles strings, numbers, booleans)
+func parseValue(val string) interface{} {
+	val = strings.TrimSpace(val)
+	
+	// Handle string literals
+	if (strings.HasPrefix(val, "'") && strings.HasSuffix(val, "'")) ||
+	   (strings.HasPrefix(val, "\"") && strings.HasSuffix(val, "\"")) {
+		return val[1 : len(val)-1]
+	}
+	
+	// Handle boolean
+	if val == "true" {
+		return true
+	}
+	if val == "false" {
+		return false
+	}
+	
+	// Handle numbers
+	if num, err := strconv.ParseFloat(val, 64); err == nil {
+		return num
+	}
+	if num, err := strconv.Atoi(val); err == nil {
+		return num
+	}
+	
+	// Handle variable reference
+	if strings.HasPrefix(val, "{") && strings.HasSuffix(val, "}") {
+		return val // Return as-is for variable references (not supported in right-hand side yet)
+	}
+	
+	return val
+}
+
+// isEmptyValue checks if a value is considered empty in SurveyJS
+func isEmptyValue(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+	
+	switch v := value.(type) {
+	case string:
+		return v == ""
+	case []interface{}:
+		return len(v) == 0
+	case map[string]interface{}:
+		return len(v) == 0
+	case bool:
+		return !v
+	case float64:
+		return v == 0
+	case int:
+		return v == 0
+	default:
+		return false
+	}
+}
+
+// compareValues compares two values based on the operator
+func compareValues(left, right interface{}, op string) bool {
+	// Handle nil cases
+	if left == nil || right == nil {
+		if op == "=" {
+			return left == right
+		}
+		return false
+	}
+	
+	// Convert to comparable types
+	switch op {
+	case "=":
+		return fmt.Sprintf("%v", left) == fmt.Sprintf("%v", right)
+	case "<", ">", "<=", ">=":
+		// Try to compare as numbers
+		leftNum, leftOk := toFloat64(left)
+		rightNum, rightOk := toFloat64(right)
+		
+		if leftOk && rightOk {
+			switch op {
+			case "<":
+				return leftNum < rightNum
+			case ">":
+				return leftNum > rightNum
+			case "<=":
+				return leftNum <= rightNum
+			case ">=":
+				return leftNum >= rightNum
+			}
+		}
+		
+		// Fall back to string comparison
+		leftStr := fmt.Sprintf("%v", left)
+		rightStr := fmt.Sprintf("%v", right)
+		
+		switch op {
+		case "<":
+			return leftStr < rightStr
+		case ">":
+			return leftStr > rightStr
+		case "<=":
+			return leftStr <= rightStr
+		case ">=":
+			return leftStr >= rightStr
+		}
+	}
+	
+	return false
+}
+
+// toFloat64 attempts to convert a value to float64
+func toFloat64(val interface{}) (float64, bool) {
+	switch v := val.(type) {
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case string:
+		if num, err := strconv.ParseFloat(v, 64); err == nil {
+			return num, true
+		}
+	}
+	return 0, false
+}
+
+// containsValue checks if left contains right (for arrays or strings)
+func containsValue(left, right interface{}) bool {
+	switch l := left.(type) {
+	case string:
+		rightStr := fmt.Sprintf("%v", right)
+		return strings.Contains(l, rightStr)
+	case []interface{}:
+		rightStr := fmt.Sprintf("%v", right)
+		for _, item := range l {
+			if fmt.Sprintf("%v", item) == rightStr {
+				return true
+			}
+		}
+	}
+	return false
 }

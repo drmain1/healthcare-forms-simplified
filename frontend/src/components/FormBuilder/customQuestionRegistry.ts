@@ -8,6 +8,7 @@ import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
 import './PatientDemographicsQuestion';
 import './BodyDiagramQuestion';
+import './HeightWeightSlider';
 
 // List of all custom question type names for reference
 export const CUSTOM_QUESTION_TYPES = {
@@ -17,6 +18,8 @@ export const CUSTOM_QUESTION_TYPES = {
   BODY_DIAGRAM: 'bodydiagram',
   BODY_DIAGRAM_2: 'bodydiagram2',
   PATIENT_DEMOGRAPHICS: 'patient_demographics',
+  HEIGHT_SLIDER: 'heightslider',
+  WEIGHT_SLIDER: 'weightslider',
 } as const;
 
 // Type for custom question data extraction

@@ -214,10 +214,10 @@ func (o *PDFOrchestrator) fetchPDFContext(ctx context.Context, responseID, reque
 func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []PatternMetadata) []string {
 	// Default order for medical forms
 	defaultOrder := []string{
-		"patient_demographics",
-		"terms_checkbox",
-		"terms_conditions",
+		"patient_demographics",  // Patient info should always be first
 		"patient_vitals", 
+		"terms_conditions",      // Full T&C sections with all content
+		// "terms_checkbox" removed - redundant with terms_conditions
 		"neck_disability_index",
 		"oswestry_disability",
 		"pain_assessment",
@@ -311,10 +311,21 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, renderOrder []stri
 }
 
 func (o *PDFOrchestrator) assembleAndGeneratePDF(htmlSections map[string]string, context *PDFContext) ([]byte, error) {
-	// Combine all sections
+	// Get the render order to maintain section ordering
+	// Extract surveyJson for pattern detection (fix for missing form fields bug)
+	surveyJson, ok := context.FormDefinition["surveyJson"].(map[string]interface{})
+	if !ok {
+		surveyJson = context.FormDefinition // Fallback for backward compatibility
+	}
+	patterns, _ := o.detector.DetectPatterns(surveyJson, context.Answers)
+	renderOrder := o.getRenderOrder(context.OrganizationInfo, patterns)
+	
+	// Combine all sections IN ORDER
 	var combinedHTML string
-	for _, html := range htmlSections {
-		combinedHTML += html + "\n"
+	for _, patternType := range renderOrder {
+		if html, exists := htmlSections[patternType]; exists && html != "" {
+			combinedHTML += html + "\n"
+		}
 	}
 	
 	// Use master layout template

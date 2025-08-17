@@ -141,11 +141,29 @@ export const PublicFormFill: React.FC = () => {
           // We use a spread to create a mutable copy.
           let plainData = { ...sender.data };
           console.log('[Survey onComplete] Starting with survey.data:', plainData);
+          
+          // Manually extract data from custom questions if sender.data is empty
+          if (Object.keys(plainData).length === 0) {
+            console.log('[Survey onComplete] sender.data is empty, manually extracting from questions...');
+            sender.getAllQuestions().forEach((q: any) => {
+              if (q.value !== undefined && q.value !== null && q.value !== '') {
+                console.log(`[Survey onComplete] Extracting ${q.name} = ${q.value}`);
+                plainData[q.name] = q.value;
+              }
+            });
+            console.log('[Survey onComplete] After manual extraction:', plainData);
+          }
 
           // If there's a nested patient_demographics object, flatten its values into the main object.
           // This preserves the logic described in your summary.
           if (plainData.patient_demographics && typeof plainData.patient_demographics === 'object') {
             Object.assign(plainData, plainData.patient_demographics);
+          }
+          
+          // If there's a nested patient_vitals object, flatten its values into the main object.
+          if (plainData.patient_vitals && typeof plainData.patient_vitals === 'object') {
+            console.log('[Survey onComplete] Flattening patient_vitals data:', plainData.patient_vitals);
+            Object.assign(plainData, plainData.patient_vitals);
           }
           
           // Extract data from nested pain assessment panels

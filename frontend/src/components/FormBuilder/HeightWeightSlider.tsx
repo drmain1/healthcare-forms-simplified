@@ -116,10 +116,13 @@ export class QuestionHeightSliderModel extends Question {
   }
 
   get value() {
-    return this.getPropertyValue('value', 66);
+    const val = this.getPropertyValue('value');
+    console.log('[QuestionHeightSliderModel] Getting value:', val, 'default would be 66');
+    return val !== undefined ? val : 66;
   }
 
   set value(newValue: any) {
+    console.log('[QuestionHeightSliderModel] Setting value:', newValue);
     this.setPropertyValue('value', newValue);
   }
 
@@ -140,10 +143,13 @@ export class QuestionWeightSliderModel extends Question {
   }
 
   get value() {
-    return this.getPropertyValue('value', 150);
+    const val = this.getPropertyValue('value');
+    console.log('[QuestionWeightSliderModel] Getting value:', val, 'default would be 150');
+    return val !== undefined ? val : 150;
   }
 
   set value(newValue: any) {
+    console.log('[QuestionWeightSliderModel] Setting value:', newValue);
     this.setPropertyValue('value', newValue);
   }
 
@@ -156,7 +162,9 @@ export class QuestionWeightSliderModel extends Question {
 // Register Height Slider Question Type
 Serializer.addClass(
   QuestionHeightSliderModel.typeName,
-  [],
+  [
+    { name: 'defaultValue:number', default: 66 }
+  ],
   function() {
     return new QuestionHeightSliderModel('');
   },
@@ -166,7 +174,9 @@ Serializer.addClass(
 // Register Weight Slider Question Type
 Serializer.addClass(
   QuestionWeightSliderModel.typeName,
-  [],
+  [
+    { name: 'defaultValue:number', default: 150 }
+  ],
   function() {
     return new QuestionWeightSliderModel('');
   },
@@ -176,10 +186,11 @@ Serializer.addClass(
 // React Component for Height Slider Question
 export class SurveyQuestionHeightSlider extends SurveyQuestionElementBase {
   get question(): QuestionHeightSliderModel {
-    return this.questionBase as QuestionHeightSliderModel;
+    return this.questionBase as unknown as QuestionHeightSliderModel;
   }
 
   protected renderElement(): JSX.Element {
+    console.log('[HeightSlider] Rendering with value:', this.question.value, 'readOnly:', this.question.isReadOnly);
     return (
       <HeightSlider
         value={this.question.value}
@@ -195,10 +206,11 @@ export class SurveyQuestionHeightSlider extends SurveyQuestionElementBase {
 // React Component for Weight Slider Question
 export class SurveyQuestionWeightSlider extends SurveyQuestionElementBase {
   get question(): QuestionWeightSliderModel {
-    return this.questionBase as QuestionWeightSliderModel;
+    return this.questionBase as unknown as QuestionWeightSliderModel;
   }
 
   protected renderElement(): JSX.Element {
+    console.log('[WeightSlider] Rendering with value:', this.question.value, 'readOnly:', this.question.isReadOnly);
     return (
       <WeightSlider
         value={this.question.value}

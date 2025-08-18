@@ -11,18 +11,11 @@ import (
 func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) (string, error) {
 	var result bytes.Buffer
 	
-	result.WriteString(`<div class="form-section" style="margin-bottom: 15px;">`)
-	result.WriteString(`<div class="section-title">Patient Demographics</div>`)
+	result.WriteString(`<div class="form-section" style="margin-bottom: 20px;">`)
+	result.WriteString(`<div class="section-title" style="background-color: #4a5568; color: white; padding: 8px 12px; margin-bottom: 15px; font-weight: bold;">Patient Demographics</div>`)
 	
-	// Patient identification section
-	result.WriteString(`<table class="data-table" style="font-size: 10px;">`)
-	result.WriteString(`<thead>`)
-	result.WriteString(`<tr>`)
-	result.WriteString(`<th>Field</th>`)
-	result.WriteString(`<th>Value</th>`)
-	result.WriteString(`</tr>`)
-	result.WriteString(`</thead>`)
-	result.WriteString(`<tbody>`)
+	// Professional form layout with multiple fields per line
+	result.WriteString(`<table style="width: 100%; border-collapse: collapse; font-size: 12px;">`)
 	
 	// Define demographic fields in order
 	demographicFields := []struct {

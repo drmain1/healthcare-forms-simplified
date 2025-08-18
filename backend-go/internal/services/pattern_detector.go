@@ -29,6 +29,7 @@ func NewPatternDetector() *PatternDetector {
 			&TermsCheckboxMatcher{},
 			&TermsConditionsMatcher{},
 			&PatientDemographicsMatcher{},
+			&AdditionalDemographicsMatcher{},
 			&ReviewOfSystemsMatcher{},
 			&NeckDisabilityMatcher{},
 			&OswestryDisabilityMatcher{},
@@ -903,3 +904,136 @@ func (m *ReviewOfSystemsMatcher) Match(formDefinition, responseData map[string]i
 
 func (m *ReviewOfSystemsMatcher) GetPatternType() string { return "review_of_systems" }
 func (m *ReviewOfSystemsMatcher) GetPriority() int       { return 4 }
+
+// AdditionalDemographicsMatcher - matches Additional Demographics forms
+type AdditionalDemographicsMatcher struct{}
+
+func (m *AdditionalDemographicsMatcher) Match(formDefinition, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// Check if the form contains the Additional Demographics panel
+	if !DetectAdditionalDemographicsPattern(formDefinition) {
+		return false, PatternMetadata{}
+	}
+	
+	// Collect all fields that start with "demographics_additional_"
+	var additionalDemoFields []string
+	for key := range responseData {
+		if strings.HasPrefix(key, "demographics_additional_") {
+			additionalDemoFields = append(additionalDemoFields, key)
+		}
+	}
+	
+	// Return match if we found the Additional Demographics panel structure
+	return true, PatternMetadata{
+		PatternType:  "additional_demographics",
+		ElementNames: additionalDemoFields,
+		TemplateData: map[string]interface{}{
+			"additionalDemoFields": additionalDemoFields,
+		},
+	}
+}
+
+func (m *AdditionalDemographicsMatcher) GetPatternType() string { return "additional_demographics" }
+func (m *AdditionalDemographicsMatcher) GetPriority() int       { return 3 }
+
+// DetectAdditionalDemographicsPattern checks if the form contains Additional Demographics elements
+func DetectAdditionalDemographicsPattern(surveyJSON map[string]interface{}) bool {
+	// First check for metadata tag for more reliable detection
+	if hasMetadataPattern(surveyJSON, "additional_demographics") {
+		return true
+	}
+	
+	// Fallback to panel name detection
+	if pages, ok := surveyJSON["pages"].([]interface{}); ok {
+		for _, pageData := range pages {
+			if page, ok := pageData.(map[string]interface{}); ok {
+				if hasAdditionalDemographicsPanel(page["elements"]) {
+					return true
+				}
+			}
+		}
+	}
+	
+	// Also check elements at the root level
+	if elements, ok := surveyJSON["elements"].([]interface{}); ok {
+		if hasAdditionalDemographicsPanel(elements) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// hasAdditionalDemographicsPanel recursively checks for Additional Demographics panel in elements
+func hasAdditionalDemographicsPanel(elements interface{}) bool {
+	elementsSlice, ok := elements.([]interface{})
+	if !ok {
+		return false
+	}
+	
+	for _, elData := range elementsSlice {
+		element, ok := elData.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		
+		// Check if this is the Additional Demographics panel
+		if name, ok := element["name"].(string); ok {
+			if name == "page_additional_demographics" {
+				return true
+			}
+		}
+		
+		// Check for metadata pattern
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if pattern, ok := metadata["pdfPattern"].(string); ok {
+				if pattern == "additional_demographics" {
+					return true
+				}
+			}
+		}
+		
+		// Check nested elements
+		if subElements, ok := element["elements"]; ok {
+			if hasAdditionalDemographicsPanel(subElements) {
+				return true
+			}
+		}
+	}
+	
+	return false
+}
+
+// hasMetadataPattern checks for explicit metadata pattern in form definition
+func hasMetadataPattern(surveyJSON map[string]interface{}, patternType string) bool {
+	return hasMetadataPatternInElements(surveyJSON, patternType)
+}
+
+func hasMetadataPatternInElements(data interface{}, patternType string) bool {
+	switch v := data.(type) {
+	case map[string]interface{}:
+		// Check metadata in current element
+		if metadata, ok := v["metadata"].(map[string]interface{}); ok {
+			if pattern, ok := metadata["pdfPattern"].(string); ok {
+				if pattern == patternType {
+					return true
+				}
+			}
+		}
+		
+		// Recursively check all nested maps
+		for _, value := range v {
+			if hasMetadataPatternInElements(value, patternType) {
+				return true
+			}
+		}
+	case []interface{}:
+		// Recursively check all array elements
+		for _, item := range v {
+			if hasMetadataPatternInElements(item, patternType) {
+				return true
+			}
+		}
+	}
+	
+	return false
+}

@@ -59,27 +59,55 @@ export const reviewOfSystemsPanel = {
 
 ### Step 2: Register in Form Builder
 
-Add to `frontend/src/components/FormBuilder/FormBuilderContainer.tsx`:
+Add to `frontend/src/utils/surveyConfigMinimal.ts` in the `createMinimalSurveyCreator` function:
 
 ```typescript
-import { reviewOfSystemsPanel } from './ReviewOfSystemsPanel';
+// Import the panel configuration
+import { reviewOfSystemsPanel } from '../components/FormBuilder/ReviewOfSystemsPanel';
 
-// In toolbox configuration
-const customPanels = [
-  reviewOfSystemsPanel,
-  // other panels...
-];
-
-// Add to toolbox
-toolbox.addItem({
+// Inside createMinimalSurveyCreator function:
+const reviewOfSystemsToolboxItem = {
   name: 'review-of-systems',
   title: 'Review of Systems',
-  category: 'Medical Forms',
-  json: reviewOfSystemsPanel
-});
+  iconName: 'icon-panel',
+  category: 'Healthcare',  // or 'Medical Forms'
+  isCopied: true,  // Creates a copy when dropped from toolbox
+  json: reviewOfSystemsPanel  // Reference to the panel configuration
+};
+
+// Add to toolbox
+creator.toolbox.addItem(reviewOfSystemsToolboxItem);
 ```
 
-### Step 3: Configure Conditional Logic (if needed)
+**Key Properties:**
+- `name`: Unique identifier for the toolbox item
+- `title`: Display name in the toolbox
+- `iconName`: Icon to display (optional, use 'icon-panel' for panels)
+- `category`: Groups items in the toolbox
+- `isCopied`: Set to `true` for custom panels to ensure proper drag behavior
+- `json`: The actual panel configuration
+
+### Step 3: Add Metadata for Reliable Backend Detection (Optional)
+
+For more reliable pattern detection, add explicit metadata:
+
+```typescript
+const reviewOfSystemsToolboxItem = {
+  name: 'review-of-systems',
+  title: 'Review of Systems',
+  iconName: 'icon-panel',
+  category: 'Healthcare',
+  isCopied: true,
+  json: {
+    ...reviewOfSystemsPanel,
+    metadata: { 
+      pdfPattern: 'review_of_systems'  // Explicit pattern type for backend
+    }
+  }
+};
+```
+
+### Step 4: Configure Conditional Logic (if needed)
 
 For gender-specific sections:
 
@@ -417,7 +445,7 @@ if title == "Insurance Card Information" { ... }
 
 ## Complete Example: Review of Systems
 
-### Frontend (`ReviewOfSystemsPanel.ts`)
+### Frontend (`frontend/src/components/FormBuilder/ReviewOfSystemsPanel.ts`)
 ```typescript
 export const reviewOfSystemsPanel = {
   type: 'panel',
@@ -440,6 +468,23 @@ export const reviewOfSystemsPanel = {
     // Additional sections...
   ]
 };
+```
+
+### Toolbox Registration (`frontend/src/utils/surveyConfigMinimal.ts`)
+```typescript
+import { reviewOfSystemsPanel } from '../components/FormBuilder/ReviewOfSystemsPanel';
+
+// Inside createMinimalSurveyCreator function:
+const reviewOfSystemsToolboxItem = {
+  name: 'review-of-systems',
+  title: 'Review of Systems',
+  iconName: 'icon-panel',
+  category: 'Healthcare',
+  isCopied: true,
+  json: reviewOfSystemsPanel
+};
+
+creator.toolbox.addItem(reviewOfSystemsToolboxItem);
 ```
 
 ### Backend Detection
@@ -497,6 +542,9 @@ func ReviewOfSystemsRenderer(metadata PatternMetadata, context *PDFContext) (str
 5. **Handle Edge Cases**: Empty data, "None of the above", etc.
 6. **Add Debug Logging**: Remove before production
 7. **Test the Full Flow**: From form creation to PDF generation
+8. **File Organization**: Create panel configs in `components/FormBuilder/`, register in `utils/surveyConfigMinimal.ts`
+9. **Toolbox Properties**: Always include `isCopied: true` for custom panels
+10. **Metadata Tags**: Use explicit `metadata.pdfPattern` for reliable backend detection
 
 ## Common Patterns
 
@@ -517,13 +565,31 @@ func ReviewOfSystemsRenderer(metadata PatternMetadata, context *PDFContext) (str
 - Base on demographic data
 - Handle missing conditions gracefully
 
+## File Organization Structure
+
+```
+frontend/src/
+├── components/FormBuilder/
+│   ├── AdditionalDemographicsPanel.ts    # Panel configuration
+│   ├── ReviewOfSystemsPanel.ts           # Panel configuration
+│   └── FormBuilderContainer.tsx          # Main form builder component
+├── utils/
+│   └── surveyConfigMinimal.ts            # Toolbox registration happens here
+backend-go/internal/services/
+├── pattern_detector.go                   # Add new matchers here
+├── additional_demographics_renderer.go   # Create new renderer file
+└── renderer_registry.go                  # Register renderers here
+```
+
 ## Next Steps
 
-1. Create your panel configuration
-2. Add detection logic
-3. Implement renderer
-4. Register and wire up
-5. Test end-to-end
-6. Add to documentation
+1. Create your panel configuration in `components/FormBuilder/`
+2. Register it in `utils/surveyConfigMinimal.ts`
+3. Add detection logic in `backend-go/internal/services/pattern_detector.go`
+4. Implement renderer in new file `backend-go/internal/services/[name]_renderer.go`
+5. Register renderer in `renderer_registry.go`
+6. Add to render order in `pdf_orchestrator.go`
+7. Test end-to-end
+8. Add to documentation
 
 Remember: The key to success is keeping detection simple and using unique identifiers!

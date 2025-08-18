@@ -6,6 +6,7 @@ import { SurveyCreator } from 'survey-creator-react';
 import { ICreatorOptions } from 'survey-creator-core';
 import { minimalToolboxItems } from './minimalToolboxConfig';
 import { reviewOfSystemsToolboxItem } from './reviewOfSystemsConfig';
+import { additionalDemographicsPanel } from '../components/FormBuilder/AdditionalDemographicsPanel';
 
 // Apply SurveyJS license
 const licenseKey = process.env.REACT_APP_SURVEYJS_LICENSE_KEY;
@@ -1635,6 +1636,23 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   
   // Add Review of Systems with "None of the above" functionality
   creator.toolbox.addItem(reviewOfSystemsToolboxItem);
+  
+  // Add Additional Demographics panel with metadata for reliable backend detection
+  const additionalDemographicsToolboxItem = {
+    name: 'additional-demographics',
+    title: 'Additional Demographics',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    isCopied: true,
+    json: {
+      ...additionalDemographicsPanel,
+      metadata: { 
+        pdfPattern: 'additional_demographics'  // Explicit pattern type for backend detection
+      }
+    }
+  };
+  
+  creator.toolbox.addItem(additionalDemographicsToolboxItem);
   
   /* OLD Review of Systems Panel (replaced with improved version)
   const reviewOfSystemsPanel = {

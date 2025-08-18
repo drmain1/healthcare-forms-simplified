@@ -54,6 +54,7 @@ func (rr *RendererRegistry) registerRenderers() {
 	rr.renderers["terms_checkbox"] = rr.wrapRenderer(TermsCheckboxRenderer)
 	rr.renderers["terms_conditions"] = rr.wrapRenderer(TermsConditionsRenderer)
 	rr.renderers["patient_demographics"] = rr.wrapRenderer(PatientDemographicsRenderer)
+	rr.renderers["additional_demographics"] = rr.wrapRenderer(AdditionalDemographicsRenderer)
 	
 	// Register pain assessment renderer - now uses the proper PainAssessmentRenderer
 	rr.renderers["pain_assessment"] = rr.wrapRenderer(PainAssessmentRenderer)

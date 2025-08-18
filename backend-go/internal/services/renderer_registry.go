@@ -59,6 +59,7 @@ func (rr *RendererRegistry) registerRenderers() {
 	rr.renderers["pain_assessment"] = rr.wrapRenderer(PainAssessmentRenderer)
 
 	// Register new renderers
+	rr.renderers["review_of_systems"] = rr.wrapRenderer(ReviewOfSystemsRenderer)
 	rr.renderers["neck_disability_index"] = rr.wrapRenderer(NeckDisabilityRenderer)
 	rr.renderers["oswestry_disability"] = rr.wrapRenderer(OswestryDisabilityRenderer)
 	rr.renderers["body_diagram_2"] = rr.wrapRenderer(BodyDiagramV2Renderer)

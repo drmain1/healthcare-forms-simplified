@@ -216,6 +216,7 @@ func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []Patt
 	defaultOrder := []string{
 		"patient_demographics",  // Patient info should always be first
 		"patient_vitals", 
+		"review_of_systems",     // Review of Systems section
 		"terms_conditions",      // Full T&C sections with all content
 		// "terms_checkbox" removed - redundant with terms_conditions
 		"neck_disability_index",

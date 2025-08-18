@@ -35,6 +35,7 @@ import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimiz
 // Import centralized custom question registry - registers all custom questions
 import '../FormBuilder/customQuestionRegistry';
 import { extractCustomQuestionData } from '../FormBuilder/customQuestionRegistry';
+import '../../styles/review-of-systems.css';
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -523,6 +524,7 @@ export const PublicFormFill: React.FC = () => {
         
         surveyModelRef.current = surveyModel;
         setSurveyModel(surveyModel); // Set state for the hook
+        
         setIsSurveyReady(true);
         setError(null);
       } catch (err: any) {

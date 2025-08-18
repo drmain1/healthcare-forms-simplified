@@ -28,6 +28,7 @@ func NewPatternDetector() *PatternDetector {
 			&TermsCheckboxMatcher{},
 			&TermsConditionsMatcher{},
 			&PatientDemographicsMatcher{},
+			&ReviewOfSystemsMatcher{},
 			&NeckDisabilityMatcher{},
 			&OswestryDisabilityMatcher{},
 			&BodyDiagram2Matcher{},
@@ -644,24 +645,39 @@ func (m *PatientVitalsMatcher) GetPriority() int       { return 9 }
 type InsuranceCardMatcher struct{}
 
 func (m *InsuranceCardMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// Look for panel with specific title "Insurance Card Information"
+	elements := extractElements(formDef)
 	insuranceFields := []string{}
 	
-	for key := range responseData {
-		lowerKey := strings.ToLower(key)
-		if strings.Contains(lowerKey, "insurance") ||
-		   strings.Contains(lowerKey, "card") ||
-		   strings.Contains(lowerKey, "policy") {
-			insuranceFields = append(insuranceFields, key)
-		}
-	}
-	
-	if len(insuranceFields) > 0 {
-		return true, PatternMetadata{
-			PatternType:  "insurance_card",
-			ElementNames: insuranceFields,
-			TemplateData: map[string]interface{}{
-				"insuranceFields": insuranceFields,
-			},
+	for _, element := range elements {
+		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
+			// Check for the specific insurance card panel title
+			if title, ok := element["title"].(string); ok && 
+			   title == "Insurance Card Information" {
+				
+				// Found insurance card panel - collect fields from nested elements
+				if panelElements, ok := element["elements"].([]interface{}); ok {
+					for _, panelElem := range panelElements {
+						if pe, ok := panelElem.(map[string]interface{}); ok {
+							if name, ok := pe["name"].(string); ok {
+								if _, exists := responseData[name]; exists {
+									insuranceFields = append(insuranceFields, name)
+								}
+							}
+						}
+					}
+				}
+				
+				if len(insuranceFields) > 0 {
+					return true, PatternMetadata{
+						PatternType:  "insurance_card",
+						ElementNames: insuranceFields,
+						TemplateData: map[string]interface{}{
+							"insuranceFields": insuranceFields,
+						},
+					}
+				}
+			}
 		}
 	}
 	
@@ -756,3 +772,34 @@ func (m *SignatureMatcher) Match(formDef, responseData map[string]interface{}) (
 
 func (m *SignatureMatcher) GetPatternType() string { return "signature" }
 func (m *SignatureMatcher) GetPriority() int       { return 11 }
+
+// ReviewOfSystemsMatcher - matches Review of Systems medical forms
+type ReviewOfSystemsMatcher struct{}
+
+func (m *ReviewOfSystemsMatcher) Match(formDefinition, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// Check if the form contains the ROS panel
+	if !DetectReviewOfSystemsPattern(formDefinition) {
+		return false, PatternMetadata{}
+	}
+	
+	// Simple approach: collect ALL fields that start with "ros_"
+	var rosFields []string
+	for key := range responseData {
+		if strings.HasPrefix(key, "ros_") {
+			rosFields = append(rosFields, key)
+		}
+	}
+	
+	// Return match if we found the ROS panel structure
+	// The renderer will handle empty vs populated fields
+	return true, PatternMetadata{
+		PatternType:  "review_of_systems",
+		ElementNames: rosFields,
+		TemplateData: map[string]interface{}{
+			"rosFields": rosFields,
+		},
+	}
+}
+
+func (m *ReviewOfSystemsMatcher) GetPatternType() string { return "review_of_systems" }
+func (m *ReviewOfSystemsMatcher) GetPriority() int       { return 4 }

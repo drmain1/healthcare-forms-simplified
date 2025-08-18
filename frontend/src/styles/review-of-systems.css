@@ -1,0 +1,84 @@
+/* Review of Systems - None of the above styling */
+
+/* Style the built-in SurveyJS "None" option */
+.ros-checkbox-group .sv-item--none {
+  border-top: 2px solid #e0e0e0 !important;
+  margin-top: 16px !important;
+  padding-top: 12px !important;
+  padding: 12px !important;
+  background-color: #f8f9fa !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+.ros-checkbox-group .sv-item--none label {
+  color: #2196F3 !important;
+  font-weight: 600 !important;
+}
+
+/* Highlight the None checkbox when checked */
+.ros-checkbox-group .sv-item--none input[type="checkbox"]:checked + span::before,
+.ros-checkbox-group .sv-item--none input[type="checkbox"]:checked + .sv-checkbox__decorator {
+  background-color: #2196F3 !important;
+  border-color: #2196F3 !important;
+}
+
+/* Style disabled items when None is selected (if using choicesEnableIf) */
+.ros-checkbox-group .sv-item--disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.ros-checkbox-group .sv-item--disabled label {
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
+
+/* Transition effects */
+.ros-checkbox-group .sv-item {
+  transition: opacity 0.3s ease, background-color 0.3s ease;
+}
+
+/* Visual separator before None option */
+.ros-checkbox-group .sv-item--none::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e0e0e0 20%, #e0e0e0 80%, transparent);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .ros-checkbox-group .sv-item--none {
+    padding: 16px 12px 12px 12px !important;
+    margin: 20px 0 0 0 !important;
+  }
+  
+  .ros-checkbox-group .sv-item {
+    padding: 8px;
+  }
+}
+
+/* Add visual emphasis when None is the only selection */
+.ros-checkbox-group .sv-item--none input[type="checkbox"]:checked {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+}
+
+/* Style for the noneText */
+.ros-checkbox-group .sv-item--none .sv-checkbox__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Add icon before None text if needed */
+.ros-checkbox-group .sv-item--none .sv-checkbox__label::before {
+  content: '✓';
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 16px;
+}

@@ -9,6 +9,7 @@ import './BodyDiagram2Question';
 import './PatientDemographicsQuestion';
 import './BodyDiagramQuestion';
 import './HeightWeightSlider';
+// ReviewOfSystemsQuestion removed - using native panel structure instead
 
 // List of all custom question type names for reference
 export const CUSTOM_QUESTION_TYPES = {
@@ -20,6 +21,7 @@ export const CUSTOM_QUESTION_TYPES = {
   PATIENT_DEMOGRAPHICS: 'patient_demographics',
   HEIGHT_SLIDER: 'heightslider',
   WEIGHT_SLIDER: 'weightslider',
+  // REVIEW_OF_SYSTEMS removed - using native panel structure instead
 } as const;
 
 // Type for custom question data extraction
@@ -59,6 +61,7 @@ export interface CustomQuestionData {
     value: string;
     formatted?: string;
   };
+  // Review of Systems data will be handled natively by SurveyJS panels
 }
 
 // Helper function to extract and flatten custom question data
@@ -91,6 +94,10 @@ export function extractCustomQuestionData(surveyData: any): any {
       extractedData.patient_age = surveyData.dateofbirth.age;
     }
   }
+  
+  // Review of Systems data is now handled natively by SurveyJS
+  // The data will be in the survey results as individual fields:
+  // ros_constitutional, ros_gastrointestinal, etc.
   
   return extractedData;
 }

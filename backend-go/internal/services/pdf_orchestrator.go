@@ -283,22 +283,47 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[s
 			elemType, _ := elemMap["type"].(string)
 			elemName, _ := elemMap["name"].(string)
 
-			// Try to match against known patterns
-			if pattern, exists := patternMap[elemName]; exists {
-				html, err := o.registry.Render(pattern.PatternType, pattern, context)
+			// Check if this element matches any pattern (by metadata or other criteria)
+			var matchedPattern *PatternMetadata
+			for _, pattern := range patterns {
+				// Check if this element is part of the pattern's fields
+				for _, fieldName := range pattern.ElementNames {
+					if fieldName == elemName {
+						matchedPattern = &pattern
+						break
+					}
+				}
+				if matchedPattern != nil {
+					break
+				}
+				
+				// Also check if this element has metadata that matches the pattern
+				if elemType == "panel" {
+					if metadata, ok := elemMap["metadata"].(map[string]interface{}); ok {
+						if patternType, ok := metadata["patternType"].(string); ok && patternType == pattern.PatternType {
+							matchedPattern = &pattern
+							break
+						}
+					}
+				}
+			}
+
+			// If we found a matching pattern, render it
+			if matchedPattern != nil && htmlSections[matchedPattern.PatternType] == "" {
+				html, err := o.registry.Render(matchedPattern.PatternType, *matchedPattern, context)
 				if err != nil {
 					errorBlock := o.registry.generateErrorBlock(RenderError{
-						Code:      fmt.Sprintf("RNDR-%s-001", pattern.PatternType),
-						Section:   pattern.PatternType,
+						Code:      fmt.Sprintf("RNDR-%s-001", matchedPattern.PatternType),
+						Section:   matchedPattern.PatternType,
 						Cause:     err,
 						RequestID: context.RequestID,
 					})
-					htmlSections[pattern.PatternType] = errorBlock
+					htmlSections[matchedPattern.PatternType] = errorBlock
 				} else {
-					htmlSections[pattern.PatternType] = html
+					htmlSections[matchedPattern.PatternType] = html
 				}
-			} else {
-				// Generic fallback render
+			} else if elemType != "panel" && elemName != "" && context.Answers[elemName] != nil {
+				// Generic fallback render for individual fields (but not panels)
 				genericHTML := fmt.Sprintf("<div class='generic-field'><strong>%s</strong>: %v</div>",
 					elemMap["title"], context.Answers[elemName])
 				htmlSections[elemName] = genericHTML

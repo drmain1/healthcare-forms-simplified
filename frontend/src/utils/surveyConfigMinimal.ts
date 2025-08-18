@@ -65,6 +65,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       title: 'Insurance Card Information',
       description: 'Upload or capture photos of your insurance card',
+      metadata: { patternType: 'insurance_card' },
       elements: [
         {
           type: 'file',

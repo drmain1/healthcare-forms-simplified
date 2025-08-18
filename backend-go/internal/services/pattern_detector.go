@@ -645,26 +645,65 @@ func (m *PatientVitalsMatcher) GetPriority() int       { return 9 }
 type InsuranceCardMatcher struct{}
 
 func (m *InsuranceCardMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Look for panel with specific title "Insurance Card Information"
+	// First check for metadata tag - this is the preferred method
 	elements := extractElements(formDef)
 	insuranceFields := []string{}
 	
 	for _, element := range elements {
 		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
-			// Check for the specific insurance card panel title
+			// Check for metadata tag first (preferred method)
+			if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+				if patternType, ok := metadata["patternType"].(string); ok && patternType == "insurance_card" {
+					// Found insurance card panel via metadata - collect fields from nested elements
+					if panelElements, ok := element["elements"].([]interface{}); ok {
+						for _, panelElem := range panelElements {
+							if pe, ok := panelElem.(map[string]interface{}); ok {
+								if name, ok := pe["name"].(string); ok {
+									// Include all insurance-related fields in the pattern
+									insuranceFields = append(insuranceFields, name)
+								}
+							}
+						}
+					}
+					
+					// Also collect any extracted insurance data fields
+					for key := range responseData {
+						if strings.Contains(strings.ToLower(key), "insurance") {
+							insuranceFields = append(insuranceFields, key)
+						}
+					}
+					
+					if len(insuranceFields) > 0 {
+						return true, PatternMetadata{
+							PatternType:  "insurance_card",
+							ElementNames: insuranceFields,
+							TemplateData: map[string]interface{}{
+								"insuranceFields": insuranceFields,
+							},
+						}
+					}
+				}
+			}
+			
+			// Fallback: Check for the specific insurance card panel title
 			if title, ok := element["title"].(string); ok && 
-			   title == "Insurance Card Information" {
+			   (title == "Insurance Card Information" || title == "Insurance Card Upload") {
 				
 				// Found insurance card panel - collect fields from nested elements
 				if panelElements, ok := element["elements"].([]interface{}); ok {
 					for _, panelElem := range panelElements {
 						if pe, ok := panelElem.(map[string]interface{}); ok {
 							if name, ok := pe["name"].(string); ok {
-								if _, exists := responseData[name]; exists {
-									insuranceFields = append(insuranceFields, name)
-								}
+								insuranceFields = append(insuranceFields, name)
 							}
 						}
+					}
+				}
+				
+				// Also collect any extracted insurance data fields
+				for key := range responseData {
+					if strings.Contains(strings.ToLower(key), "insurance") {
+						insuranceFields = append(insuranceFields, key)
 					}
 				}
 				

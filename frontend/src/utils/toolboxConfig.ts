@@ -214,6 +214,7 @@ export const healthcareToolboxItems = [
     json: {
       type: 'panel',
       title: 'Insurance Card Upload',
+      metadata: { patternType: 'insurance_card' },
       elements: [
         {
           type: 'file',

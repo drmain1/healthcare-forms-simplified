@@ -65,11 +65,11 @@ func extractInsuranceData(elementNames []string, answers map[string]interface{})
 			// Check for image data
 			if strValue, ok := value.(string); ok {
 				if isImageData(strValue) {
-					if strings.Contains(lowerName, "front") {
+					if strings.Contains(lowerName, "front") || elementName == "insurance_card_front" {
 						cardData.FrontImage = strValue
 						continue
 					}
-					if strings.Contains(lowerName, "back") {
+					if strings.Contains(lowerName, "back") || elementName == "insurance_card_back" {
 						cardData.BackImage = strValue
 						continue
 					}
@@ -83,18 +83,36 @@ func extractInsuranceData(elementNames []string, answers map[string]interface{})
 				}
 			}
 			
-			// Extract text-based insurance information
+			// Extract text-based insurance information - include all insurance fields
 			if strings.Contains(lowerName, "insurance") || 
 			   strings.Contains(lowerName, "policy") ||
 			   strings.Contains(lowerName, "member") ||
 			   strings.Contains(lowerName, "group") ||
 			   strings.Contains(lowerName, "plan") ||
 			   strings.Contains(lowerName, "provider") ||
-			   strings.Contains(lowerName, "carrier") {
+			   strings.Contains(lowerName, "carrier") ||
+			   strings.Contains(lowerName, "issuer") ||
+			   strings.Contains(lowerName, "rx") ||
+			   strings.Contains(lowerName, "copay") ||
+			   strings.Contains(lowerName, "deductible") ||
+			   strings.Contains(lowerName, "oop") {
 				
 				valueStr := fmt.Sprintf("%v", value)
-				if valueStr != "" {
+				if valueStr != "" && valueStr != "null" {
 					cardData.ExtractedInfo[elementName] = valueStr
+				}
+			}
+		}
+	}
+	
+	// Also check for any insurance-related keys directly in answers (in case they weren't in elementNames)
+	for key, value := range answers {
+		lowerKey := strings.ToLower(key)
+		if strings.Contains(lowerKey, "insurance") && value != nil {
+			if _, exists := cardData.ExtractedInfo[key]; !exists { // Don't duplicate
+				valueStr := fmt.Sprintf("%v", value)
+				if valueStr != "" && valueStr != "null" {
+					cardData.ExtractedInfo[key] = valueStr
 				}
 			}
 		}

@@ -655,6 +655,7 @@ export const healthcareQuestionTypes = {
       type: 'panel',
       title: 'Insurance Card Upload',
       description: 'Please upload photos of your insurance card',
+      metadata: { patternType: 'insurance_card' },
       elements: [
         {
           type: 'file',

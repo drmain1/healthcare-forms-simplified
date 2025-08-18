@@ -123,26 +123,71 @@ class InsuranceCardService {
   }
 
   private cleanExtractedData(data: any): InsuranceCardData {
-    const cleaned: InsuranceCardData = {};
+    const cleaned: any = {};
     
-    // Map and clean the extracted data
-    if (data.memberId && data.memberId !== 'null') cleaned.memberId = data.memberId;
-    if (data.memberName && data.memberName !== 'null') cleaned.memberName = data.memberName;
-    if (data.groupNumber && data.groupNumber !== 'null') cleaned.groupNumber = data.groupNumber;
-    if (data.issuerName && data.issuerName !== 'null') cleaned.issuerName = data.issuerName;
-    if (data.planType && data.planType !== 'null') cleaned.planType = data.planType;
-    if (data.rxBin && data.rxBin !== 'null') cleaned.rxBin = data.rxBin;
-    if (data.rxPcn && data.rxPcn !== 'null') cleaned.rxPcn = data.rxPcn;
-    if (data.rxGroup && data.rxGroup !== 'null') cleaned.rxGroup = data.rxGroup;
-    if (data.copayPcp && data.copayPcp !== 'null') cleaned.copayPcp = data.copayPcp;
-    if (data.copaySpecialist && data.copaySpecialist !== 'null') cleaned.copaySpecialist = data.copaySpecialist;
-    if (data.copayEmergency && data.copayEmergency !== 'null') cleaned.copayEmergency = data.copayEmergency;
-    if (data.deductible && data.deductible !== 'null') cleaned.deductible = data.deductible;
-    if (data.outOfPocketMax && data.outOfPocketMax !== 'null') cleaned.outOfPocketMax = data.outOfPocketMax;
-    if (data.effectiveDate && data.effectiveDate !== 'null') cleaned.effectiveDate = data.effectiveDate;
-    if (data.customerServicePhone && data.customerServicePhone !== 'null') cleaned.customerServicePhone = data.customerServicePhone;
+    // Preserve both camelCase keys (for frontend/AI) and snake_case keys (for backend PDF rendering)
+    if (data.memberId && data.memberId !== 'null') {
+      cleaned.memberId = data.memberId;
+      cleaned.insurance_member_id = data.memberId;
+    }
+    if (data.memberName && data.memberName !== 'null') {
+      cleaned.memberName = data.memberName;
+      cleaned.insurance_member_name = data.memberName;
+    }
+    if (data.groupNumber && data.groupNumber !== 'null') {
+      cleaned.groupNumber = data.groupNumber;
+      cleaned.insurance_group_number = data.groupNumber;
+    }
+    if (data.issuerName && data.issuerName !== 'null') {
+      cleaned.issuerName = data.issuerName;
+      cleaned.insurance_issuer_name = data.issuerName;
+    }
+    if (data.planType && data.planType !== 'null') {
+      cleaned.planType = data.planType;
+      cleaned.insurance_plan_type = data.planType;
+    }
+    if (data.rxBin && data.rxBin !== 'null') {
+      cleaned.rxBin = data.rxBin;
+      cleaned.insurance_rx_bin = data.rxBin;
+    }
+    if (data.rxPcn && data.rxPcn !== 'null') {
+      cleaned.rxPcn = data.rxPcn;
+      cleaned.insurance_rx_pcn = data.rxPcn;
+    }
+    if (data.rxGroup && data.rxGroup !== 'null') {
+      cleaned.rxGroup = data.rxGroup;
+      cleaned.insurance_rx_group = data.rxGroup;
+    }
+    if (data.copayPcp && data.copayPcp !== 'null') {
+      cleaned.copayPcp = data.copayPcp;
+      cleaned.insurance_copay_pcp = data.copayPcp;
+    }
+    if (data.copaySpecialist && data.copaySpecialist !== 'null') {
+      cleaned.copaySpecialist = data.copaySpecialist;
+      cleaned.insurance_copay_specialist = data.copaySpecialist;
+    }
+    if (data.copayEmergency && data.copayEmergency !== 'null') {
+      cleaned.copayEmergency = data.copayEmergency;
+      cleaned.insurance_copay_emergency = data.copayEmergency;
+    }
+    if (data.deductible && data.deductible !== 'null') {
+      cleaned.deductible = data.deductible;
+      cleaned.insurance_deductible = data.deductible;
+    }
+    if (data.outOfPocketMax && data.outOfPocketMax !== 'null') {
+      cleaned.outOfPocketMax = data.outOfPocketMax;
+      cleaned.insurance_oop_max = data.outOfPocketMax;
+    }
+    if (data.effectiveDate && data.effectiveDate !== 'null') {
+      cleaned.effectiveDate = data.effectiveDate;
+      cleaned.insurance_effective_date = data.effectiveDate;
+    }
+    if (data.customerServicePhone && data.customerServicePhone !== 'null') {
+      cleaned.customerServicePhone = data.customerServicePhone;
+      cleaned.insurance_customer_service_phone = data.customerServicePhone;
+    }
 
-    return cleaned;
+    return cleaned as InsuranceCardData;
   }
 }
 

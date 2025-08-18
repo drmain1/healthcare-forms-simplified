@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -572,10 +573,65 @@ func (m *SensationAreasMatcher) GetPriority() int       { return 8 }
 type PatientVitalsMatcher struct{}
 
 func (m *PatientVitalsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// First check for metadata tag - this is the preferred method
 	elements := extractElements(formDef)
 	var foundVitals []string
 
-	// Look for a panel with "Vitals" in the title or name
+	// Check for metadata-tagged panels first (bulletproof detection)
+	for _, element := range elements {
+		if elemType, ok := element["type"].(string); ok && elemType == "panel" {
+			// Method 1: Direct metadata property on panel
+			if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+				if patternType, ok := metadata["patternType"].(string); ok && patternType == "patient_vitals" {
+					log.Printf("DEBUG: Found patient vitals panel by direct metadata tag")
+					// Extract elements from the metadata-tagged panel
+					if panelElements, ok := element["elements"].([]interface{}); ok {
+						for _, panelElem := range panelElements {
+							if pe, ok := panelElem.(map[string]interface{}); ok {
+								// Only consider elements that are not just for display
+								if t, ok := pe["type"].(string); ok && t != "html" {
+									if n, ok := pe["name"].(string); ok {
+										foundVitals = append(foundVitals, n)
+									}
+								}
+							}
+						}
+					}
+					goto CheckAndReturn
+				}
+			}
+
+			// Method 2: Look for hidden HTML elements with metadata data attributes
+			if panelElements, ok := element["elements"].([]interface{}); ok {
+				for _, panelElem := range panelElements {
+					if pe, ok := panelElem.(map[string]interface{}); ok {
+						if t, ok := pe["type"].(string); ok && t == "html" {
+							if htmlContent, ok := pe["html"].(string); ok {
+								// Check if HTML contains our metadata data attributes
+								if strings.Contains(htmlContent, `data-pattern-type="patient_vitals"`) {
+									log.Printf("DEBUG: Found patient vitals panel by HTML metadata data attribute")
+									// Extract ALL elements from this panel for vitals processing
+									for _, elem := range panelElements {
+										if e, ok := elem.(map[string]interface{}); ok {
+											// Only consider elements that are not just for display
+											if elemType, ok := e["type"].(string); ok && elemType != "html" {
+												if name, ok := e["name"].(string); ok {
+													foundVitals = append(foundVitals, name)
+												}
+											}
+										}
+									}
+									goto CheckAndReturn
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: Look for a panel with "Vitals" in the title or name (backward compatibility)
 	for _, element := range elements {
 		if elemType, ok := element["type"].(string); ok && elemType == "panel" {
 			name, _ := element["name"].(string)
@@ -583,6 +639,7 @@ func (m *PatientVitalsMatcher) Match(formDef, responseData map[string]interface{
 
 			// Corrected case-sensitivity for title check
 			if strings.Contains(strings.ToLower(name), "vitals") || strings.Contains(strings.ToLower(title), "vitals") {
+				log.Printf("DEBUG: Found patient vitals panel by name/title matching")
 				// Panel found, now extract the names of the elements inside it
 				if panelElements, ok := element["elements"].([]interface{}); ok {
 					for _, panelElem := range panelElements {
@@ -626,6 +683,9 @@ CheckAndReturn:
 			}
 		}
 
+		log.Printf("DEBUG: Patient vitals matcher found %d total fields, %d with data: %v", 
+			len(foundVitals), len(fieldsWithData), foundVitals)
+
 		return true, PatternMetadata{
 			PatternType:  "patient_vitals",
 			ElementNames: foundVitals, // Return all potential fields from the form definition
@@ -635,6 +695,7 @@ CheckAndReturn:
 		}
 	}
 
+	log.Printf("DEBUG: Patient vitals matcher found no vitals fields")
 	return false, PatternMetadata{}
 }
 

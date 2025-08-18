@@ -343,33 +343,6 @@ export const ResponseDetail: React.FC = () => {
         {surveyModelRef.current && <Survey model={surveyModelRef.current} />}
       </Paper>
 
-      {/* NEW: Cleaned up, single rendering location for body diagrams */}
-      {bodyDiagrams.length > 0 && (
-        <Paper sx={{ p: 3, mt: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Pain Areas
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-          {bodyDiagrams.map((diagram) => (
-            <Box key={diagram.name} sx={{ mt: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0' }}>
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
-                {diagram.title || (diagram.type === 'bodydiagram2' ? 'Body Sensation Diagram' : 'Body Pain Diagram')}
-              </Typography>
-              {diagram.type === 'bodydiagram2' ? (
-                <BodyDiagram2
-                  value={diagram.data}
-                  readOnly={true}
-                />
-              ) : (
-                <BodyPainDiagram
-                  value={diagram.data}
-                  readOnly={true}
-                />
-              )}
-            </Box>
-          ))}
-        </Paper>
-      )}
       
       {/* Additional Information */}
       {response.review_notes && (

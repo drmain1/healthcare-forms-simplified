@@ -222,6 +222,11 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       elements: [
         {
           type: 'html',
+          name: 'vitals_metadata',
+          html: '<div style="display: none;" data-pattern-type="patient_vitals" data-metadata="true"></div>'
+        },
+        {
+          type: 'html',
           name: 'vitals_instructions',
           html: '<p style="color: #666; margin-bottom: 20px;">Please enter your height and weight using the sliders below:</p>'
         },

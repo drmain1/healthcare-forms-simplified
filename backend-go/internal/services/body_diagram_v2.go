@@ -3,8 +3,6 @@ package services
 import (
 	"bytes"
 	"fmt"
-	"html"
-	"sort"
 	"strings"
 )
 
@@ -50,12 +48,6 @@ func BodyDiagramV2Renderer(metadata PatternMetadata, context *PDFContext) (strin
 	} else {
 		// Render visual body diagram with pain markers
 		result.WriteString(renderVisualBodyDiagram(painPoints))
-		
-		// Add pain points table as supplementary information
-		result.WriteString(`<div style="margin-top: 30px;">`)
-		result.WriteString(`<h4>Pain Location Details</h4>`)
-		result.WriteString(renderPainPointsTable(painPoints))
-		result.WriteString(`</div>`)
 	}
 	
 	result.WriteString(`</div>`)
@@ -82,13 +74,6 @@ func BodyPainDiagramV2Renderer(metadata PatternMetadata, context *PDFContext) (s
 		// Ensure we render with percentage-based coordinates directly
 		// so that the markers stay aligned with UI placement
 		result.WriteString(renderVisualBodyDiagram(painPoints))
-		
-		// Add pain points table as supplementary information
-		result.WriteString(`<div style="margin-top: 30px;">`)
-		result.WriteString(`<h4>Pain Location Details</h4>`)
-		// Similarly ensure sensation points use % coordinates
-		result.WriteString(renderPainPointsTable(painPoints))
-		result.WriteString(`</div>`)
 	}
 	
 	result.WriteString(`</div>`)
@@ -179,68 +164,6 @@ func renderVisualBodyDiagram(painPoints []PainPoint) string {
 	return result.String()
 }
 
-func renderPainPointsTable(painPoints []PainPoint) string {
-	var result bytes.Buffer
-	
-	// Sort pain points by intensity (highest first)
-	sortedPoints := make([]PainPoint, len(painPoints))
-	copy(sortedPoints, painPoints)
-	sort.Slice(sortedPoints, func(i, j int) bool {
-		return sortedPoints[i].Intensity > sortedPoints[j].Intensity
-	})
-	
-	result.WriteString(`<table class="data-table">`)
-	result.WriteString(`<thead>`)
-	result.WriteString(`<tr>`)
-	result.WriteString(`<th>Marker #</th>`)
-	result.WriteString(`<th>Body Area</th>`)
-	result.WriteString(`<th>Side</th>`)
-	result.WriteString(`<th>Pain Intensity</th>`)
-	result.WriteString(`<th>Position (X,Y)</th>`)
-	result.WriteString(`</tr>`)
-	result.WriteString(`</thead>`)
-	result.WriteString(`<tbody>`)
-	
-	for i, point := range sortedPoints {
-		result.WriteString(`<tr>`)
-		
-		// Marker number
-		result.WriteString(fmt.Sprintf(`<td>%d</td>`, i+1))
-		
-		// Body area
-		area := point.Area
-		if area == "" {
-			area = "-"
-		}
-		result.WriteString(`<td>` + html.EscapeString(area) + `</td>`)
-		
-		// Side
-		side := point.Side
-		if side == "" {
-			side = "-"
-		}
-		result.WriteString(`<td>` + html.EscapeString(side) + `</td>`)
-		
-		// Intensity with color coding
-		intensityColor := getIntensityColor(point.Intensity)
-		intensityLabel := getIntensityLabel(point.Intensity)
-		result.WriteString(`<td>`)
-		result.WriteString(`<span style="background-color: ` + intensityColor + `; color: white; padding: 2px 6px; border-radius: 3px;">`)
-		result.WriteString(fmt.Sprintf("%s (%d/10)", intensityLabel, point.Intensity))
-		result.WriteString(`</span>`)
-		result.WriteString(`</td>`)
-		
-		// Position
-		result.WriteString(`<td>` + fmt.Sprintf("(%.1f, %.1f)", point.X, point.Y) + `</td>`)
-		
-		result.WriteString(`</tr>`)
-	}
-	
-	result.WriteString(`</tbody>`)
-	result.WriteString(`</table>`)
-	
-	return result.String()
-}
 
 // Helper functions
 
@@ -282,12 +205,6 @@ func SensationAreasRenderer(metadata PatternMetadata, context *PDFContext) (stri
 	} else {
 		// Render visual body diagram with sensation markers
 		result.WriteString(renderVisualSensationDiagram(sensationPoints))
-		
-		// Add sensation points table as supplementary information
-		result.WriteString(`<div style="margin-top: 30px;">`)
-		result.WriteString(`<h4>Sensation Location Details</h4>`)
-		result.WriteString(renderSensationPointsTable(sensationPoints))
-		result.WriteString(`</div>`)
 	}
 	
 	result.WriteString(`</div>`)
@@ -384,43 +301,6 @@ func renderVisualSensationDiagram(sensationPoints []SensationPoint) string {
 	return result.String()
 }
 
-// renderSensationPointsTable creates a table of sensation points
-func renderSensationPointsTable(sensationPoints []SensationPoint) string {
-	var result bytes.Buffer
-	
-	// Sort sensation points by type
-	sortedPoints := make([]SensationPoint, len(sensationPoints))
-	copy(sortedPoints, sensationPoints)
-	sort.Slice(sortedPoints, func(i, j int) bool {
-		return sortedPoints[i].Sensation < sortedPoints[j].Sensation
-	})
-	
-	result.WriteString(`<table class="data-table">`)
-	result.WriteString(`<thead>`)
-	result.WriteString(`<tr>`)
-	result.WriteString(`<th>Location</th>`)
-	result.WriteString(`<th>Sensation Type</th>`)
-	result.WriteString(`</tr>`)
-	result.WriteString(`</thead>`)
-	result.WriteString(`<tbody>`)
-	
-	for i, point := range sortedPoints {
-		label := sensationLabels[point.Sensation]
-		if label == "" {
-			label = point.Sensation
-		}
-		
-		result.WriteString(`<tr>`)
-		result.WriteString(fmt.Sprintf(`<td>Point %d</td>`, i+1))
-		result.WriteString(fmt.Sprintf(`<td>%s</td>`, html.EscapeString(label)))
-		result.WriteString(`</tr>`)
-	}
-	
-	result.WriteString(`</tbody>`)
-	result.WriteString(`</table>`)
-	
-	return result.String()
-}
 
 // embedMarkersInSVG embeds pain markers directly into the SVG as circle elements
 func embedMarkersInSVG(svgContent string, painPoints []PainPoint, markerType string) string {

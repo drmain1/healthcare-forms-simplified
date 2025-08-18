@@ -64,8 +64,9 @@ func (o *PDFOrchestrator) GeneratePDF(ctx context.Context, responseID string, us
 	}
 	
 	// 2. Detect patterns and determine render order
-	log.Printf("DEBUG: Form definition survey JSON: %+v", pdfContext.FormDefinition)
-	log.Printf("DEBUG: Response answers keys: %v", getKeys(pdfContext.Answers))
+	// NOTE: Avoid logging full form definition or answers to maintain HIPAA compliance
+	log.Printf("DEBUG: Form definition contains %d keys", len(pdfContext.FormDefinition))
+	log.Printf("DEBUG: Response answers contains %d fields", len(pdfContext.Answers))
 	
 	// Extract surveyJson for pattern detection
 	surveyJson, ok := pdfContext.FormDefinition["surveyJson"].(map[string]interface{})
@@ -250,9 +251,10 @@ func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []Patt
 	return finalOrder
 }
 
-func (o *PDFOrchestrator) renderSections(context *PDFContext, renderOrder []string) (map[string]string, error) {
-	// Detect all patterns first
-	// Extract surveyJson for pattern detection
+// renderSections now respects JSON order: traverses survey definition in sequence,
+// rendering specialized patterns if present, otherwise falling back to generic fields.
+func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[string]string, error) {
+	// Extract surveyJson for traversal
 	surveyJson, ok := context.FormDefinition["surveyJson"].(map[string]interface{})
 	if !ok {
 		surveyJson = context.FormDefinition // Fallback
@@ -261,53 +263,69 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, renderOrder []stri
 	if err != nil {
 		return nil, err
 	}
-	
-	// Create pattern lookup map
+
+	// Index patterns by type for lookup
 	patternMap := make(map[string]PatternMetadata)
 	for _, pattern := range patterns {
 		patternMap[pattern.PatternType] = pattern
 	}
-	
-	// Render sections in parallel
-	type renderResult struct {
-		patternType string
-		html        string
-		err         error
-	}
-	
-	resultChan := make(chan renderResult, len(renderOrder))
-	
-	for _, patternType := range renderOrder {
-		go func(pt string) {
-			pattern, exists := patternMap[pt]
-			if !exists {
-				resultChan <- renderResult{pt, "", fmt.Errorf("pattern not detected: %s", pt)}
-				return
-			}
-			
-			html, err := o.registry.Render(pt, pattern, context)
-			resultChan <- renderResult{pt, html, err}
-		}(patternType)
-	}
-	
-	// Collect results
+
 	htmlSections := make(map[string]string)
-	for i := 0; i < len(renderOrder); i++ {
-		result := <-resultChan
-		if result.err != nil {
-			// Generate error block instead of failing completely
-			errorBlock := o.registry.generateErrorBlock(RenderError{
-				Code:      fmt.Sprintf("RNDR-%s-001", result.patternType),
-				Section:   result.patternType,
-				Cause:     result.err,
-				RequestID: context.RequestID,
-			})
-			htmlSections[result.patternType] = errorBlock
-		} else {
-			htmlSections[result.patternType] = result.html
+
+	// Recursive traverse elements in order
+	var traverse func(elems []interface{})
+	traverse = func(elems []interface{}) {
+		for _, elem := range elems {
+			elemMap, ok := elem.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			elemType, _ := elemMap["type"].(string)
+			elemName, _ := elemMap["name"].(string)
+
+			// Try to match against known patterns
+			if pattern, exists := patternMap[elemName]; exists {
+				html, err := o.registry.Render(pattern.PatternType, pattern, context)
+				if err != nil {
+					errorBlock := o.registry.generateErrorBlock(RenderError{
+						Code:      fmt.Sprintf("RNDR-%s-001", pattern.PatternType),
+						Section:   pattern.PatternType,
+						Cause:     err,
+						RequestID: context.RequestID,
+					})
+					htmlSections[pattern.PatternType] = errorBlock
+				} else {
+					htmlSections[pattern.PatternType] = html
+				}
+			} else {
+				// Generic fallback render
+				genericHTML := fmt.Sprintf("<div class='generic-field'><strong>%s</strong>: %v</div>",
+					elemMap["title"], context.Answers[elemName])
+				htmlSections[elemName] = genericHTML
+			}
+
+			// Traverse children if panel
+			if elemType == "panel" {
+				if nested, ok := elemMap["elements"].([]interface{}); ok {
+					traverse(nested)
+				}
+			}
 		}
 	}
-	
+
+	// Traverse by pages
+	if pages, ok := surveyJson["pages"].([]interface{}); ok {
+		for _, page := range pages {
+			if pageMap, ok := page.(map[string]interface{}); ok {
+				if elems, ok := pageMap["elements"].([]interface{}); ok {
+					traverse(elems)
+				}
+			}
+		}
+	} else if elems, ok := surveyJson["elements"].([]interface{}); ok {
+		traverse(elems)
+	}
+
 	return htmlSections, nil
 }
 

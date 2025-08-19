@@ -214,6 +214,13 @@ function registerTodaysDateQuestion() {
         default: false,
         category: 'general',
         displayName: 'Read-only'
+      },
+      {
+        name: 'metadata',
+        default: null,
+        category: 'general',
+        visible: false,
+        isSerializable: true
       }
     ],
     function() {

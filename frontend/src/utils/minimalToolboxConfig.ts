@@ -201,6 +201,7 @@ export const phase3HealthcareItems = [
       type: 'panel',
       name: 'patient_vitals',
       title: 'Patient Vitals',
+      metadata: { patternType: 'patient_vitals' },
       elements: [
         {
           type: 'html',

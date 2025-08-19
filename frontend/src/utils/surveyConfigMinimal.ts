@@ -8,6 +8,10 @@ import { minimalToolboxItems } from './minimalToolboxConfig';
 import { reviewOfSystemsToolboxItem } from './reviewOfSystemsConfig';
 import { additionalDemographicsPanel } from '../components/FormBuilder/AdditionalDemographicsPanel';
 
+// Initialize metadata support before anything else
+import { initializeSurveyMetadata } from './initializeSurveyMetadata';
+initializeSurveyMetadata();
+
 // Apply SurveyJS license
 const licenseKey = process.env.REACT_APP_SURVEYJS_LICENSE_KEY;
 if (licenseKey) {
@@ -220,12 +224,8 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       name: 'patient_vitals',
       title: 'Patient Vitals',
+      metadata: { patternType: 'patient_vitals' },
       elements: [
-        {
-          type: 'html',
-          name: 'vitals_metadata',
-          html: '<div style="display: none;" data-pattern-type="patient_vitals" data-metadata="true"></div>'
-        },
         {
           type: 'html',
           name: 'vitals_instructions',
@@ -1544,6 +1544,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       name: 'terms_and_conditions_panel',
       title: 'Terms and Conditions',
+      metadata: { patternType: 'terms_and_conditions' },
       elements: [
         {
           type: 'html',

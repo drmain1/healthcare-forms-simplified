@@ -232,6 +232,13 @@ function registerDateOfBirthQuestion() {
         name: 'ageFieldName',
         default: 'patient_age',
         category: 'general'
+      },
+      {
+        name: 'metadata',
+        default: null,
+        category: 'general',
+        visible: false,
+        isSerializable: true
       }
     ],
     function() {

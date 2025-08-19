@@ -44,6 +44,13 @@ Serializer.addClass(
     {
       name: 'painPoints:painpoints',
       default: []
+    },
+    {
+      name: 'metadata',
+      default: null,
+      category: 'general',
+      visible: false,
+      isSerializable: true
     }
   ],
   function() {

@@ -64,8 +64,10 @@ func TermsConditionsRenderer(metadata PatternMetadata, context *PDFContext) (str
 						}
 					}
 					
-					// Check for acknowledgement checkbox
-					if elementType == "checkbox" && strings.Contains(strings.ToLower(elementName), "acknowledgement") {
+					// Check for acknowledgement/acceptance checkbox
+					if elementType == "checkbox" && (strings.Contains(strings.ToLower(elementName), "acknowledgement") || 
+						strings.Contains(strings.ToLower(elementName), "accept") || 
+						strings.Contains(strings.ToLower(elementName), "terms")) {
 						result.WriteString(renderAcknowledgementStatus(element, elementName, answers))
 					}
 					
@@ -141,6 +143,16 @@ func processTermsHTML(content string) string {
 func renderAcknowledgementStatus(element map[string]interface{}, elementName string, answers map[string]interface{}) string {
 	var result bytes.Buffer
 	
+	// Get the checkbox text from choices
+	checkboxText := "Agreement"
+	if choices, ok := element["choices"].([]interface{}); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]interface{}); ok {
+			if text, ok := choice["text"].(string); ok {
+				checkboxText = text
+			}
+		}
+	}
+	
 	// Create a styled acknowledgement table
 	result.WriteString(`<div style="margin-top: 15px;">`)
 	result.WriteString(`<table style="width: 100%; border-collapse: collapse; background-color: #fff;">`)
@@ -153,7 +165,7 @@ func renderAcknowledgementStatus(element map[string]interface{}, elementName str
 	result.WriteString(`</thead>`)
 	result.WriteString(`<tbody>`)
 	result.WriteString(`<tr>`)
-	result.WriteString(`<td style="padding: 10px; border: 1px solid #dee2e6;">Acknowledgement</td>`)
+	result.WriteString(fmt.Sprintf(`<td style="padding: 10px; border: 1px solid #dee2e6;">%s</td>`, html.EscapeString(checkboxText)))
 	
 	// Check if accepted
 	accepted := false

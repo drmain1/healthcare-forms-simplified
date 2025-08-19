@@ -32,6 +32,11 @@ import '../../styles/mobile-minimal.css';
 import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
 import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
+
+// Initialize metadata support before loading custom questions
+import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
+initializeSurveyMetadata();
+
 // Import centralized custom question registry - registers all custom questions
 import '../FormBuilder/customQuestionRegistry';
 import { extractCustomQuestionData } from '../FormBuilder/customQuestionRegistry';

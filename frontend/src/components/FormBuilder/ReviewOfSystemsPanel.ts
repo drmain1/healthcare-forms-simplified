@@ -6,6 +6,7 @@ export const reviewOfSystemsPanel = {
   name: 'page_review_of_systems',
   title: 'Review of Systems',
   description: 'Select the following conditions that apply to you. Please circle any current conditions.',
+  metadata: { patternType: 'review_of_systems' },
   elements: [
     {
       type: 'panel',

@@ -7,6 +7,13 @@ import { BodyPainDiagram, renderBodyDiagramForPDF } from './BodyPainDiagram';
 export class QuestionBodyPainDiagramModel extends Question {
   static readonly typeName = 'bodypaindiagram';
 
+  constructor(name: string) {
+    // Ensure name is always a string
+    super(typeof name === 'string' ? name : '');
+    // Set default metadata for this question type
+    this.metadata = { patternType: 'body_pain_diagram' };
+  }
+
   getType(): string {
     return QuestionBodyPainDiagramModel.typeName;
   }
@@ -106,9 +113,18 @@ Serializer.addClass(
       visible: false,
       isSerializable: true,
     },
+    {
+      name: 'metadata',
+      default: null,
+      category: 'general',
+      visible: false,
+      isSerializable: true,
+    },
   ],
-  function() {
-    return new QuestionBodyPainDiagramModel('');
+  function(name) {
+    // Handle various input types from SurveyJS
+    const questionName = typeof name === 'string' ? name : '';
+    return new QuestionBodyPainDiagramModel(questionName);
   },
   'question'
 );
@@ -123,7 +139,10 @@ if (typeof window !== 'undefined' && (window as any).SurveyCreator) {
     json: {
       type: QuestionBodyPainDiagramModel.typeName,
       title: 'Please mark areas where you experience pain',
-      description: 'Click on the body diagram to indicate pain locations and intensity'
+      description: 'Click on the body diagram to indicate pain locations and intensity',
+      metadata: {
+        patternType: 'body_pain_diagram'
+      }
     }
   };
 

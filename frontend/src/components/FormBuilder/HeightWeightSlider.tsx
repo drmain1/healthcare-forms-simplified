@@ -163,7 +163,8 @@ export class QuestionWeightSliderModel extends Question {
 Serializer.addClass(
   QuestionHeightSliderModel.typeName,
   [
-    { name: 'defaultValue:number', default: 66 }
+    { name: 'defaultValue:number', default: 66 },
+    { name: 'metadata', default: null, category: 'general', visible: false, isSerializable: true }
   ],
   function() {
     return new QuestionHeightSliderModel('');
@@ -175,7 +176,8 @@ Serializer.addClass(
 Serializer.addClass(
   QuestionWeightSliderModel.typeName,
   [
-    { name: 'defaultValue:number', default: 150 }
+    { name: 'defaultValue:number', default: 150 },
+    { name: 'metadata', default: null, category: 'general', visible: false, isSerializable: true }
   ],
   function() {
     return new QuestionWeightSliderModel('');

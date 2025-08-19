@@ -30,6 +30,11 @@ import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
 import { ClinicalSummaryButton } from './ClinicalSummaryButton';
+
+// Initialize metadata support before loading custom questions
+import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
+initializeSurveyMetadata();
+
 // Import centralized custom question registry - registers all custom questions
 import '../FormBuilder/customQuestionRegistry';
 

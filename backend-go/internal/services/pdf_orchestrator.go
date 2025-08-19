@@ -75,6 +75,29 @@ func (o *PDFOrchestrator) GeneratePDF(ctx context.Context, responseID string, us
 		log.Printf("DEBUG: Using full form definition as surveyJson fallback")
 	} else {
 		log.Printf("DEBUG: Successfully extracted surveyJson from form definition")
+		// Debug: Check if pages exist
+		if pages, ok := surveyJson["pages"].([]interface{}); ok {
+			log.Printf("DEBUG: Found %d pages in surveyJson", len(pages))
+			// Check first page for elements
+			if len(pages) > 0 {
+				if page, ok := pages[0].(map[string]interface{}); ok {
+					if elements, ok := page["elements"].([]interface{}); ok {
+						log.Printf("DEBUG: First page has %d elements", len(elements))
+						// Check first element for metadata
+						if len(elements) > 0 {
+							if elem, ok := elements[0].(map[string]interface{}); ok {
+								log.Printf("DEBUG: First element type=%v, name=%v", elem["type"], elem["name"])
+								if metadata, ok := elem["metadata"].(map[string]interface{}); ok {
+									log.Printf("DEBUG: First element has metadata: %+v", metadata)
+								} else {
+									log.Printf("DEBUG: First element has NO metadata")
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	patterns, err := o.detector.DetectPatterns(surveyJson, pdfContext.Answers)
 	if err != nil {

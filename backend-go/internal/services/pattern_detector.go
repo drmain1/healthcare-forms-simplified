@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -205,28 +204,49 @@ func (m *TermsCheckboxMatcher) GetPriority() int       { return 1 }
 type TermsConditionsMatcher struct{}
 
 func (m *TermsConditionsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Look for panels with consent/terms/policy related titles
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
 	var consentPanels []map[string]interface{}
+	var termsFields []string
 	
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
-			// Check for titles containing consent/terms/policy keywords
-			if title, ok := element["title"].(string); ok {
-				titleLower := strings.ToLower(title)
-				if strings.Contains(titleLower, "consent") ||
-				   strings.Contains(titleLower, "acknowledgment") ||
-				   strings.Contains(titleLower, "financial responsibility") ||
-				   strings.Contains(titleLower, "privacy") ||
-				   strings.Contains(titleLower, "terms") ||
-				   strings.Contains(titleLower, "agreement") ||
-				   strings.Contains(titleLower, "policies") {
-					
-					// Found a consent/terms panel
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "terms_and_conditions" {
+					// Found terms and conditions via metadata
 					consentPanels = append(consentPanels, element)
 					
-					// Log for debugging
-					fmt.Printf("DEBUG: Found terms/consent panel: %s\n", title)
+					// Extract field names from the panel elements
+					if panelElements, ok := element["elements"].([]interface{}); ok {
+						for _, el := range panelElements {
+							if elem, ok := el.(map[string]interface{}); ok {
+								if name, ok := elem["name"].(string); ok {
+									// Add field names (skip HTML elements)
+									if !strings.HasPrefix(name, "terms_header") && !strings.HasPrefix(name, "terms_content") {
+										termsFields = append(termsFields, name)
+									}
+								}
+							}
+						}
+					}
+					
+					// Also check response data for any terms-related fields
+					for key := range responseData {
+						if strings.Contains(key, "terms") || strings.Contains(key, "accept") || strings.Contains(key, "signature") {
+							// Add if not already in list
+							found := false
+							for _, field := range termsFields {
+								if field == key {
+									found = true
+									break
+								}
+							}
+							if !found {
+								termsFields = append(termsFields, key)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -235,7 +255,7 @@ func (m *TermsConditionsMatcher) Match(formDef, responseData map[string]interfac
 	if len(consentPanels) > 0 {
 		return true, PatternMetadata{
 			PatternType:  "terms_conditions",
-			ElementNames: []string{}, // Will be populated with element names from panels
+			ElementNames: termsFields,
 			TemplateData: map[string]interface{}{
 				"panels": consentPanels,
 				"answers": responseData,
@@ -253,45 +273,40 @@ func (m *TermsConditionsMatcher) GetPriority() int       { return 2 }
 type PatientDemographicsMatcher struct{}
 
 func (m *PatientDemographicsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	demographicFields := []string{
-		"patient_name", "first_name", "last_name", "date_of_birth", "dob",
-		"sex_at_birth", "gender", "sex", "phone", "phone_number", "email", "email_address", 
-		"address", "street_address", "city", "state", "zip", "zip_code", 
-		"postal_code", "emergency_contact", "emergency_phone",
-	}
+	// Clean metadata-only detection for 100% reliability
+	elements := extractElements(formDef)
+	var demographicFields []string
 	
-	foundFields := []string{}
-	for _, field := range demographicFields {
-		if _, exists := responseData[field]; exists {
-			foundFields = append(foundFields, field)
-		}
-	}
-	
-	// Also check for any field containing these keywords
-	for key := range responseData {
-		lowerKey := strings.ToLower(key)
-		if !contains(foundFields, key) {
-			if strings.Contains(lowerKey, "name") ||
-			   strings.Contains(lowerKey, "birth") ||
-			   strings.Contains(lowerKey, "gender") ||
-			   strings.Contains(lowerKey, "sex") ||
-			   strings.Contains(lowerKey, "phone") ||
-			   strings.Contains(lowerKey, "email") ||
-			   strings.Contains(lowerKey, "address") ||
-			   strings.Contains(lowerKey, "city") ||
-			   strings.Contains(lowerKey, "state") ||
-			   strings.Contains(lowerKey, "zip") {
-				foundFields = append(foundFields, key)
+	for _, element := range elements {
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "patient_demographics" {
+					// Found patient demographics via metadata
+					if name, ok := element["name"].(string); ok {
+						demographicFields = append(demographicFields, name)
+					}
+					// Also collect any nested fields if it's a panel
+					if nestedElements, ok := element["elements"].([]interface{}); ok {
+						for _, nested := range nestedElements {
+							if nestedMap, ok := nested.(map[string]interface{}); ok {
+								if nestedName, ok := nestedMap["name"].(string); ok {
+									demographicFields = append(demographicFields, nestedName)
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 	
-	if len(foundFields) >= 2 { // At least 2 demographic fields
+	if len(demographicFields) > 0 {
 		return true, PatternMetadata{
 			PatternType:  "patient_demographics",
-			ElementNames: foundFields,
+			ElementNames: demographicFields,
 			TemplateData: map[string]interface{}{
-				"fields": foundFields,
+				"fields": demographicFields,
 			},
 		}
 	}
@@ -542,108 +557,37 @@ func (m *SensationAreasMatcher) GetPriority() int       { return 8 }
 type PatientVitalsMatcher struct{}
 
 func (m *PatientVitalsMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// First check for metadata tag - this is the preferred method
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
 	var foundVitals []string
 
-	// Check for metadata-tagged panels first (bulletproof detection)
 	for _, element := range elements {
-		if elemType, ok := element["type"].(string); ok && elemType == "panel" {
-			// Method 1: Direct metadata property on panel
-			if metadata, ok := element["metadata"].(map[string]interface{}); ok {
-				if patternType, ok := metadata["patternType"].(string); ok && patternType == "patient_vitals" {
-					log.Printf("DEBUG: Found patient vitals panel by direct metadata tag")
-					// Extract elements from the metadata-tagged panel
-					if panelElements, ok := element["elements"].([]interface{}); ok {
-						for _, panelElem := range panelElements {
-							if pe, ok := panelElem.(map[string]interface{}); ok {
-								// Only consider elements that are not just for display
-								if t, ok := pe["type"].(string); ok && t != "html" {
-									if n, ok := pe["name"].(string); ok {
-										foundVitals = append(foundVitals, n)
-									}
-								}
-							}
-						}
-					}
-					goto CheckAndReturn
-				}
-			}
-
-			// Method 2: Look for hidden HTML elements with metadata data attributes
-			if panelElements, ok := element["elements"].([]interface{}); ok {
-				for _, panelElem := range panelElements {
-					if pe, ok := panelElem.(map[string]interface{}); ok {
-						if t, ok := pe["type"].(string); ok && t == "html" {
-							if htmlContent, ok := pe["html"].(string); ok {
-								// Check if HTML contains our metadata data attributes
-								if strings.Contains(htmlContent, `data-pattern-type="patient_vitals"`) {
-									log.Printf("DEBUG: Found patient vitals panel by HTML metadata data attribute")
-									// Extract ALL elements from this panel for vitals processing
-									for _, elem := range panelElements {
-										if e, ok := elem.(map[string]interface{}); ok {
-											// Only consider elements that are not just for display
-											if elemType, ok := e["type"].(string); ok && elemType != "html" {
-												if name, ok := e["name"].(string); ok {
-													foundVitals = append(foundVitals, name)
-												}
-											}
-										}
-									}
-									goto CheckAndReturn
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Fallback: Look for a panel with "Vitals" in the title or name (backward compatibility)
-	for _, element := range elements {
-		if elemType, ok := element["type"].(string); ok && elemType == "panel" {
-			name, _ := element["name"].(string)
-			title, _ := element["title"].(string)
-
-			// Corrected case-sensitivity for title check
-			if strings.Contains(strings.ToLower(name), "vitals") || strings.Contains(strings.ToLower(title), "vitals") {
-				log.Printf("DEBUG: Found patient vitals panel by name/title matching")
-				// Panel found, now extract the names of the elements inside it
-				if panelElements, ok := element["elements"].([]interface{}); ok {
-					for _, panelElem := range panelElements {
-						if pe, ok := panelElem.(map[string]interface{}); ok {
-							// Only consider elements that are not just for display
-							if t, ok := pe["type"].(string); ok && t != "html" {
-								if n, ok := pe["name"].(string); ok {
-									foundVitals = append(foundVitals, n)
-								}
-							}
-						}
-					}
-				}
-				// Once we find a vitals panel, we assume it's the one and stop looking.
-				goto CheckAndReturn
-			}
-		}
-	}
-
-	// Fallback: if no panel was found, look for individual slider elements
-	for _, element := range elements {
-		if elemType, ok := element["type"].(string); ok {
-			if elemType == "heightslider" || elemType == "weightslider" {
-				if name, ok := element["name"].(string); ok {
-					if !contains(foundVitals, name) {
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "patient_vitals" {
+					// Found patient vitals via metadata
+					if name, ok := element["name"].(string); ok {
 						foundVitals = append(foundVitals, name)
 					}
+					// Also collect any nested fields if it's a panel
+					if nestedElements, ok := element["elements"].([]interface{}); ok {
+						for _, nested := range nestedElements {
+							if nestedMap, ok := nested.(map[string]interface{}); ok {
+								// Only consider elements that are not just for display
+								if t, ok := nestedMap["type"].(string); ok && t != "html" {
+									if nestedName, ok := nestedMap["name"].(string); ok {
+										foundVitals = append(foundVitals, nestedName)
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 
-CheckAndReturn:
-	// If we found potential vitals fields in the form definition, we consider it a match.
-	// The renderer can handle cases where no data was submitted.
 	if len(foundVitals) > 0 {
 		var fieldsWithData []string
 		for _, fieldName := range foundVitals {
@@ -651,9 +595,6 @@ CheckAndReturn:
 				fieldsWithData = append(fieldsWithData, fieldName)
 			}
 		}
-
-		log.Printf("DEBUG: Patient vitals matcher found %d total fields, %d with data: %v", 
-			len(foundVitals), len(fieldsWithData), foundVitals)
 
 		return true, PatternMetadata{
 			PatternType:  "patient_vitals",
@@ -664,7 +605,6 @@ CheckAndReturn:
 		}
 	}
 
-	log.Printf("DEBUG: Patient vitals matcher found no vitals fields")
 	return false, PatternMetadata{}
 }
 
@@ -675,78 +615,41 @@ func (m *PatientVitalsMatcher) GetPriority() int       { return 9 }
 type InsuranceCardMatcher struct{}
 
 func (m *InsuranceCardMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// First check for metadata tag - this is the preferred method
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
 	insuranceFields := []string{}
 	
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
-			// Check for metadata tag first (preferred method)
-			if metadata, ok := element["metadata"].(map[string]interface{}); ok {
-				if patternType, ok := metadata["patternType"].(string); ok && patternType == "insurance_card" {
-					// Found insurance card panel via metadata - collect fields from nested elements
-					if panelElements, ok := element["elements"].([]interface{}); ok {
-						for _, panelElem := range panelElements {
-							if pe, ok := panelElem.(map[string]interface{}); ok {
-								if name, ok := pe["name"].(string); ok {
-									// Include all insurance-related fields in the pattern
-									insuranceFields = append(insuranceFields, name)
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "insurance_card" {
+					// Found insurance card via metadata
+					if name, ok := element["name"].(string); ok {
+						insuranceFields = append(insuranceFields, name)
+					}
+					// Also collect any nested fields if it's a panel
+					if nestedElements, ok := element["elements"].([]interface{}); ok {
+						for _, nested := range nestedElements {
+							if nestedMap, ok := nested.(map[string]interface{}); ok {
+								if nestedName, ok := nestedMap["name"].(string); ok {
+									insuranceFields = append(insuranceFields, nestedName)
 								}
 							}
 						}
 					}
-					
-					// Also collect any extracted insurance data fields
-					for key := range responseData {
-						if strings.Contains(strings.ToLower(key), "insurance") {
-							insuranceFields = append(insuranceFields, key)
-						}
-					}
-					
-					if len(insuranceFields) > 0 {
-						return true, PatternMetadata{
-							PatternType:  "insurance_card",
-							ElementNames: insuranceFields,
-							TemplateData: map[string]interface{}{
-								"insuranceFields": insuranceFields,
-							},
-						}
-					}
 				}
 			}
-			
-			// Fallback: Check for the specific insurance card panel title
-			if title, ok := element["title"].(string); ok && 
-			   (title == "Insurance Card Information" || title == "Insurance Card Upload") {
-				
-				// Found insurance card panel - collect fields from nested elements
-				if panelElements, ok := element["elements"].([]interface{}); ok {
-					for _, panelElem := range panelElements {
-						if pe, ok := panelElem.(map[string]interface{}); ok {
-							if name, ok := pe["name"].(string); ok {
-								insuranceFields = append(insuranceFields, name)
-							}
-						}
-					}
-				}
-				
-				// Also collect any extracted insurance data fields
-				for key := range responseData {
-					if strings.Contains(strings.ToLower(key), "insurance") {
-						insuranceFields = append(insuranceFields, key)
-					}
-				}
-				
-				if len(insuranceFields) > 0 {
-					return true, PatternMetadata{
-						PatternType:  "insurance_card",
-						ElementNames: insuranceFields,
-						TemplateData: map[string]interface{}{
-							"insuranceFields": insuranceFields,
-						},
-					}
-				}
-			}
+		}
+	}
+	
+	if len(insuranceFields) > 0 {
+		return true, PatternMetadata{
+			PatternType:  "insurance_card",
+			ElementNames: insuranceFields,
+			TemplateData: map[string]interface{}{
+				"insuranceFields": insuranceFields,
+			},
 		}
 	}
 	
@@ -846,28 +749,36 @@ func (m *SignatureMatcher) GetPriority() int       { return 11 }
 type ReviewOfSystemsMatcher struct{}
 
 func (m *ReviewOfSystemsMatcher) Match(formDefinition, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Check if the form contains the ROS panel
-	if !DetectReviewOfSystemsPattern(formDefinition) {
-		return false, PatternMetadata{}
-	}
-	
-	// Simple approach: collect ALL fields that start with "ros_"
+	// Clean metadata-only detection for 100% reliability
+	elements := extractElements(formDefinition)
 	var rosFields []string
-	for key := range responseData {
-		if strings.HasPrefix(key, "ros_") {
-			rosFields = append(rosFields, key)
+	
+	for _, element := range elements {
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "review_of_systems" {
+					// Found review of systems via metadata
+					// Collect all ros_ fields from response data
+					for key := range responseData {
+						if strings.HasPrefix(key, "ros_") {
+							rosFields = append(rosFields, key)
+						}
+					}
+					// Return immediately when metadata found
+					return true, PatternMetadata{
+						PatternType:  "review_of_systems",
+						ElementNames: rosFields,
+						TemplateData: map[string]interface{}{
+							"rosFields": rosFields,
+						},
+					}
+				}
+			}
 		}
 	}
 	
-	// Return match if we found the ROS panel structure
-	// The renderer will handle empty vs populated fields
-	return true, PatternMetadata{
-		PatternType:  "review_of_systems",
-		ElementNames: rosFields,
-		TemplateData: map[string]interface{}{
-			"rosFields": rosFields,
-		},
-	}
+	return false, PatternMetadata{}
 }
 
 func (m *ReviewOfSystemsMatcher) GetPatternType() string { return "review_of_systems" }
@@ -877,131 +788,38 @@ func (m *ReviewOfSystemsMatcher) GetPriority() int       { return 4 }
 type AdditionalDemographicsMatcher struct{}
 
 func (m *AdditionalDemographicsMatcher) Match(formDefinition, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Check if the form contains the Additional Demographics panel
-	if !DetectAdditionalDemographicsPattern(formDefinition) {
-		return false, PatternMetadata{}
-	}
-	
-	// Collect all fields that start with "demographics_additional_"
+	// Clean metadata-only detection for 100% reliability
+	elements := extractElements(formDefinition)
 	var additionalDemoFields []string
-	for key := range responseData {
-		if strings.HasPrefix(key, "demographics_additional_") {
-			additionalDemoFields = append(additionalDemoFields, key)
+	
+	for _, element := range elements {
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "additional_demographics" {
+					// Found additional demographics via metadata
+					// Collect all demographics_additional_ fields from response data
+					for key := range responseData {
+						if strings.HasPrefix(key, "demographics_additional_") {
+							additionalDemoFields = append(additionalDemoFields, key)
+						}
+					}
+					// Return immediately when metadata found
+					return true, PatternMetadata{
+						PatternType:  "additional_demographics",
+						ElementNames: additionalDemoFields,
+						TemplateData: map[string]interface{}{
+							"additionalDemoFields": additionalDemoFields,
+						},
+					}
+				}
+			}
 		}
 	}
 	
-	// Return match if we found the Additional Demographics panel structure
-	return true, PatternMetadata{
-		PatternType:  "additional_demographics",
-		ElementNames: additionalDemoFields,
-		TemplateData: map[string]interface{}{
-			"additionalDemoFields": additionalDemoFields,
-		},
-	}
+	return false, PatternMetadata{}
 }
 
 func (m *AdditionalDemographicsMatcher) GetPatternType() string { return "additional_demographics" }
 func (m *AdditionalDemographicsMatcher) GetPriority() int       { return 3 }
 
-// DetectAdditionalDemographicsPattern checks if the form contains Additional Demographics elements
-func DetectAdditionalDemographicsPattern(surveyJSON map[string]interface{}) bool {
-	// First check for metadata tag for more reliable detection
-	if hasMetadataPattern(surveyJSON, "additional_demographics") {
-		return true
-	}
-	
-	// Fallback to panel name detection
-	if pages, ok := surveyJSON["pages"].([]interface{}); ok {
-		for _, pageData := range pages {
-			if page, ok := pageData.(map[string]interface{}); ok {
-				if hasAdditionalDemographicsPanel(page["elements"]) {
-					return true
-				}
-			}
-		}
-	}
-	
-	// Also check elements at the root level
-	if elements, ok := surveyJSON["elements"].([]interface{}); ok {
-		if hasAdditionalDemographicsPanel(elements) {
-			return true
-		}
-	}
-	
-	return false
-}
-
-// hasAdditionalDemographicsPanel recursively checks for Additional Demographics panel in elements
-func hasAdditionalDemographicsPanel(elements interface{}) bool {
-	elementsSlice, ok := elements.([]interface{})
-	if !ok {
-		return false
-	}
-	
-	for _, elData := range elementsSlice {
-		element, ok := elData.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		
-		// Check if this is the Additional Demographics panel
-		if name, ok := element["name"].(string); ok {
-			if name == "page_additional_demographics" {
-				return true
-			}
-		}
-		
-		// Check for metadata pattern
-		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
-			if pattern, ok := metadata["pdfPattern"].(string); ok {
-				if pattern == "additional_demographics" {
-					return true
-				}
-			}
-		}
-		
-		// Check nested elements
-		if subElements, ok := element["elements"]; ok {
-			if hasAdditionalDemographicsPanel(subElements) {
-				return true
-			}
-		}
-	}
-	
-	return false
-}
-
-// hasMetadataPattern checks for explicit metadata pattern in form definition
-func hasMetadataPattern(surveyJSON map[string]interface{}, patternType string) bool {
-	return hasMetadataPatternInElements(surveyJSON, patternType)
-}
-
-func hasMetadataPatternInElements(data interface{}, patternType string) bool {
-	switch v := data.(type) {
-	case map[string]interface{}:
-		// Check metadata in current element
-		if metadata, ok := v["metadata"].(map[string]interface{}); ok {
-			if pattern, ok := metadata["pdfPattern"].(string); ok {
-				if pattern == patternType {
-					return true
-				}
-			}
-		}
-		
-		// Recursively check all nested maps
-		for _, value := range v {
-			if hasMetadataPatternInElements(value, patternType) {
-				return true
-			}
-		}
-	case []interface{}:
-		// Recursively check all array elements
-		for _, item := range v {
-			if hasMetadataPatternInElements(item, patternType) {
-				return true
-			}
-		}
-	}
-	
-	return false
-}

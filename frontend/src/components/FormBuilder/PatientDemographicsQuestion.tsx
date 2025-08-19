@@ -114,6 +114,13 @@ const PatientDemographicsComponent: React.FC<{
 export class QuestionPatientDemographicsModel extends Question {
   static readonly typeName = 'patient_demographics';
 
+  constructor(name: string) {
+    // Ensure name is always a string
+    super(typeof name === 'string' ? name : '');
+    // Set default metadata for this question type
+    this.metadata = { patternType: 'patient_demographics' };
+  }
+
   getType(): string {
     return QuestionPatientDemographicsModel.typeName;
   }
@@ -130,9 +137,19 @@ export class QuestionPatientDemographicsModel extends Question {
 // --- Register with SurveyJS ---
 Serializer.addClass(
   QuestionPatientDemographicsModel.typeName,
-  [], // No special properties to serialize, the value is a single JSON object
-  function () {
-    return new QuestionPatientDemographicsModel('');
+  [
+    {
+      name: 'metadata',
+      default: null,
+      category: 'general',
+      visible: false,
+      isSerializable: true,
+    }
+  ], // Add metadata property for serialization
+  function (name) {
+    // Handle various input types from SurveyJS
+    const questionName = typeof name === 'string' ? name : '';
+    return new QuestionPatientDemographicsModel(questionName);
   },
   'question'
 );
@@ -161,3 +178,23 @@ ReactQuestionFactory.Instance.registerQuestion(
     return React.createElement(SurveyQuestionPatientDemographics, props);
   }
 );
+
+// Add to toolbox
+if (typeof window !== 'undefined' && (window as any).SurveyCreator) {
+  const componentInfo = {
+    name: QuestionPatientDemographicsModel.typeName,
+    title: 'Patient Demographics',
+    category: 'Healthcare',
+    iconName: 'icon-panel',
+    json: {
+      type: QuestionPatientDemographicsModel.typeName,
+      title: 'Patient Demographics',
+      description: 'Collect patient demographic information',
+      metadata: {
+        patternType: 'patient_demographics'
+      }
+    }
+  };
+
+  (window as any).SurveyCreator.defaultToolbox.addItem(componentInfo);
+}

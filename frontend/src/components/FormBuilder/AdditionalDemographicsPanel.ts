@@ -6,6 +6,7 @@ export const additionalDemographicsPanel = {
   name: 'page_additional_demographics',
   title: 'Additional Demographics',
   description: 'Please provide additional demographic and contact information.',
+  metadata: { patternType: 'additional_demographics' },
   elements: [
     {
       type: 'radiogroup',

@@ -7,6 +7,13 @@ import { BodyDiagram2, renderBodyDiagram2ForPDF } from './BodyDiagram2';
 export class QuestionBodyDiagram2Model extends Question {
   static readonly typeName = 'bodydiagram2';
 
+  constructor(name: string) {
+    // Ensure name is always a string
+    super(typeof name === 'string' ? name : '');
+    // Set default metadata for this question type
+    this.metadata = { patternType: 'sensation_areas_diagram' };
+  }
+
   getType(): string {
     return QuestionBodyDiagram2Model.typeName;
   }
@@ -106,9 +113,18 @@ Serializer.addClass(
       visible: false,
       isSerializable: true,
     },
+    {
+      name: 'metadata',
+      default: null,
+      category: 'general',
+      visible: false,
+      isSerializable: true,
+    },
   ],
-  function() {
-    return new QuestionBodyDiagram2Model('');
+  function(name) {
+    // Handle various input types from SurveyJS
+    const questionName = typeof name === 'string' ? name : '';
+    return new QuestionBodyDiagram2Model(questionName);
   },
   'question'
 );
@@ -123,7 +139,10 @@ if (typeof window !== 'undefined' && (window as any).SurveyCreator) {
     json: {
       type: QuestionBodyDiagram2Model.typeName,
       title: 'Please mark areas where you experience different sensations',
-      description: 'Click on the body diagram to indicate sensation locations and types'
+      description: 'Click on the body diagram to indicate sensation locations and types',
+      metadata: {
+        patternType: 'sensation_areas_diagram'
+      }
     }
   };
 

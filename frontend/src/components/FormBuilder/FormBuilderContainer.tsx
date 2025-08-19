@@ -10,7 +10,11 @@ import { FormBuilderUI } from './FormBuilderUI';
 import { useAppSelector } from '../../store/hooks';
 import { selectOrganization } from '../../store/selectors/authSelectors';
 
-// Register custom components
+// CRITICAL: Initialize metadata support BEFORE loading any custom questions
+import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
+initializeSurveyMetadata();
+
+// Register custom components (AFTER metadata initialization)
 import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
 import './HeightWeightSlider';

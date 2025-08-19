@@ -86,13 +86,13 @@ export const BodyPainDiagram: React.FC<BodyPainDiagramProps> = ({
 
   useEffect(() => {
     // Load SVG content
-    fetch('/assets/body-diagram-pain.svg')
+    fetch('/assets/JoLp9f01 (1).svg')
       .then(response => response.text())
       .then(data => {
         // Clean up the SVG to ensure it scales properly
         const cleanedSvg = data
           .replace(/width="[^"]*"/, 'width="100%"')
-          .replace(/viewBox="[^"]*"/, 'viewBox="0 0 310 360"');
+          .replace(/height="[^"]*"/, 'height="auto"');
         setSvgContent(cleanedSvg);
       })
       .catch(error => {
@@ -275,7 +275,7 @@ export const renderBodyDiagramForPDF = (marks: PainMark[]): string => {
 
   return `
     <div style="position: relative; display: inline-block;">
-      <img src="/assets/body-diagram-pain.svg" style="max-width: 100%; height: auto;" />
+      <img src="/assets/JoLp9f01 (1).svg" style="max-width: 100%; height: auto;" />
       ${marksHtml}
       ${marks.length > 0 ? legend : '<p>No pain areas marked</p>'}
     </div>

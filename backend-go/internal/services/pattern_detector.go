@@ -445,40 +445,17 @@ type BodyDiagram2Matcher struct{}
 func (m *BodyDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	sensationDiagramFields := []string{}
 	
-	// First check form definition for bodydiagram2 type components with name "sensation_areas"
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok {
-			// Check specifically for bodydiagram2 type (sensation diagram)
-			if elementType == "bodydiagram2" {
-				if name, ok := element["name"].(string); ok {
-					// Only match if name is "sensation_areas"
-					if name == "sensation_areas" {
-						// Check if this field has data in responseData
-						if value, exists := responseData[name]; exists {
-							if _, isArray := value.([]interface{}); isArray {
-								sensationDiagramFields = append(sensationDiagramFields, name)
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	// If no form definition, check response data for fields that look like bodydiagram2 data
-	if len(sensationDiagramFields) == 0 {
-		for key, value := range responseData {
-			// Check if it's an array with sensation data structure
-			if arr, ok := value.([]interface{}); ok && len(arr) > 0 {
-				if item, ok := arr[0].(map[string]interface{}); ok {
-					// Check if it has sensation field (key differentiator)
-					if _, hasSensation := item["sensation"]; hasSensation {
-						if _, hasX := item["x"]; hasX {
-							if _, hasY := item["y"]; hasY {
-								sensationDiagramFields = append(sensationDiagramFields, key)
-							}
-						}
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				// Support both naming conventions for clarity
+				if patternType == "body_diagram_2" || patternType == "sensation_areas_diagram" {
+					// Found sensation diagram via metadata
+					if name, ok := element["name"].(string); ok {
+						sensationDiagramFields = append(sensationDiagramFields, name)
 					}
 				}
 			}
@@ -507,30 +484,21 @@ type BodyPainDiagram2Matcher struct{}
 func (m *BodyPainDiagram2Matcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
 	painDiagramFields := []string{}
 	
-	// ONLY check form definition for bodypaindiagram type components with name "pain_areas"
-	// Do NOT match on synthetic pain_areas field from pain assessment
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok {
-			// Check specifically for bodypaindiagram type (actual diagram component)
-			if elementType == "bodypaindiagram" {
-				if name, ok := element["name"].(string); ok {
-					// Only match if name is "pain_areas"
-					if name == "pain_areas" {
-						// Check if this field has data in responseData
-						if value, exists := responseData[name]; exists {
-							if _, isArray := value.([]interface{}); isArray {
-								painDiagramFields = append(painDiagramFields, name)
-							}
-						}
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "body_pain_diagram" {
+					// Found body pain diagram via metadata
+					if name, ok := element["name"].(string); ok {
+						painDiagramFields = append(painDiagramFields, name)
 					}
 				}
 			}
 		}
 	}
-	
-	// Do NOT check for pain_areas in response data anymore
-	// That's synthetic data from pain assessment, not a real body diagram
 	
 	if len(painDiagramFields) > 0 {
 		return true, PatternMetadata{

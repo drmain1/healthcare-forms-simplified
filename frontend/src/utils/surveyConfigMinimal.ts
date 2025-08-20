@@ -1349,6 +1349,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       name: 'patient_demographics',
       title: 'Patient Demographics',
+      metadata: { patternType: 'patient_demographics' },
       elements: [
         {
           type: 'html',

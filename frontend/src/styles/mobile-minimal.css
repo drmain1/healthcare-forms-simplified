@@ -22,6 +22,96 @@
   .patient-form-view.mobile-minimal .sd-question__title {
     color: white;
   }
+ 
+   /* Improve section description/readability */
+   .patient-form-view.mobile-minimal .sd-description,
+   .patient-form-view.mobile-minimal .sd-question__description,
+   .patient-form-view.mobile-minimal .sd-element__title--description {
+     color: rgba(255, 255, 255, 0.85); /* higher contrast than before */
+     font-size: 15px;
+     line-height: 1.5;
+     font-weight: 400;
+   }
+
+   /* Improve slider/scale context labels readability */
+   .patient-form-view.mobile-minimal .sd-context,
+   .patient-form-view.mobile-minimal .sd-slider__label,
+   .patient-form-view.mobile-minimal .sd-label {
+     color: rgba(255,255,255,0.9);
+     font-size: 14px;
+     line-height: 1.4;
+   }
+
+   /* Improve numeric tick marks below sliders */
+   .patient-form-view.mobile-minimal .sd-slider__value,
+   .patient-form-view.mobile-minimal .sd-slider__tick-label,
+   .patient-form-view.mobile-minimal .sd-slider__tick-text {
+     color: rgba(255,255,255,0.9);
+     font-size: 13px;
+     font-weight: 400;
+   }
+
+   /* SurveyJS Slider specific styles for better readability */
+   /* Tick label numbers (0, 2, 4, 6, 8, 10, etc.) */
+   .patient-form-view.mobile-minimal .sd-slider__label-text {
+     color: white !important; /* Full white for maximum contrast */
+     font-size: 14px !important;
+     font-weight: 500 !important;
+     text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important; /* Subtle shadow for better readability */
+   }
+
+   /* Label container styling */
+   .patient-form-view.mobile-minimal .sd-slider__label {
+     color: white !important;
+   }
+
+   /* Style the tick marks */
+   .patient-form-view.mobile-minimal .sd-slider__label-tick {
+     background: rgba(255,255,255,0.4) !important;
+     width: 2px !important;
+     height: 8px !important;
+   }
+
+   /* Style the slider track (unfilled portion) */
+   .patient-form-view.mobile-minimal .sd-slider__inverse-track {
+     background: rgba(255,255,255,0.2) !important;
+     height: 6px !important;
+   }
+
+   /* Style the filled portion of the slider */
+   /* Temporarily removed to see default colors
+   .patient-form-view.mobile-minimal .sd-slider__track {
+     background: linear-gradient(90deg, #5E9EFF, #7BB8FF) !important;
+     height: 6px !important;
+   }
+   */
+
+   /* Style the slider handle/thumb */
+   .patient-form-view.mobile-minimal .sd-slider__thumb {
+     background: white !important;
+     /* border: 2px solid #5E9EFF !important; */
+     box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+     width: 24px !important;
+     height: 24px !important;
+     border-radius: 50% !important;
+     cursor: pointer !important;
+   }
+
+   /* Active/focus state for handle */
+   .patient-form-view.mobile-minimal .sd-slider__thumb:active,
+   .patient-form-view.mobile-minimal .sd-slider__thumb:focus {
+     transform: scale(1.1);
+     box-shadow: 0 0 0 8px rgba(94, 158, 255, 0.2), 0 2px 8px rgba(0,0,0,0.3) !important;
+   }
+
+   /* Tooltip value display */
+   .patient-form-view.mobile-minimal .sd-slider__tooltip-value {
+     color: #000428 !important;
+     background: white !important;
+     padding: 4px 8px !important;
+     border-radius: 4px !important;
+     font-weight: 600 !important;
+   }
 
   /* 4. Input styling - minimal approach */
   .patient-form-view.mobile-minimal input[type="text"],
@@ -62,20 +152,26 @@
 
   /* 6. Radio/checkbox items */
   .patient-form-view.mobile-minimal .sd-item {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 8px;
-    padding: 12px;
+    background: transparent; /* remove boxy background */
+    border: none; /* remove square border */
+    margin-bottom: 12px;
+    padding: 0; /* let native radio/button spacing handle layout */
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .patient-form-view.mobile-minimal .sd-item--checked {
-    background: rgba(94, 158, 255, 0.3);
-    border-color: #5E9EFF;
+    background: transparent;
+    border: none;
   }
 
   /* 7. Radio/checkbox labels */
   .patient-form-view.mobile-minimal .sd-item__control-label {
     color: white;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
   }
 
   /* 8. Navigation buttons */
@@ -99,5 +195,40 @@
   .patient-form-view.mobile-minimal input::placeholder,
   .patient-form-view.mobile-minimal textarea::placeholder {
     color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* 11. File Upload Component Styling */
+  /* File upload drag area placeholder text */
+  .patient-form-view.mobile-minimal .sd-file__drag-area-placeholder {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 15px !important;
+  }
+
+  /* File upload decorator (the upload area) */
+  .patient-form-view.mobile-minimal .sd-file__decorator {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px dashed rgba(255, 255, 255, 0.3) !important;
+  }
+
+  /* File upload decorator on drag hover */
+  .patient-form-view.mobile-minimal .sd-file__decorator--drag {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  /* File choose button text */
+  .patient-form-view.mobile-minimal .sd-file__choose-btn--text {
+    color: white !important;
+  }
+
+  /* Any file component description text */
+  .patient-form-view.mobile-minimal .sd-file .sd-description {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* File upload instructions/caption */
+  .patient-form-view.mobile-minimal .sd-file__caption,
+  .patient-form-view.mobile-minimal .sd-file__no-file-caption {
+    color: rgba(255, 255, 255, 0.85) !important;
   }
 }

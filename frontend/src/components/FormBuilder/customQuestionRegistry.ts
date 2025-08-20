@@ -6,7 +6,6 @@ import './DateOfBirthQuestion';
 import './TodaysDateQuestion';
 import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
-import './PatientDemographicsQuestion';
 import './BodyDiagramQuestion';
 import './HeightWeightSlider';
 // ReviewOfSystemsQuestion removed - using native panel structure instead
@@ -18,7 +17,6 @@ export const CUSTOM_QUESTION_TYPES = {
   BODY_PAIN_DIAGRAM: 'bodypaindiagram',
   BODY_DIAGRAM: 'bodydiagram',
   BODY_DIAGRAM_2: 'bodydiagram2',
-  PATIENT_DEMOGRAPHICS: 'patient_demographics',
   HEIGHT_SLIDER: 'heightslider',
   WEIGHT_SLIDER: 'weightslider',
   // REVIEW_OF_SYSTEMS removed - using native panel structure instead
@@ -26,20 +24,6 @@ export const CUSTOM_QUESTION_TYPES = {
 
 // Type for custom question data extraction
 export interface CustomQuestionData {
-  [CUSTOM_QUESTION_TYPES.PATIENT_DEMOGRAPHICS]?: {
-    firstName: string;
-    lastName: string;
-    preferredName: string;
-    dob: string;
-    email: string;
-    primaryPhone: string;
-    secondaryPhone: string;
-    cellPhone: string;
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-  };
   [CUSTOM_QUESTION_TYPES.BODY_PAIN_DIAGRAM]?: Array<{
     id: string;
     x: number;
@@ -68,24 +52,9 @@ export interface CustomQuestionData {
 export function extractCustomQuestionData(surveyData: any): any {
   const extractedData = { ...surveyData };
   
-  // Handle patient demographics - flatten the nested object
-  if (surveyData.patient_demographics && typeof surveyData.patient_demographics === 'object') {
-    const demographics = surveyData.patient_demographics;
-    
-    // Extract key fields to top level for easier access
-    if (demographics.firstName) extractedData.first_name = demographics.firstName;
-    if (demographics.lastName) extractedData.last_name = demographics.lastName;
-    if (demographics.dob) extractedData.patient_dob = demographics.dob;
-    if (demographics.email) extractedData.patient_email = demographics.email;
-    if (demographics.primaryPhone) extractedData.patient_phone = demographics.primaryPhone;
-    if (demographics.address) extractedData.patient_address = demographics.address;
-    if (demographics.city) extractedData.patient_city = demographics.city;
-    if (demographics.state) extractedData.patient_state = demographics.state;
-    if (demographics.zip) extractedData.patient_zip = demographics.zip;
-    
-    // Keep the original nested object as well for completeness
-    extractedData.patient_demographics = demographics;
-  }
+  // Patient demographics is now handled as a standard panel, not a custom question
+  // The data will be in the survey results as individual fields:
+  // first_name, last_name, date_of_birth, etc.
   
   // Handle date of birth question
   if (surveyData.dateofbirth && typeof surveyData.dateofbirth === 'object') {

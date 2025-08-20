@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"log"
 	"strings"
 )
 
@@ -17,100 +18,86 @@ func PatientDemographicsRenderer(metadata PatternMetadata, context *PDFContext) 
 	// Professional form layout with multiple fields per line
 	result.WriteString(`<table style="width: 100%; border-collapse: collapse; font-size: 12px;">`)
 	
-	// Define demographic fields in order
-	demographicFields := []struct {
-		key   string
-		label string
-	}{
-		{"patient_name", "Full Name"},
-		{"first_name", "First Name"},
-		{"last_name", "Last Name"},
-		{"date_of_birth", "Date of Birth"},
-		{"dob", "Date of Birth"},
-		{"sex_at_birth", "Sex Assigned at Birth"},
-		{"gender", "Gender"},
-		{"sex", "Gender"},
-		{"phone", "Phone Number"},
-		{"phone_number", "Phone Number"},
-		{"email", "Email Address"},
-		{"email_address", "Email Address"},
-		{"address", "Address"},
-		{"street_address", "Street Address"},
-		{"city", "City"},
-		{"state", "State"},
-		{"zip", "ZIP Code"},
-		{"zip_code", "ZIP Code"},
-		{"postal_code", "ZIP Code"},
-		{"emergency_contact", "Emergency Contact"},
-		{"emergency_phone", "Emergency Phone"},
-	}
+	// Log for debugging
+	log.Printf("DEBUG: PatientDemographicsRenderer - ElementNames: %v", metadata.ElementNames)
+	log.Printf("DEBUG: PatientDemographicsRenderer - Available answers keys: %v", getMapKeys(context.Answers))
 	
-	// Track which fields we've processed
-	processedFields := make(map[string]bool)
-	
-	for _, field := range demographicFields {
-		if processedFields[field.key] {
+	// Process fields directly from metadata.ElementNames - these match the actual form field names
+	for _, elementName := range metadata.ElementNames {
+		// Skip non-data fields
+		if elementName == "patient_demographics" || // Skip the panel itself
+		   elementName == "demographics_header" || // Skip HTML header elements
+		   strings.HasSuffix(elementName, "_header") {
 			continue
 		}
 		
-		if value, exists := context.Answers[field.key]; exists && value != nil {
-			processedFields[field.key] = true
-			
-			displayValue := formatDemographicValue(field.key, value)
+		// Check if this field has data in the response
+		if value, exists := context.Answers[elementName]; exists && value != nil {
+			displayValue := formatDemographicValue(elementName, value)
 			
 			// Skip empty values
 			if displayValue == "" {
 				continue
 			}
 			
+			// Generate proper label from field name
+			label := generateFieldLabel(elementName)
+			
 			result.WriteString(`<tr>`)
-			result.WriteString(`<td><strong>` + html.EscapeString(field.label) + `</strong></td>`)
-			result.WriteString(`<td>` + html.EscapeString(displayValue) + `</td>`)
+			result.WriteString(`<td style="padding: 4px 8px; font-weight: bold;">` + html.EscapeString(label) + `:</td>`)
+			result.WriteString(`<td style="padding: 4px 8px;">` + html.EscapeString(displayValue) + `</td>`)
 			result.WriteString(`</tr>`)
+			
+			log.Printf("DEBUG: Rendered field %s with label %s and value %s", elementName, label, displayValue)
+		} else {
+			log.Printf("DEBUG: Field %s not found in response data", elementName)
 		}
 	}
 	
-	// Handle any remaining fields that weren't in our predefined list
-	for _, elementName := range metadata.ElementNames {
-		if processedFields[elementName] {
-			continue
-		}
-		
-		if value, exists := context.Answers[elementName]; exists && value != nil {
-			displayValue := formatDemographicValue(elementName, value)
-			if displayValue != "" {
-				// Map common field names to proper labels
-				label := elementName
-				switch strings.ToLower(elementName) {
-				case "sex_at_birth":
-					label = "Sex Assigned at Birth"
-				case "gender", "sex":
-					label = "Gender"
-				case "phone", "phone_number":
-					label = "Phone Number"
-				case "email", "email_address":
-					label = "Email Address"
-				case "zip", "zip_code", "postal_code":
-					label = "ZIP Code"
-				case "dob", "date_of_birth":
-					label = "Date of Birth"
-				default:
-					label = formatFieldLabel(elementName, "")
-				}
-				result.WriteString(`<tr>`)
-				result.WriteString(`<td><strong>` + html.EscapeString(label) + `</strong></td>`)
-				result.WriteString(`<td>` + html.EscapeString(displayValue) + `</td>`)
-				result.WriteString(`</tr>`)
-			}
-		}
-	}
-	
-	result.WriteString(`</tbody>`)
 	result.WriteString(`</table>`)
-	
 	result.WriteString(`</div>`)
 	
 	return result.String(), nil
+}
+
+// generateFieldLabel creates a human-readable label from a field name
+func generateFieldLabel(fieldName string) string {
+	// Handle specific field mappings
+	switch strings.ToLower(fieldName) {
+	case "first_name":
+		return "First Name"
+	case "last_name":
+		return "Last Name"
+	case "form_date":
+		return "Form Date"
+	case "date_of_birth", "dob":
+		return "Date of Birth"
+	case "sex_at_birth":
+		return "Sex Assigned at Birth"
+	case "gender", "sex":
+		return "Gender"
+	case "phone", "phone_number":
+		return "Phone Number"
+	case "secondary_phone":
+		return "Secondary Phone"
+	case "email", "email_address":
+		return "Email Address"
+	case "street_address":
+		return "Street Address"
+	case "city":
+		return "City"
+	case "state":
+		return "State"
+	case "zip", "zip_code", "postal_code":
+		return "ZIP Code"
+	case "emergency_contact":
+		return "Emergency Contact"
+	case "emergency_phone":
+		return "Emergency Phone"
+	default:
+		// Format the field name as a label (e.g., "field_name" -> "Field Name")
+		return formatFieldLabel(fieldName, "")
+	}
 }
 
 func formatDemographicValue(fieldKey string, value interface{}) string {

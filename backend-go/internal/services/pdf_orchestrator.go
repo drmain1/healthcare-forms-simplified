@@ -238,7 +238,7 @@ func (o *PDFOrchestrator) fetchPDFContext(ctx context.Context, responseID, reque
 func (o *PDFOrchestrator) getRenderOrder(org *data.Organization, patterns []PatternMetadata) []string {
 	// Default order for medical forms
 	defaultOrder := []string{
-		// "patient_demographics",  // Removed - using only additional_demographics
+		"patient_demographics",    // Primary patient demographic information
 		"additional_demographics", // Additional demographic information
 		"patient_vitals", 
 		"review_of_systems",     // Review of Systems section

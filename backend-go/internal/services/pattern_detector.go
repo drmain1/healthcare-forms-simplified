@@ -321,28 +321,54 @@ func (m *PatientDemographicsMatcher) GetPriority() int       { return 3 }
 type PainAssessmentMatcher struct{}
 
 func (m *PainAssessmentMatcher) Match(formDef, responseData map[string]interface{}) (bool, PatternMetadata) {
-	// Look for panel with specific title "Visual Analog Scale & Pain Assessment"
+	// Clean metadata-only detection for 100% reliability
 	elements := extractElements(formDef)
+	var foundPanel map[string]interface{}
+	var allFieldNames []string
 	
 	for _, element := range elements {
-		if elementType, ok := element["type"].(string); ok && elementType == "panel" {
-			// Check for the specific title
-			if title, ok := element["title"].(string); ok && 
-			   title == "Visual Analog Scale & Pain Assessment" {
-				
-				// Found it! Get the panel name and structure
-				panelName, _ := element["name"].(string)
-				
-				// Log for debugging
-				fmt.Printf("DEBUG: Found pain assessment panel with title: %s, name: %s\n", title, panelName)
-				
-				return true, PatternMetadata{
-					PatternType:  "pain_assessment",
-					ElementNames: []string{panelName},
-					TemplateData: map[string]interface{}{
-						"panel": element,
-						"answers": responseData,
-					},
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "pain_assessment" {
+					// Found pain assessment via metadata
+					foundPanel = element
+					panelName, _ := element["name"].(string)
+					
+					// Collect all nested field names for proper tracking
+					var collectFieldNames func(elem map[string]interface{})
+					collectFieldNames = func(elem map[string]interface{}) {
+						// Add field name if it exists and has data
+						if name, ok := elem["name"].(string); ok && name != "" {
+							if _, hasAnswer := responseData[name]; hasAnswer {
+								allFieldNames = append(allFieldNames, name)
+							}
+						}
+						
+						// Recursively collect from nested elements
+						if nestedElements, ok := elem["elements"].([]interface{}); ok {
+							for _, nested := range nestedElements {
+								if nestedMap, ok := nested.(map[string]interface{}); ok {
+									collectFieldNames(nestedMap)
+								}
+							}
+						}
+					}
+					
+					// Start collecting from the panel
+					collectFieldNames(element)
+					
+					// Log for debugging
+					fmt.Printf("DEBUG: Found pain assessment panel via metadata, name: %s, fields: %v\n", panelName, allFieldNames)
+					
+					return true, PatternMetadata{
+						PatternType:  "pain_assessment",
+						ElementNames: allFieldNames, // All nested fields for proper tracking
+						TemplateData: map[string]interface{}{
+							"panel": foundPanel,
+							"answers": responseData,
+						},
+					}
 				}
 			}
 		}

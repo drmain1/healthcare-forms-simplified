@@ -32,15 +32,13 @@ import '../../styles/mobile-minimal.css';
 import { mobileDiagnostics } from '../../utils/mobileDiagnostics';
 import { removeMobileThemeOverrides } from '../../utils/mobileThemeFix';
 import { optimizeFormForMobile, optimizeSurveyModelForMobile, needsMobileOptimization } from '../../utils/mobileFormOptimizer';
-
-// Initialize metadata support before loading custom questions
 import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
-initializeSurveyMetadata();
-
-// Import centralized custom question registry - registers all custom questions
 import '../FormBuilder/customQuestionRegistry';
 import { extractCustomQuestionData } from '../FormBuilder/customQuestionRegistry';
 import '../../styles/review-of-systems.css';
+
+// Initialize metadata support before loading custom questions
+initializeSurveyMetadata();
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
@@ -137,8 +135,7 @@ export const PublicFormFill: React.FC = () => {
           console.log("--- DEBUG: Form Data Before Cleaning ---");
           console.log(JSON.stringify(sender.data, null, 2));
           
-          // Debug body diagram specifically
-          console.log('[Survey onComplete] Looking for pain_areas...');
+          // Debug logging
           console.log('[Survey onComplete] All question names:', 
             sender.getAllQuestions().map((q: any) => q.name));
           console.log('[Survey onComplete] All question values:', 
@@ -210,36 +207,16 @@ export const PublicFormFill: React.FC = () => {
               }
             });
             
-            // Store the extracted pain data as pain_areas for backend compatibility
+            // Store the extracted pain assessment data
             if (Object.keys(painAssessmentData).length > 0) {
               console.log('[Survey onComplete] Extracted pain assessment data:', painAssessmentData);
               
-              // Create pain_areas array from the extracted data
-              if (painAreas.length > 0) {
-                plainData.pain_areas = painAreas;
-                console.log('[Survey onComplete] Created pain_areas array:', painAreas);
-              }
-              
-              // Also preserve individual fields
+              // Preserve individual fields (no synthetic pain_areas needed)
               Object.assign(plainData, painAssessmentData);
             }
           };
           
-          // First try to find direct pain_areas question
-          const painQuestion = sender.getQuestionByName('pain_areas');
-          if (painQuestion) {
-            console.log('[Survey onComplete] Found pain_areas question:', painQuestion);
-            console.log('[Survey onComplete] pain_areas value:', painQuestion.value);
-            console.log('[Survey onComplete] pain_areas isEmpty:', painQuestion.isEmpty());
-            
-            // Force the pain_areas data into plainData if it exists
-            if (painQuestion.value && !plainData.pain_areas) {
-              console.log('[Survey onComplete] Manually adding pain_areas to plainData');
-              plainData.pain_areas = painQuestion.value;
-            }
-          }
-          
-          // Also check all other bodypaindiagram questions
+          // Check for actual bodypaindiagram questions (not synthetic pain_areas)
           sender.getAllQuestions().forEach((q: any) => {
             if ((q.getType() === 'bodypaindiagram' || q.getType() === 'bodydiagram2') && q.value && !plainData[q.name]) {
               console.log(`[Survey onComplete] Manually adding ${q.name} to plainData`);
@@ -247,18 +224,14 @@ export const PublicFormFill: React.FC = () => {
             }
           });
           
-          // Extract nested panel data if no direct pain_areas found
-          if (!plainData.pain_areas) {
-            console.log('[Survey onComplete] No direct pain_areas found, extracting from nested panels...');
-            extractPainAssessmentData();
-          }
+          // Extract nested panel data for pain assessment
+          extractPainAssessmentData();
 
           console.log('[Survey onComplete] Plain data before cleaning:', JSON.stringify(plainData, null, 2));
           const cleanedData = cleanSignatureData(plainData);
 
           console.log("--- DEBUG: Form Data After Cleaning ---");
           console.log(JSON.stringify(cleanedData, null, 2));
-          console.log('[Survey onComplete] Body diagram data preserved?', cleanedData.pain_areas ? 'YES' : 'NO');
 
           handleFormSubmission(cleanedData);
         });
@@ -587,22 +560,7 @@ export const PublicFormFill: React.FC = () => {
     try {
       console.log('Form submitted with data:', formData);
       
-      // Clean the pain_areas array to remove non-serializable properties
-      if (formData.pain_areas && Array.isArray(formData.pain_areas)) {
-        console.log('[BodyDiagram Debug] Original pain_areas:', formData.pain_areas);
-        
-        // Clean the array by creating new plain objects
-        formData.pain_areas = formData.pain_areas.map((mark: any) => ({
-          id: mark.id,
-          x: mark.x,
-          y: mark.y,
-          intensity: mark.intensity,
-          label: mark.label || undefined
-        })).filter((mark: any) => mark.id && typeof mark.x === 'number' && typeof mark.y === 'number');
-        
-        console.log('[BodyDiagram Debug] Cleaned pain_areas:', formData.pain_areas);
-        console.log('[BodyDiagram Debug] pain_areas length:', formData.pain_areas.length);
-      }
+      // Note: No need to handle synthetic pain_areas anymore - backend handles pain assessment via metadata
       
       console.log('[DOB Check] patient_dob value:', formData.patient_dob);
       console.log('[DOB Check] patient_age value:', formData.patient_age);

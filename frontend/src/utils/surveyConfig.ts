@@ -483,6 +483,7 @@ export const healthcareQuestionTypes = {
     questionJSON: {
       type: 'panel',
       title: 'Pain Assessment',
+      metadata: { patternType: 'pain_assessment' },
       elements: [
         {
           type: 'rating',

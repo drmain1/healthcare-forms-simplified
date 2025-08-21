@@ -339,10 +339,11 @@ export const healthcareToolboxItems = [
     title: 'Complete Pain Assessment (VAS)',
     iconName: 'icon-panel',
     json: {
-      type: 'custom_table',
+      type: 'panel',
       name: 'pain_assessment_panel',
       title: 'Visual Analog Scale & Pain Assessment',
       description: 'For each area below, please describe your present pain level and frequency.',
+      metadata: { patternType: 'pain_assessment' },
       elements: [
         // Neck
         {

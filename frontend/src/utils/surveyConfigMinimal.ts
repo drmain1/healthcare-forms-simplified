@@ -297,6 +297,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       name: 'pain_assessment_panel', // Name for backend detection
       title: 'Visual Analog Scale & Pain Assessment',
       description: 'For each area below, please describe your present pain level and frequency.',
+      metadata: { patternType: 'pain_assessment' },
       elements: [
         // Neck
         {
@@ -722,6 +723,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       title: 'Oswestry Low Back Pain Disability Index',
       description: 'Please answer each section by selecting ONLY the ONE CHOICE that most applies to you RIGHT NOW.',
+      metadata: { patternType: 'oswestry_disability' },
       elements: [
         // Patient Information
         {
@@ -1052,6 +1054,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
       type: 'panel',
       title: 'Neck Disability Index Questionnaire',
       description: 'Please answer each section by selecting ONLY the ONE CHOICE that most applies to you RIGHT NOW.',
+      metadata: { patternType: 'neck_disability_index' },
       elements: [
         // Patient Information
         {

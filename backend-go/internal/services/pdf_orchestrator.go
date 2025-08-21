@@ -295,6 +295,9 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[s
 	}
 
 	htmlSections := make(map[string]string)
+	// CRITICAL: Track which fields have been rendered to prevent duplicates
+	renderedFields := make(map[string]bool)
+	processedPatterns := make(map[string]bool) // Track which patterns have been rendered
 
 	// Recursive traverse elements in order
 	var traverse func(elems []interface{})
@@ -333,7 +336,8 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[s
 			}
 
 			// If we found a matching pattern, render it
-			if matchedPattern != nil && htmlSections[matchedPattern.PatternType] == "" {
+			if matchedPattern != nil && !processedPatterns[matchedPattern.PatternType] {
+				log.Printf("DEBUG: Rendering pattern type=%s with fields=%v", matchedPattern.PatternType, matchedPattern.ElementNames)
 				html, err := o.registry.Render(matchedPattern.PatternType, *matchedPattern, context)
 				if err != nil {
 					errorBlock := o.registry.generateErrorBlock(RenderError{
@@ -346,11 +350,19 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[s
 				} else {
 					htmlSections[matchedPattern.PatternType] = html
 				}
-			} else if elemType != "panel" && elemName != "" && context.Answers[elemName] != nil {
-				// Generic fallback render for individual fields (but not panels)
-				genericHTML := fmt.Sprintf("<div class='generic-field'><strong>%s</strong>: %v</div>",
-					elemMap["title"], context.Answers[elemName])
+				processedPatterns[matchedPattern.PatternType] = true
+				// CRITICAL: Mark all fields in this pattern as rendered
+				for _, fieldName := range matchedPattern.ElementNames {
+					renderedFields[fieldName] = true
+					log.Printf("DEBUG: Marked field '%s' as rendered by pattern '%s'", fieldName, matchedPattern.PatternType)
+				}
+			} else if elemType != "panel" && elemName != "" && context.Answers[elemName] != nil && !renderedFields[elemName] {
+				// Use intelligent generic field renderer for any question type
+				log.Printf("DEBUG: Rendering standalone field '%s' with GenericFieldRenderer", elemName)
+				renderer := &GenericFieldRenderer{}
+				genericHTML := renderer.RenderField(elemMap, context.Answers[elemName], elemName, 0)
 				htmlSections[elemName] = genericHTML
+				renderedFields[elemName] = true // Mark as rendered
 			}
 
 			// Traverse children if panel
@@ -375,6 +387,53 @@ func (o *PDFOrchestrator) renderSections(context *PDFContext, _ []string) (map[s
 		traverse(elems)
 	}
 
+	// Smart fallback: Handle truly orphaned fields (in answers but not in form definition)
+	// This handles edge cases where data exists but wasn't traversed
+	orphanedCount := 0
+	for elemName, answer := range context.Answers {
+		// Skip if already rendered
+		if renderedFields[elemName] {
+			continue
+		}
+
+		// This is an orphaned field - exists in answers but wasn't encountered during traversal
+		log.Printf("WARNING: Orphaned field '%s' found in answers but not traversed in form definition", elemName)
+		
+		// Try to find the element definition
+		element := o.findElementByName(surveyJson, elemName)
+		if element != nil {
+			// Found definition, render it
+			log.Printf("DEBUG: Found definition for orphaned field '%s', rendering with GenericFieldRenderer", elemName)
+			renderer := &GenericFieldRenderer{}
+			genericHTML := renderer.RenderField(element, answer, elemName, 0)
+			htmlSections[elemName] = genericHTML
+			renderedFields[elemName] = true
+			orphanedCount++
+		} else {
+			// No definition found, render as raw value with warning
+			log.Printf("WARNING: No definition found for orphaned field '%s', rendering as raw value", elemName)
+			renderer := &GenericFieldRenderer{}
+			// Create minimal element definition for rendering
+			minimalElement := map[string]interface{}{
+				"name": elemName,
+				"type": "text",
+				"title": elemName,
+			}
+			genericHTML := renderer.RenderField(minimalElement, answer, elemName, 0)
+			htmlSections[elemName] = genericHTML
+			renderedFields[elemName] = true
+			orphanedCount++
+		}
+	}
+	
+	if orphanedCount > 0 {
+		log.Printf("INFO: Rendered %d orphaned fields using fallback logic", orphanedCount)
+	}
+
+	// Log summary for debugging
+	log.Printf("DEBUG: PDF rendering complete - Patterns: %d, Total fields: %d, Rendered sections: %d",
+		len(processedPatterns), len(renderedFields), len(htmlSections))
+
 	return htmlSections, nil
 }
 
@@ -390,11 +449,38 @@ func (o *PDFOrchestrator) assembleAndGeneratePDF(htmlSections map[string]string,
 	
 	// Combine all sections IN ORDER
 	var combinedHTML string
+	log.Printf("DEBUG: Combining HTML sections. Available sections: %d", len(htmlSections))
+
+	// Log all available sections first
+	for sectionName, html := range htmlSections {
+		if html != "" {
+			log.Printf("DEBUG: Available section: %s (%d chars)", sectionName, len(html))
+		}
+	}
+
 	for _, patternType := range renderOrder {
 		if html, exists := htmlSections[patternType]; exists && html != "" {
+			log.Printf("DEBUG: Adding ordered section %s to PDF (%d chars)", patternType, len(html))
 			combinedHTML += html + "\n"
 		}
 	}
+
+	// Log any remaining sections not in render order
+	for sectionName, html := range htmlSections {
+		found := false
+		for _, orderedName := range renderOrder {
+			if orderedName == sectionName {
+				found = true
+				break
+			}
+		}
+		if !found && html != "" {
+			log.Printf("DEBUG: Adding unordered section %s to PDF (%d chars)", sectionName, len(html))
+			combinedHTML += html + "\n"
+		}
+	}
+
+	log.Printf("DEBUG: Final combined HTML size: %d characters", len(combinedHTML))
 	
 	// Use master layout template
 	layoutTmpl, err := o.templateStore.Get("pdf_layout.html")
@@ -432,6 +518,52 @@ func getKeys(m map[string]interface{}) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// findElementByName recursively searches for an element by name in the survey definition
+func (o *PDFOrchestrator) findElementByName(surveyJson map[string]interface{}, targetName string) map[string]interface{} {
+	var findElement func(elems []interface{}) map[string]interface{}
+
+	findElement = func(elems []interface{}) map[string]interface{} {
+		for _, elem := range elems {
+			if elemMap, ok := elem.(map[string]interface{}); ok {
+				// Check if this element has the target name
+				if name, ok := elemMap["name"].(string); ok && name == targetName {
+					return elemMap
+				}
+
+				// Recursively search in nested elements (panels)
+				if nestedElements, ok := elemMap["elements"].([]interface{}); ok {
+					if found := findElement(nestedElements); found != nil {
+						return found
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	// Search in pages
+	if pages, ok := surveyJson["pages"].([]interface{}); ok {
+		for _, page := range pages {
+			if pageMap, ok := page.(map[string]interface{}); ok {
+				if elems, ok := pageMap["elements"].([]interface{}); ok {
+					if found := findElement(elems); found != nil {
+						return found
+					}
+				}
+			}
+		}
+	}
+
+	// Search in direct elements array
+	if elems, ok := surveyJson["elements"].([]interface{}); ok {
+		if found := findElement(elems); found != nil {
+			return found
+		}
+	}
+
+	return nil
 }
 
 // getPatientName is defined in patient_demographics.go

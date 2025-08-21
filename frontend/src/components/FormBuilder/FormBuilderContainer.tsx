@@ -9,18 +9,17 @@ import { applyCreatorTheme } from '../../config/surveyThemes';
 import { FormBuilderUI } from './FormBuilderUI';
 import { useAppSelector } from '../../store/hooks';
 import { selectOrganization } from '../../store/selectors/authSelectors';
-
-// CRITICAL: Initialize metadata support BEFORE loading any custom questions
 import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
-initializeSurveyMetadata();
-
-// Register custom components (AFTER metadata initialization)
+// Register custom components
 import './BodyPainDiagramQuestion';
 import './BodyDiagram2Question';
 import './HeightWeightSlider';
 import './DateOfBirthQuestion';
 import './TodaysDateQuestion';
 import './CustomDropdownItem';
+
+// CRITICAL: Initialize metadata support BEFORE using any custom questions
+initializeSurveyMetadata();
 // ReviewOfSystemsQuestion removed - using native panel structure instead
 
 export interface FormBuilderData {

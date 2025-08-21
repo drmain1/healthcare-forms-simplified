@@ -30,16 +30,14 @@ import { useGetResponseQuery } from '../../store/api/responsesApi';
 import { useGetFormQuery } from '../../store/api/formsApi';
 import { PdfExportButton } from './PdfExportButton';
 import { ClinicalSummaryButton } from './ClinicalSummaryButton';
-
-// Initialize metadata support before loading custom questions
 import { initializeSurveyMetadata } from '../../utils/initializeSurveyMetadata';
-initializeSurveyMetadata();
-
 // Import centralized custom question registry - registers all custom questions
 import '../FormBuilder/customQuestionRegistry';
-
 import { BodyPainDiagram } from '../FormBuilder/BodyPainDiagram';
 import { BodyDiagram2 } from '../FormBuilder/BodyDiagram2';
+
+// Initialize metadata support before using custom questions
+initializeSurveyMetadata();
 
 
 export const ResponseDetail: React.FC = () => {

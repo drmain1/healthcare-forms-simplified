@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/vertexai/genai"
-	"github.com/gemini/forms-api/internal/data"
+	"backend-go/internal/data"
 )
 
 // VertexAIService provides methods for interacting with the Vertex AI API.

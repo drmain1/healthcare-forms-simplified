@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gemini/forms-api/internal/services"
+	"backend-go/internal/services"
 )
 
 // TestPDFGenerationPipeline tests the complete PDF generation pipeline

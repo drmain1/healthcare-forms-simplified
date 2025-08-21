@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gemini/forms-api/internal/services"
+	"backend-go/internal/services"
 )
 
 func TestPDFOrchestrator_PatternDetection(t *testing.T) {

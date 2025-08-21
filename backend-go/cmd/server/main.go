@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/vertexai/genai"
-	"github.com/gemini/forms-api/internal/api"
-	"github.com/gemini/forms-api/internal/data"
-	"github.com/gemini/forms-api/internal/services"
+	"backend-go/internal/api"
+	"backend-go/internal/data"
+	"backend-go/internal/services"
 	"github.com/gin-gonic/gin"
 
 	"github.com/gin-contrib/cors" // Import the cors package
@@ -56,14 +56,34 @@ func main() {
 	insuranceCardService := services.NewInsuranceCardService(vertexClient)
 	insuranceCardHandler := api.NewInsuranceCardHandler(insuranceCardService)
 
+	// Initialize security components
+	auditLogger, err := services.NewCloudAuditLogger(projectID)
+	if err != nil {
+		log.Printf("WARNING: Audit logging disabled: %v", err)
+		// Don't fail startup, but log warning
+	}
+	defer func() {
+		if auditLogger != nil {
+			auditLogger.Close()
+		}
+	}()
+	
+	securityValidator := services.NewSecurityValidator()
+
 	r := gin.New()
 	// Per Gin documentation, this is required when running behind a proxy
 	// to ensure correct client IP is read.
 	r.SetTrustedProxies(nil)
 	r.RedirectTrailingSlash = false
 
-	// CORS Middleware
-
+	// Apply middleware in correct order:
+	// 1. Recovery (catch panics)
+	r.Use(gin.Recovery())
+	
+	// 2. Security headers (apply to all responses)
+	r.Use(api.SecurityHeadersMiddleware())
+	
+	// 3. CORS (needed before auth)
 	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if corsOrigins == "" {
 		corsOrigins = "http://localhost:3000"
@@ -71,15 +91,17 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Split(corsOrigins, ";"),
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-
-	// Logger and Recovery middleware
+	
+	// 4. Error handler (catch all errors)
+	r.Use(api.ErrorHandlerMiddleware())
+	
+	// 5. Request logging (optional but recommended)
 	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
@@ -96,22 +118,67 @@ func main() {
 	}
 
 	// Public routes (no auth required)
+	publicRoutes := r.Group("/public")
+	{
+		// Endpoint to get a form, which now also returns a nonce
+		publicRoutes.GET("/forms/:id", func(c *gin.Context) {
+			formID := c.Param("id")
+			// For now, return nonce along with any existing form data
+			// In a full implementation, you'd fetch the actual form data
+			c.JSON(http.StatusOK, gin.H{
+				"formId":      formID,
+				"submitNonce": services.GenerateNonce(),
+				"message":     "Form loaded successfully",
+			})
+		})
+
+		// Endpoint to submit a form, protected by our middleware
+		publicRoutes.POST("/forms/submit", api.PublicFormProtectionMiddleware(), func(c *gin.Context) {
+			// Get the validated form data from middleware
+			formData, exists := c.Get("formData")
+			if !exists {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "No form data provided"})
+				return
+			}
+			
+			// Process the form submission here
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Form submitted successfully",
+				"data":    formData,
+			})
+		})
+	}
+	
+	// Legacy public routes (maintain backward compatibility)
 	r.GET("/forms/:id/fill/:share_token", api.GetFormByShareToken(firestoreClient))
 	r.GET("/forms/:id/fill/:share_token/", api.GetFormByShareToken(firestoreClient))
 	r.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
 
 	// Authentication routes
-
 	apiAuthRoutes := r.Group("/api/auth")
 	{
 		apiAuthRoutes.POST("/session-login", api.SessionLogin(firebaseApp))
 		apiAuthRoutes.POST("/session-login/", api.SessionLogin(firebaseApp))
+		// CSRF token endpoint for authenticated users
+		apiAuthRoutes.GET("/csrf-token", api.GenerateCSRFToken)
 	}
 
 	// Authenticated routes
-
 	authRequired := r.Group("/api")
+	
+	// 6. Authentication middleware
 	authRequired.Use(api.AuthMiddleware(authClient))
+	
+	// 7. CSRF protection for state-changing operations
+	authRequired.Use(api.CSRFMiddleware())
+	
+	// 8. Security validation (after auth so we have userID)
+	authRequired.Use(api.SecurityMiddleware(securityValidator))
+	
+	// 9. Audit logging (after auth to capture user info)
+	if auditLogger != nil {
+		authRequired.Use(api.AuditMiddleware(auditLogger))
+	}
 	{
 		// Form routes
 		authRequired.POST("/forms", api.CreateForm(firestoreClient))

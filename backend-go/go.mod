@@ -1,4 +1,4 @@
-module github.com/gemini/forms-api
+module backend-go
 
 go 1.24
 
@@ -6,10 +6,12 @@ toolchain go1.24.5
 
 require (
 	cloud.google.com/go/firestore v1.18.0
+	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/vertexai v0.15.0
 	firebase.google.com/go/v4 v4.18.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.10.1
+	github.com/google/uuid v1.6.0
 	golang.org/x/crypto v0.40.0
 	google.golang.org/api v0.237.0
 	google.golang.org/grpc v1.73.0
@@ -50,7 +52,6 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

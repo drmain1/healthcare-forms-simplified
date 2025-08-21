@@ -5,6 +5,7 @@ import (
 	"html"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type RateLimiter struct {
 	requests map[string][]time.Time
 	limit    int
 	window   time.Duration
+	mu       sync.Mutex
 }
 
 // ValidationResult contains the results of security validation
@@ -289,6 +291,9 @@ func (sv *SecurityValidator) sanitizeSpecialPatterns(content string) string {
 }
 
 func (rl *RateLimiter) Allow(userID string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	
 	now := time.Now()
 	
 	// Clean old requests

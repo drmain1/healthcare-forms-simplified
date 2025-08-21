@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gemini/forms-api/internal/services/renderers/templates"
+	"backend-go/internal/services/renderers/templates"
 )
 
 type RendererFunc func(PatternMetadata, *PDFContext) (string, error)

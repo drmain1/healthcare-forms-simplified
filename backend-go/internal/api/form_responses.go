@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"github.com/gemini/forms-api/internal/data"
-	"github.com/gemini/forms-api/internal/services"
+	"backend-go/internal/data"
+	"backend-go/internal/services"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"

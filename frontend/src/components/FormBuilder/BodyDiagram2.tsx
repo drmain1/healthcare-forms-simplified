@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Button, Chip, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import DOMPurify from 'dompurify';
 
 interface SensationMark {
   id: string;
@@ -193,7 +194,7 @@ export const BodyDiagram2: React.FC<BodyDiagram2Props> = ({
         onClick={handleSvgClick}
         style={{ cursor: readOnly ? 'default' : 'crosshair' }}
       >
-        <div dangerouslySetInnerHTML={{ __html: BODY_SVG_CONTENT }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(BODY_SVG_CONTENT) }} />
         
         {/* Render sensation markers inside the wrapper */}
         {sensationMarks.map((mark, index) => (

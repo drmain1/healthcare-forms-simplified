@@ -108,7 +108,8 @@ func GetForm(client *firestore.Client, rdb *redis.Client) gin.HandlerFunc {
 			return
 		}
 
-		if form.OrganizationID != orgID.(string) {
+		// Allow access to forms without organization ID (legacy forms)
+		if form.OrganizationID != "" && form.OrganizationID != orgID.(string) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}

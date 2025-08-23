@@ -13,7 +13,7 @@ export const responsesApi = baseApi.injectEndpoints({
     // Get all responses with filtering and pagination
     getResponses: builder.query<PaginatedResponse<FormResponse>, ResponseFilterParams>({
       query: (params = {}) => ({
-        url: '/responses/',
+        url: '/responses',
         params: {
           page: params.page || 1,
           page_size: params.page_size || 20,
@@ -37,7 +37,7 @@ export const responsesApi = baseApi.injectEndpoints({
     // Get responses for a specific form
     getFormResponses: builder.query<PaginatedResponse<FormResponse>, { formId: string } & FilterParams>({
       query: ({ formId, ...params }) => ({
-        url: '/responses/',
+        url: '/responses',
         params: {
           form: formId,
           page: params.page || 1,
@@ -65,7 +65,7 @@ export const responsesApi = baseApi.injectEndpoints({
     // Create new response
     createResponse: builder.mutation<FormResponse, { formId: string; data: any }>({
       query: ({ formId, data }) => ({
-        url: '/responses/',
+        url: '/responses',
         method: 'POST',
         body: {
           form_id: formId,

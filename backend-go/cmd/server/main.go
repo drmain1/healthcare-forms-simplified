@@ -45,17 +45,22 @@ func main() {
 		log.Fatalf("Failed to create Firebase Auth client: %v", err)
 	}
 
-	// Initialize Redis Client
+	// Initialize Redis Client (optional)
+	var rdb *redis.Client
 	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == "" {
-		log.Fatal("REDIS_ADDR environment variable not set")
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-	})
-	// Ping Redis to check the connection
-	if _, err := rdb.Ping(ctx).Result(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+	if redisAddr != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: redisAddr,
+		})
+		// Ping Redis to check the connection
+		if _, err := rdb.Ping(ctx).Result(); err != nil {
+			log.Printf("WARNING: Failed to connect to Redis: %v. Redis caching disabled.", err)
+			rdb = nil
+		} else {
+			log.Printf("Connected to Redis at %s", redisAddr)
+		}
+	} else {
+		log.Printf("WARNING: REDIS_ADDR not set. Redis caching disabled.")
 	}
 
 	// === SERVICE INITIALIZATION ===
@@ -81,11 +86,12 @@ func main() {
 	r.RedirectTrailingSlash = false
 
 	r.Use(gin.Recovery())
-	r.Use(api.SecurityHeadersMiddleware())
-
+	
+	// CORS must come before SecurityHeaders to properly handle preflight requests
 	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if corsOrigins == "" {
-		corsOrigins = "http://localhost:3000"
+		// Default to both localhost and production URLs including custom domain
+		corsOrigins = "http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com;https://form.easydocforms.com"
 	}
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Split(corsOrigins, ";"),
@@ -95,9 +101,23 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-
+	
+	r.Use(api.SecurityHeadersMiddleware())
 	r.Use(api.ErrorHandlerMiddleware())
 	r.Use(gin.Logger())
+
+	// === STATIC FILE SERVING (BEFORE OTHER ROUTES) ===
+	// Register static files early to avoid inheriting API middleware
+	
+	// Serve static assets (CSS, JS, images, etc.)
+	r.Static("/static", "/web/build/static")
+	
+	// Serve other static files (favicon, manifest, etc.)
+	r.StaticFile("/favicon.ico", "/web/build/favicon.ico")
+	r.StaticFile("/logo192.png", "/web/build/logo192.png")
+	r.StaticFile("/logo512.png", "/web/build/logo512.png")
+	r.StaticFile("/manifest.json", "/web/build/manifest.json")
+	r.StaticFile("/robots.txt", "/web/build/robots.txt")
 
 	// === ROUTE DEFINITIONS ===
 
@@ -189,6 +209,20 @@ func main() {
 		authRequired.POST("/insurance-card/extract", insuranceCardHandler.ProcessInsuranceCard)
 		authRequired.POST("/insurance-card/upload", insuranceCardHandler.ProcessInsuranceCardMultipart)
 	}
+
+	// Static files already registered above
+	
+	// Serve React app for all other routes (must be last - catch-all for React Router)
+	r.NoRoute(func(c *gin.Context) {
+		// Don't serve React app for API routes - let them 404
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+			return
+		}
+		
+		// For all other routes, serve the React app
+		c.File("/web/build/index.html")
+	})
 
 	// === SERVER START ===
 

@@ -22,7 +22,7 @@ class InsuranceCardService {
   private apiUrl: string;
 
   constructor() {
-    this.apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+    this.apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
   }
 
   async parseInsuranceCard(imageFile: File, side: 'front' | 'back'): Promise<InsuranceCardData> {

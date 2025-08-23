@@ -7,7 +7,8 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 // Configure axios defaults
-axios.defaults.baseURL = process.env.REACT_APP_API_URL;
+axios.defaults.baseURL = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
+axios.defaults.withCredentials = true; // Enable sending cookies with requests
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

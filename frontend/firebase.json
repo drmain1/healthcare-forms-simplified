@@ -9,7 +9,10 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "https://healthcare-forms-backend-ubaop6yg4q-uc.a.run.app"
+        "run": {
+          "serviceId": "healthcare-forms-backend-go",
+          "region": "us-central1"
+        }
       },
       {
         "source": "**",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Button, Chip, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import DOMPurify from 'dompurify';
 
 interface PainMark {
   id: string;
@@ -191,7 +192,7 @@ export const BodyPainDiagram: React.FC<BodyPainDiagramProps> = ({
         onClick={handleSvgClick}
         style={{ cursor: readOnly ? 'default' : 'crosshair' }}
       >
-        <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent) }} />
         
         {/* Render pain markers inside the wrapper */}
         {painMarks.map((mark, index) => (

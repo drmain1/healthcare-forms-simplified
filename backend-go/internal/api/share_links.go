@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"time"
 
@@ -33,7 +34,22 @@ func CreateShareLink(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 		
-		if form.OrganizationID != orgID.(string) {
+		// Log organization IDs for debugging
+		log.Printf("DEBUG ShareLink: Form OrganizationID: %s, User OrganizationID: %v", form.OrganizationID, orgID)
+		
+		// Check if form has no organization ID (legacy form) and allow access
+		if form.OrganizationID == "" {
+			log.Printf("WARNING ShareLink: Form has no OrganizationID, assigning user's org: %s", orgID.(string))
+			// Update the form with the current user's organization ID
+			_, err := client.Collection("forms").Doc(formID).Update(c.Request.Context(), []firestore.Update{
+				{Path: "organizationId", Value: orgID.(string)},
+			})
+			if err != nil {
+				log.Printf("ERROR ShareLink: Failed to update form organization ID: %v", err)
+			}
+			form.OrganizationID = orgID.(string)
+		} else if form.OrganizationID != orgID.(string) {
+			log.Printf("ERROR ShareLink: Permission denied. Form org: %s, User org: %s", form.OrganizationID, orgID.(string))
 			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to create share links for this form"})
 			return
 		}
@@ -134,7 +150,10 @@ func ListShareLinks(client *firestore.Client) gin.HandlerFunc {
 			return
 		}
 		
-		if form.OrganizationID != orgID.(string) {
+		// Check if form has no organization ID (legacy form) and allow access
+		if form.OrganizationID == "" {
+			log.Printf("WARNING ListShareLinks: Form has no OrganizationID, allowing access for user org: %s", orgID.(string))
+		} else if form.OrganizationID != orgID.(string) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to view share links for this form"})
 			return
 		}

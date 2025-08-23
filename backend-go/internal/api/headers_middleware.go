@@ -22,13 +22,14 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		}
 		
 		// Content Security Policy
-		// Adjust based on your frontend requirements
-		csp := "default-src 'self'; " +
-			   "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; " +
-			   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+		// Adjusted for same-origin architecture, Firebase Auth, and custom domain
+		csp := "default-src 'self' https://form.easydocforms.com; " +
+			   "script-src 'self' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://form.easydocforms.com; " +
+			   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://form.easydocforms.com; " +
 			   "font-src 'self' https://fonts.gstatic.com data:; " +
 			   "img-src 'self' data: https: blob:; " +
-			   "connect-src 'self' https://firebaseapp.com https://firebaseio.com https://googleapis.com; " +
+			   "connect-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://form.easydocforms.com; " +
+			   "frame-src https://healthcare-forms-v2.firebaseapp.com https://*.firebaseapp.com https://accounts.google.com; " +
 			   "frame-ancestors 'none';"
 		
 		c.Header("Content-Security-Policy", csp)

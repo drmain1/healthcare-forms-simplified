@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../store/slices/authSlice';
 import axios from 'axios';
+import { fetchCSRFToken } from '../utils/csrfToken';
 
 interface FirebaseAuthContextType {
   user: AuthUser | null;
@@ -37,8 +38,12 @@ export const FirebaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       await authService.sessionLogin(authUser.idToken);
       console.log('Session login successful');
       
+      // Fetch CSRF token after successful session login
+      await fetchCSRFToken();
+      console.log('CSRF token fetched');
+      
       // Fetch or create the user's organization from backend
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+      const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
       
       try {
         const orgResponse = await axios.get(

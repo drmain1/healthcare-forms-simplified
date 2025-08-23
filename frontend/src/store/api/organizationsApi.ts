@@ -36,7 +36,7 @@ interface Organization {
   updated_at: string;
 }
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
 
 export const organizationsApi = createApi({
   reducerPath: 'organizationsApi',

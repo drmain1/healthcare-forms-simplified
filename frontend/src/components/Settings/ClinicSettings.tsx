@@ -78,7 +78,7 @@ export const ClinicSettings: React.FC = () => {
     setLoading(true);
     try {
       const token = await firebaseAuth.getIdToken();
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+      const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
       
       const response = await axios.get(
         `${apiUrl}/organizations/${organization.id}/clinic-info`,
@@ -110,7 +110,7 @@ export const ClinicSettings: React.FC = () => {
     
     try {
       const token = await firebaseAuth.getIdToken();
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+      const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
       
       await axios.put(
         `${apiUrl}/organizations/${organization.id}/clinic-info`,

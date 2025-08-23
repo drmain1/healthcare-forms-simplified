@@ -34,7 +34,7 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
         return;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+      const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
       
       console.log('Generating PDF for form:', formId, 'and response:', responseId);
       const response = await axios.post(

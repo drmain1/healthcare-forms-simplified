@@ -19,7 +19,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Get all forms with filtering and pagination
     getForms: builder.query<PaginatedResponse<Form>, FilterParams>({
       query: (params = {}) => ({
-        url: '/forms/',
+        url: '/forms',
         params: {
           page: params.page || 1,
           page_size: params.page_size || 20,
@@ -41,7 +41,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Create new form
     createForm: builder.mutation<Form, CreateFormRequest>({
       query: (data) => ({
-        url: '/forms/',
+        url: '/forms',
         method: 'POST',
         body: data,
       }),
@@ -51,7 +51,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Update existing form
     updateForm: builder.mutation<Form, UpdateFormRequest>({
       query: ({ id, ...data }) => ({
-        url: `/forms/${id}/`,
+        url: `/forms/${id}`,
         method: 'PATCH',
         body: data,
       }),
@@ -64,7 +64,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Delete form
     deleteForm: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/forms/${id}/`,
+        url: `/forms/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: (_result, _error, id) => [
@@ -76,7 +76,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Duplicate form
     duplicateForm: builder.mutation<Form, { id: string; title?: string }>({
       query: ({ id, title }) => ({
-        url: `/forms/${id}/duplicate/`,
+        url: `/forms/${id}/duplicate`,
         method: 'POST',
         body: { title },
       }),
@@ -85,14 +85,14 @@ export const formsApi = baseApi.injectEndpoints({
 
     // Get form templates
     getFormTemplates: builder.query<FormTemplate[], void>({
-      query: () => '/form-templates/',
+      query: () => '/form-templates',
       providesTags: ['FormTemplate'],
     }),
 
     // Test form (validate SurveyJS schema)
     testForm: builder.mutation<{ valid: boolean; errors?: string[] }, any>({
       query: (surveyJson) => ({
-        url: '/forms/test/',
+        url: '/forms/test',
         method: 'POST',
         body: { surveyJson },
       }),
@@ -101,7 +101,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Publish form (change status to active)
     publishForm: builder.mutation<Form, string>({
       query: (id) => ({
-        url: `/forms/${id}/publish/`,
+        url: `/forms/${id}/publish`,
         method: 'POST',
       }),
       invalidatesTags: (_result, _error, id) => [
@@ -113,7 +113,7 @@ export const formsApi = baseApi.injectEndpoints({
     // Archive form
     archiveForm: builder.mutation<Form, string>({
       query: (id) => ({
-        url: `/forms/${id}/archive/`,
+        url: `/forms/${id}/archive`,
         method: 'POST',
       }),
       invalidatesTags: (_result, _error, id) => [
@@ -124,7 +124,7 @@ export const formsApi = baseApi.injectEndpoints({
 
     // Get form analytics
     getFormAnalytics: builder.query<any, string>({
-      query: (id) => `/forms/${id}/analytics/`,
+      query: (id) => `/forms/${id}/analytics`,
       providesTags: (_result, _error, id) => [{ type: 'Analytics', id }],
     }),
 
@@ -162,12 +162,12 @@ export const formsApi = baseApi.injectEndpoints({
 
     // Dashboard endpoints
     getDashboardStats: builder.query<any, void>({
-      query: () => '/forms/dashboard_stats/',
+      query: () => '/forms/dashboard_stats',
       providesTags: ['Form', 'Analytics'],
     }),
 
     getRecentActivity: builder.query<any[], void>({
-      query: () => '/forms/recent_activity/',
+      query: () => '/forms/recent_activity',
       providesTags: ['Form', 'Analytics'],
     }),
 

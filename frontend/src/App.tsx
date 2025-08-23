@@ -11,6 +11,8 @@ import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import { initializeSessionTimeout, cleanupSessionTimeout } from './utils/sessionTimeout';
 import { FirebaseAuthProvider, useFirebaseAuth } from './contexts/FirebaseAuthContext';
 import { logBuildInfo } from './config/buildInfo';
+import { fetchCSRFToken } from './utils/csrfToken';
+import debugLogger from './utils/debugLogger';
 
 // Import SurveyJS CSS
 import 'survey-core/survey-core.css';
@@ -104,8 +106,22 @@ const AppContent = () => {
 
 function App() {
   useEffect(() => {
+    // Debug log to verify app is running
+    debugLogger.info('[App] Application started', { cookies: document.cookie });
+    
     // Log build information to console
     logBuildInfo();
+    
+    // Initialize CSRF token on app startup
+    fetchCSRFToken().then(token => {
+      if (token) {
+        debugLogger.info('[App] CSRF token initialized successfully');
+      } else {
+        debugLogger.warn('[App] Failed to initialize CSRF token');
+      }
+    }).catch(err => {
+      debugLogger.error('[App] Error initializing CSRF token', err);
+    });
     
     // Initialize session timeout when app loads
     initializeSessionTimeout();

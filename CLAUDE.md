@@ -67,7 +67,8 @@ firebase deploy --only hosting --project healthcare-forms-v2
 
 ### Current Backend System
 The platform uses a Go backend (`backend-go/`) as the primary system:
-- Cloud Run: `healthcare-forms-backend-go-ubaop6yg4q-uc.a.run.app`
+- **Production Domain**: `https://form.easydocforms.com` (Cloudflare proxied)
+- **Cloud Run**: `healthcare-forms-backend-go-ubaop6yg4q-uc.a.run.app`
 - Uses Gin framework with CORS middleware
 - Vertex AI integration for PDF generation
 - Gotenberg service for HTML to PDF conversion
@@ -143,7 +144,7 @@ import './PatientDemographicsQuestion';
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to service account JSON (or use gcloud auth for local dev)
 
 **Frontend**
-- `REACT_APP_API_URL`: Backend API URL
+- `REACT_APP_API_URL`: Backend API URL (`https://form.easydocforms.com/api` for production)
 - `REACT_APP_SURVEYJS_LICENSE_KEY`: SurveyJS license
 - Firebase configuration variables (multiple REACT_APP_FIREBASE_* vars)
 
@@ -221,10 +222,11 @@ gcloud auth application-default login
 4. Verify health endpoint: `/health`
 
 ### Frontend Deployment
-1. Update `.env.local` with production URLs
+1. Update `.env.local` with production URLs (`REACT_APP_API_URL=https://form.easydocforms.com/api`)
 2. Run `npm run build`
-3. Deploy: `firebase deploy --only hosting --project healthcare-forms-v2`
-4. Verify at `healthcare-forms-v2.web.app`
+3. **Option A (Current)**: Deploy: `firebase deploy --only hosting --project healthcare-forms-v2`
+4. **Option B (Recommended)**: Deploy to custom domain `form.easydocforms.com` (Cloudflare proxied)
+5. Verify at `form.easydocforms.com` or `healthcare-forms-v2.web.app`
 
 ## Monitoring & Debugging
 
@@ -262,3 +264,10 @@ gcloud run services logs read healthcare-forms-backend-go \
 - Production uses Google Distroless images (nonroot)
 - Static binary compilation with security flags
 - Runs as non-root user (UID 65532)
+
+### Custom Domain Setup (form.easydocforms.com)
+- **DNS**: Cloudflare manages DNS with CNAME to Cloud Run
+- **Benefits**: Same-origin requests, eliminates Firebase proxy cookie issues
+- **SSL**: Cloudflare provides SSL termination and DDoS protection
+- **CSRF**: Traditional cookie-based CSRF tokens work properly
+- **Performance**: Cloudflare CDN and edge caching

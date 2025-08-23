@@ -92,7 +92,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --platform managed \
     --allow-unauthenticated \
     --service-account go-backend-sa@${PROJECT_ID}.iam.gserviceaccount.com \
-    --set-env-vars "GCP_PROJECT_ID=${PROJECT_ID},GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app,CORS_ALLOWED_ORIGINS=http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com" \
+    --set-env-vars "GCP_PROJECT_ID=${PROJECT_ID},GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app,CORS_ALLOWED_ORIGINS=http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com;https://form.easydocforms.com" \
     --memory 512Mi \
     --cpu 1 \
     --timeout 60 \

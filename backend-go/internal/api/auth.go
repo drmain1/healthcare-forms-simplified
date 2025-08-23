@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
@@ -44,17 +45,41 @@ func SessionLogin(firebaseApp *firebase.App) gin.HandlerFunc {
 			return
 		}
 
-		// Get cookie domain from environment variable, default to localhost for development
+		// Get cookie domain from environment variable, default to empty for current domain
 		cookieDomain := os.Getenv("COOKIE_DOMAIN")
-		if cookieDomain == "" {
-			cookieDomain = "localhost"
-		}
-
-		// Set secure flag based on environment (true in production)
-		isSecure := gin.Mode() == gin.ReleaseMode
+		
+		origin := c.Request.Header.Get("Origin")
+		
+		// For Firebase hosting proxy and custom domain, we're actually same-origin
+		isFirebaseOrigin := strings.Contains(origin, "firebaseapp.com") || strings.Contains(origin, ".web.app")
+		isCustomDomain := strings.Contains(origin, "form.easydocforms.com")
+		isLocalhost := strings.HasPrefix(origin, "http://localhost")
 
 		// Set the session cookie in the response
-		c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, isSecure, true)
+		// When behind Firebase Hosting proxy or custom domain, treat as same-origin
+		if isFirebaseOrigin || isCustomDomain {
+			c.SetSameSite(http.SameSiteLaxMode)
+			log.Printf("Setting session cookie with SameSite=Lax for same-origin (no Secure flag): %s", origin)
+			// Don't use Secure flag for Firebase proxy or custom domain - it's effectively same-origin
+			c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, false, true)
+		} else if isLocalhost {
+			c.SetSameSite(http.SameSiteLaxMode)
+			log.Printf("Setting session cookie with SameSite=Lax for localhost: %s", origin)
+			c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, false, true)
+		} else {
+			c.SetSameSite(http.SameSiteNoneMode)
+			log.Printf("Setting session cookie with SameSite=None for cross-origin: %s", origin)
+			// Use Secure flag for true cross-origin requests
+			isSecure := c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https"
+			c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, isSecure, true)
+		}
+		
+		// Also generate and set CSRF token upon successful login
+		// Pass false for Firebase/custom domain/localhost, true for real cross-origin
+		shouldBeSecure := !isFirebaseOrigin && !isCustomDomain && !isLocalhost && 
+		                  (c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https")
+		GenerateCSRFTokenInternal(c, shouldBeSecure)
+		
 		c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
 	}
 }

@@ -23,6 +23,9 @@ FROM gcr.io/distroless/static-debian12:nonroot
 # Copy the binary
 COPY --from=builder /app/server /server
 
+# Copy web files for serving React app
+COPY --from=builder /app/web /web
+
 # Templates are now embedded in the binary via go:embed
 # No need to copy separate template files
 

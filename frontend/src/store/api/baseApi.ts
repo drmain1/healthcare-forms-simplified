@@ -1,10 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { firebaseAuth } from '../../services/firebaseAuth';
+import { getCSRFToken } from '../../utils/csrfToken';
+import debugLogger from '../../utils/debugLogger';
 
 
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.REACT_APP_API_URL || '/api/v1',
+  baseUrl: process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || '/api'),
   credentials: 'include', // Include cookies in requests
   prepareHeaders: async (headers) => {
     // Add Firebase/Google ID token if available
@@ -12,6 +14,18 @@ const baseQuery = fetchBaseQuery({
     if (idToken) {
       headers.set('Authorization', `Bearer ${idToken}`);
     }
+    
+    // Add CSRF token if available
+    const csrfToken = getCSRFToken();
+    debugLogger.debug('[BaseAPI] CSRF Token check', { 
+      hasToken: !!csrfToken, 
+      allCookies: document.cookie.split(';').map(c => c.trim().split('=')[0])
+    });
+    if (csrfToken) {
+      headers.set('X-CSRF-Token', csrfToken);
+      debugLogger.debug('[BaseAPI] Added CSRF token to headers');
+    }
+    
     headers.set('Content-Type', 'application/json');
     return headers;
   },

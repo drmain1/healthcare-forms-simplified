@@ -1,4 +1,4 @@
-# Security Implementation Plan - Healthcare Forms Platform
+`# Security Implementation Plan - Healthcare Forms Platform
 
 ## Overview
 This document provides a detailed implementation plan for critical security improvements to achieve HIPAA compliance for the Healthcare Forms platform.

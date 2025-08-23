@@ -42,15 +42,66 @@ initializeSurveyMetadata();
 
 // Fetch form using the public share token endpoint
 const fetchFormByShareToken = async (formId: string, shareToken: string) => {
+  console.log('fetchFormByShareToken called with:', { formId, shareToken });
+  
   try {
-    const response = await fetch(apiEndpoints.forms.public(formId, shareToken));
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Form not found');
+    // Debug URL construction
+    console.log('Building URL...');
+    const url = apiEndpoints.forms.public(formId, shareToken);
+    console.log('Fetching form from:', url);
+    console.log('Full URL:', window.location.origin + url);
+    
+    // Make the fetch request
+    console.log('Making fetch request...');
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // Bypass cache completely
+    });
+    
+    console.log('Response received');
+    const contentType = response.headers.get('content-type');
+    console.log('Response status:', response.status);
+    console.log('Response content-type:', contentType);
+    
+    // Get response text first
+    console.log('Reading response text...');
+    const responseText = await response.text();
+    console.log('Response text length:', responseText.length);
+    console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+    
+    // Try to parse as JSON
+    let data;
+    try {
+      console.log('Parsing JSON...');
+      data = JSON.parse(responseText);
+      console.log('Successfully parsed JSON:', data);
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON');
+      console.error('Parse error:', parseError);
+      console.error('Response that failed to parse:', responseText);
+      
+      // Check if we got HTML
+      if (responseText.trim().startsWith('<!') || responseText.trim().startsWith('<html')) {
+        console.error('Received HTML instead of JSON');
+        throw new Error('Form API endpoint returned HTML instead of JSON - possible routing issue');
+      }
+      
+      throw new Error('Invalid JSON response from server');
     }
-    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || `Form not found (Status: ${response.status})`);
+    }
+    
+    console.log('Returning form data');
     return data.form || data; // Handle both old and new response formats
   } catch (error) {
+    console.error('Error in fetchFormByShareToken:', error);
+    console.error('Error stack:', (error as any).stack);
     throw new Error(error instanceof Error ? error.message : 'Failed to load form');
   }
 };

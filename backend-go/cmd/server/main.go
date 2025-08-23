@@ -155,8 +155,12 @@ func main() {
 		})
 	}
 
-	r.GET("/forms/:id/fill/:share_token", api.GetFormByShareToken(firestoreClient))
-	r.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
+	// Public API endpoints (no auth required)
+	publicAPI := r.Group("/api")
+	{
+		publicAPI.GET("/forms/:id/public/:share_token", api.GetFormByShareToken(firestoreClient))
+		publicAPI.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
+	}
 
 	// --- Auth Routes ---
 	apiAuthRoutes := r.Group("/api/auth")

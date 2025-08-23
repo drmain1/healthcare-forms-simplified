@@ -17,11 +17,11 @@ export const apiEndpoints = {
   forms: {
     get: (formId: string) => `${getApiUrl()}/forms/${formId}/`,
     responses: (formId: string) => `${getApiUrl()}/forms/${formId}/responses/`,
-    // Public form access is at root level, not under /api
-    public: (formId: string, token: string) => `${getBaseUrl()}/forms/${formId}/fill/${token}`,
+    // Public form access - moved under /api to avoid routing conflicts
+    public: (formId: string, token: string) => `${getApiUrl()}/forms/${formId}/public/${token}`,
   },
   responses: {
     // Public submission endpoint (no auth required)
-    submitPublic: () => `${getBaseUrl()}/responses/public`,
+    submitPublic: () => `${getApiUrl()}/responses/public`,
   },
 };

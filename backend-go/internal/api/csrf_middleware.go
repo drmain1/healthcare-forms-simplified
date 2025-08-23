@@ -42,18 +42,25 @@ func CSRFMiddleware() gin.HandlerFunc {
 			isCustomDomain := strings.Contains(origin, "form.easydocforms.com")
 			
 			validToken := false
-			if isFirebaseOrigin || isCustomDomain {
-				// Firebase Hosting and custom domain: Just check header token exists and is valid format
-				if headerToken != "" && len(headerToken) == 36 { // UUID format
-					validToken = true
-					log.Printf("CSRF validation for same-origin domain - using header token only")
+
+			// SECURITY FIX: Always validate that header token matches cookie token
+			// This prevents CSRF attacks even from same-origin requests
+			if cookieErr == nil && headerToken != "" && cookieToken != "" && headerToken == cookieToken {
+				validToken = true
+
+				// Log differently based on origin for debugging
+				if isFirebaseOrigin || isCustomDomain {
+					log.Printf("CSRF validation passed for production domain - tokens match. Origin: %s", origin)
+				} else {
+					log.Printf("CSRF validation passed - tokens match. Origin: %s", origin)
 				}
 			} else {
-				// Local/other: Traditional cookie+header validation
-				if cookieErr == nil && headerToken != "" && cookieToken != "" && headerToken == cookieToken {
-					validToken = true
-					log.Printf("CSRF validation for non-Firebase origin - cookie and header match")
-				}
+				// Detailed logging for debugging validation failures
+				log.Printf("CSRF validation failed - Cookie exists: %v, Header exists: %v, Tokens match: %v, Origin: %s",
+					cookieErr == nil && cookieToken != "",
+					headerToken != "",
+					headerToken == cookieToken,
+					origin)
 			}
 
 			if !validToken {
@@ -103,7 +110,7 @@ func GenerateCSRFToken(c *gin.Context) {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			false, // No Secure flag for same-origin
@@ -115,7 +122,7 @@ func GenerateCSRFToken(c *gin.Context) {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			false, // No Secure flag for localhost
@@ -127,7 +134,7 @@ func GenerateCSRFToken(c *gin.Context) {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			true, // Secure flag for cross-origin
@@ -161,7 +168,7 @@ func GenerateCSRFTokenInternal(c *gin.Context, isSecureParam bool) string {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			false, // No Secure flag for same-origin
@@ -173,7 +180,7 @@ func GenerateCSRFTokenInternal(c *gin.Context, isSecureParam bool) string {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			false, // No Secure flag for localhost
@@ -185,7 +192,7 @@ func GenerateCSRFTokenInternal(c *gin.Context, isSecureParam bool) string {
 		c.SetCookie(
 			CSRF_COOKIE_NAME,
 			token,
-			3600*24, // 24 hours
+			3600*4, // 4 hours - reduced lifetime for better security
 			"/",
 			"", // Empty domain to use current domain
 			isSecureParam, // Use passed secure flag for cross-origin

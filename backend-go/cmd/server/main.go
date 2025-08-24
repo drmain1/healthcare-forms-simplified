@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"backend-go/internal/api"
@@ -111,9 +113,13 @@ func main() {
 		ctx := context.Background()
 		
 		// Basic service health
-		healthStatus := gin.H{"status": "healthy", "timestamp": time.Now().Unix()}
+		healthStatus := gin.H{
+			"status": "healthy", 
+			"timestamp": time.Now().Unix(),
+			"version": "1.4.0", // Phase 4 completion
+		}
 		
-		// Redis connectivity and auth check
+		// Redis connectivity and comprehensive health check
 		redisClient := data.GetRedisClient()
 		if redisClient == nil {
 			healthStatus["status"] = "degraded"
@@ -134,18 +140,61 @@ func main() {
 			
 			// Redis connection pool health
 			stats := redisClient.PoolStats()
-			healthStatus["redis"] = gin.H{
+			
+			// Get Redis server information
+			info, infoErr := redisClient.Info(ctx, "memory", "stats", "replication").Result()
+			
+			redisHealth := gin.H{
 				"status": "connected",
-				"total_connections": stats.TotalConns,
-				"idle_connections": stats.IdleConns,
-				"stale_connections": stats.StaleConns,
+				"pool": gin.H{
+					"total_connections": stats.TotalConns,
+					"idle_connections": stats.IdleConns,
+					"stale_connections": stats.StaleConns,
+					"hits": stats.Hits,
+					"misses": stats.Misses,
+					"timeouts": stats.Timeouts,
+				},
 			}
 			
-			// Check for critical connection pool issues
-			if stats.TotalConns == 0 {
-				healthStatus["status"] = "degraded"
-				healthStatus["redis"].(gin.H)["warning"] = "no_connections_available"
+			// Parse Redis INFO for key metrics
+			if infoErr == nil && info != "" {
+				memoryInfo := parseRedisMemoryInfo(info)
+				if len(memoryInfo) > 0 {
+					redisHealth["memory"] = memoryInfo
+				}
+				
+				statsInfo := parseRedisStatsInfo(info)
+				if len(statsInfo) > 0 {
+					redisHealth["stats"] = statsInfo
+				}
 			}
+			
+			// Check for warning conditions
+			var warnings []string
+			if stats.TotalConns == 0 {
+				warnings = append(warnings, "no_connections_available")
+				healthStatus["status"] = "degraded"
+			}
+			
+			if stats.Timeouts > 0 {
+				warnings = append(warnings, fmt.Sprintf("connection_timeouts_detected: %d", stats.Timeouts))
+			}
+			
+			// Check hit ratio for performance monitoring
+			if stats.Hits+stats.Misses > 0 {
+				hitRatio := float64(stats.Hits) / float64(stats.Hits+stats.Misses)
+				redisHealth["hit_ratio"] = fmt.Sprintf("%.2f", hitRatio)
+				
+				if hitRatio < 0.8 {
+					warnings = append(warnings, fmt.Sprintf("low_hit_ratio: %.2f", hitRatio))
+				}
+			}
+			
+			if len(warnings) > 0 {
+				redisHealth["warnings"] = warnings
+			}
+			
+			healthStatus["redis"] = redisHealth
 		}
 		
 		c.JSON(200, healthStatus)
@@ -153,6 +202,7 @@ func main() {
 
 	// --- Public Routes ---
 	publicRoutes := r.Group("/public")
+	publicRoutes.Use(api.RateLimiterMiddleware(api.APIRateLimit)) // Apply rate limiting to public routes
 	{
 		publicRoutes.GET("/forms/:id", func(c *gin.Context) {
 			formID := c.Param("id")
@@ -188,8 +238,9 @@ func main() {
 		publicAPI.POST("/responses/public", api.CreatePublicFormResponse(firestoreClient))
 	}
 
-	// --- Auth Routes ---
+	// --- Auth Routes (Stricter Rate Limiting) ---
 	apiAuthRoutes := r.Group("/api/auth")
+	apiAuthRoutes.Use(api.RateLimiterMiddleware(api.AuthRateLimit)) // Stricter limits for auth endpoints
 	{
 		apiAuthRoutes.POST("/session-login", api.SessionLogin(firebaseApp))
 	}
@@ -214,6 +265,7 @@ func main() {
 	{
 		authRequired.Use(api.AuthMiddleware(authClient))
 		authRequired.Use(api.CSRFMiddleware())
+		authRequired.Use(api.RateLimiterMiddleware(api.APIRateLimit)) // Standard API rate limiting
 		authRequired.Use(api.SecurityMiddleware(securityValidator))
 		if auditLogger != nil {
 			authRequired.Use(api.AuditMiddleware(auditLogger))
@@ -249,8 +301,10 @@ func main() {
 		authRequired.PUT("/organizations/:id/clinic-info", api.UpdateOrganizationClinicInfo(firestoreClient))
 		authRequired.GET("/organizations/:id/clinic-info", api.GetOrganizationClinicInfo(firestoreClient))
 
-		// PDF Generation Route
-		api.RegisterPDFRoutes(authRequired, firestoreClient, gotenbergService)
+		// PDF Generation Routes (with stricter rate limiting and distributed locks)
+		pdfRoutes := authRequired.Group("/responses")
+		pdfRoutes.Use(api.RateLimiterMiddleware(api.PDFRateLimit)) // Stricter PDF rate limiting
+		api.RegisterPDFRoutes(pdfRoutes, firestoreClient, gotenbergService)
 
 		// Insurance Card Processing Routes
 		authRequired.POST("/insurance-card/extract", insuranceCardHandler.ProcessInsuranceCard)
@@ -282,4 +336,93 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+// parseRedisMemoryInfo parses Redis memory information from INFO output
+func parseRedisMemoryInfo(info string) gin.H {
+	memoryInfo := make(gin.H)
+	lines := strings.Split(info, "\n")
+	
+	for _, line := range lines {
+		if strings.Contains(line, "used_memory:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if bytes, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					memoryInfo["used_bytes"] = bytes
+					memoryInfo["used_mb"] = fmt.Sprintf("%.2f", float64(bytes)/1024/1024)
+				}
+			}
+		}
+		if strings.Contains(line, "used_memory_human:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				memoryInfo["used_human"] = strings.TrimSpace(parts[1])
+			}
+		}
+		if strings.Contains(line, "used_memory_peak_human:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				memoryInfo["peak_human"] = strings.TrimSpace(parts[1])
+			}
+		}
+		if strings.Contains(line, "mem_fragmentation_ratio:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				memoryInfo["fragmentation_ratio"] = strings.TrimSpace(parts[1])
+			}
+		}
+	}
+	
+	return memoryInfo
+}
+
+// parseRedisStatsInfo parses Redis statistics from INFO output
+func parseRedisStatsInfo(info string) gin.H {
+	statsInfo := make(gin.H)
+	lines := strings.Split(info, "\n")
+	
+	for _, line := range lines {
+		if strings.Contains(line, "total_connections_received:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if count, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					statsInfo["total_connections_received"] = count
+				}
+			}
+		}
+		if strings.Contains(line, "total_commands_processed:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if count, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					statsInfo["total_commands_processed"] = count
+				}
+			}
+		}
+		if strings.Contains(line, "keyspace_hits:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if count, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					statsInfo["keyspace_hits"] = count
+				}
+			}
+		}
+		if strings.Contains(line, "keyspace_misses:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if count, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					statsInfo["keyspace_misses"] = count
+				}
+			}
+		}
+		if strings.Contains(line, "connected_clients:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				if count, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64); err == nil {
+					statsInfo["connected_clients"] = count
+				}
+			}
+		}
+	}
+	
+	return statsInfo
 }

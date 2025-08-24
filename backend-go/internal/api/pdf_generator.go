@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
 
+	"backend-go/internal/data"
 	"backend-go/internal/services"
 )
 
@@ -43,6 +45,43 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 		
 		log.Printf("PDF_GENERATION_V2_START: user=%s, response=%s", userID, responseId)
 		startTime := time.Now()
+		
+		// Distributed lock to prevent duplicate PDF generation
+		redisClient := data.GetRedisClient()
+		if redisClient != nil {
+			lock := services.NewDistributedLock(redisClient, fmt.Sprintf("pdf-gen:%s", responseId), 5*time.Minute)
+			
+			acquired, err := lock.Acquire(c.Request.Context())
+			if err != nil {
+				log.Printf("PDF_GENERATION_V2_ERROR: user=%s, response=%s, error=failed to acquire lock: %v", userID, responseId, err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Could not acquire system lock for PDF generation",
+					"code": "LOCK_ERROR",
+				})
+				return
+			}
+			
+			if !acquired {
+				log.Printf("PDF_GENERATION_V2_CONFLICT: user=%s, response=%s, error=PDF generation already in progress", userID, responseId)
+				c.JSON(http.StatusConflict, gin.H{
+					"error": "PDF generation is already in progress for this response",
+					"code": "GENERATION_IN_PROGRESS",
+					"retry_after": 300, // 5 minutes
+				})
+				return
+			}
+			
+			// Ensure lock is released even if panic occurs
+			defer func() {
+				if err := lock.Release(c.Request.Context()); err != nil {
+					log.Printf("PDF_GENERATION_V2_WARNING: user=%s, response=%s, error=failed to release lock: %v", userID, responseId, err)
+				}
+			}()
+			
+			log.Printf("PDF_GENERATION_V2_LOCK_ACQUIRED: user=%s, response=%s", userID, responseId)
+		} else {
+			log.Printf("PDF_GENERATION_V2_WARNING: user=%s, response=%s, Redis unavailable - proceeding without lock", userID, responseId)
+		}
 		
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

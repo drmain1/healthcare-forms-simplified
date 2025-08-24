@@ -143,5 +143,5 @@ func GeneratePDFHandler(client *firestore.Client, gs *services.GotenbergService)
 
 // Helper function to register this route - will be called from main.go
 func RegisterPDFRoutes(router *gin.RouterGroup, client *firestore.Client, gs *services.GotenbergService) {
-	router.POST("/responses/:responseId/generate-pdf", GeneratePDFHandler(client, gs))
+	router.POST("/:responseId/generate-pdf", GeneratePDFHandler(client, gs))
 }

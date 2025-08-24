@@ -34,11 +34,20 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
         return;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
+      // When REACT_APP_API_URL is empty string, we're on production domain (form.easydocforms.com)
+      // which already proxies /api/* requests, so we use empty prefix to avoid double /api/api
+      const apiUrl = process.env.REACT_APP_API_URL === '' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
       
       console.log('Generating PDF for form:', formId, 'and response:', responseId);
+      console.log('Using API URL:', apiUrl || '(using proxy path)');
+      
+      // Build the endpoint URL - when apiUrl is empty, use relative path (axios baseURL handles prefix)
+      const endpoint = apiUrl 
+        ? `${apiUrl}/responses/${responseId}/generate-pdf`
+        : `responses/${responseId}/generate-pdf`;
+        
       const response = await axios.post(
-        `${apiUrl}/responses/${responseId}/generate-pdf`,
+        endpoint,
         { formId }, // Pass formId in the request body
         {
           headers: {

@@ -38,10 +38,10 @@ echo -e "${YELLOW}[1/5] Building frontend...${NC}"
 cd frontend
 
 # Ensure correct production environment
-if ! grep -q "REACT_APP_API_URL=/api" .env; then
-    echo -e "${RED}Warning: .env file doesn't have correct API_URL${NC}"
-    echo "Setting REACT_APP_API_URL=/api in .env"
-    sed -i '' 's|REACT_APP_API_URL=.*|REACT_APP_API_URL=/api|' .env
+# For form.easydocforms.com, we use empty API_URL since the proxy adds /api
+if ! grep -q "REACT_APP_API_URL=$" .env; then
+    echo -e "${YELLOW}Info: Setting REACT_APP_API_URL to empty (proxy handles /api prefix)${NC}"
+    sed -i '' 's|REACT_APP_API_URL=.*|REACT_APP_API_URL=|' .env
 fi
 
 npm run build

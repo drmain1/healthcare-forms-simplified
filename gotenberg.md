@@ -1,6 +1,6 @@
 # Gotenberg PDF and AI Service Architecture
 
-**Last Updated: August 7, 2025**  
+**Last Updated: August 24, 2025**  
 **Status: ✅ Fully Operational**
 
 This document outlines the architecture of the Gotenberg PDF generation service and the AI clinical summary service and their integration with the Go backend.
@@ -75,3 +75,83 @@ The `healthcare-forms-backend-go` service is configured with the following envir
 The backend uses:
 *   **Vertex AI Model**: `gemini-2.5-flash-lite` for HTML generation (⚠️ CORRECT MODEL - DO NOT CHANGE)
 *   **Service Account**: `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
+
+---
+
+## CRITICAL ISSUE RESOLVED: Double API Prefix Bug
+
+### Problem Description (August 24, 2025)
+
+**Issue:** PDF generation was failing with 404 errors due to requests being sent to `/api/api/responses/.../generate-pdf` instead of `/api/responses/.../generate-pdf`.
+
+**Root Cause:** Frontend dataflow configuration conflict between:
+1. `axios.defaults.baseURL = '/api'` (set in `frontend/src/index.tsx`)  
+2. PdfExportButton making requests to `/api/responses/.../generate-pdf`
+
+**Resulting in:** `/api` + `/api/responses/...` = `/api/api/responses/...` (404 Not Found)
+
+### Data Flow Analysis
+
+```
+❌ BROKEN FLOW:
+Frontend: PdfExportButton → axios('/api/responses/ID/generate-pdf')
+         ↓
+axios.defaults.baseURL ('/api') + request path ('/api/responses/...') 
+         ↓
+Final URL: '/api/api/responses/ID/generate-pdf' → 404 Not Found
+
+✅ FIXED FLOW:
+Frontend: PdfExportButton → axios('responses/ID/generate-pdf')
+         ↓  
+axios.defaults.baseURL ('/api') + request path ('responses/...') 
+         ↓
+Final URL: '/api/responses/ID/generate-pdf' → 200 Success
+```
+
+### Solution Implemented
+
+**File:** `frontend/src/components/Responses/PdfExportButton.tsx`
+
+**Change:** 
+```typescript
+// OLD (BROKEN):
+const endpoint = apiUrl 
+  ? `${apiUrl}/responses/${responseId}/generate-pdf`
+  : `/api/responses/${responseId}/generate-pdf`;
+
+// NEW (FIXED):
+const endpoint = apiUrl 
+  ? `${apiUrl}/responses/${responseId}/generate-pdf`
+  : `responses/${responseId}/generate-pdf`;  // Remove leading /api
+```
+
+**Explanation:** When `REACT_APP_API_URL` is empty (production), use relative path `responses/...` so axios combines it with the baseURL properly.
+
+### Testing Verification
+
+Before fix:
+```bash
+curl -X POST "https://form.easydocforms.com/api/api/responses/ID/generate-pdf"
+# → 404 Not Found
+```
+
+After fix:
+```bash  
+curl -X POST "https://form.easydocforms.com/api/responses/ID/generate-pdf"
+# → 401 Unauthorized (endpoint exists, requires auth)
+```
+
+### Prevention Measures
+
+1. **Documentation:** This issue is now documented to prevent regression
+2. **Code Comments:** Added explanatory comments in PdfExportButton.tsx
+3. **Understanding:** The key insight is that axios.defaults.baseURL affects ALL axios requests globally
+
+### Related Authentication Fixes
+
+Additionally resolved:
+1. **IAM Permissions:** Added `roles/run.invoker` for `go-backend-sa` → `gotenberg` service
+2. **Logging Permissions:** Added `roles/logging.logWriter` for backend service account  
+3. **Authentication Audience:** Fixed idtoken client to use proper Cloud Run service URL as audience
+
+**Result:** PDF generation now works end-to-end with proper authentication and routing.

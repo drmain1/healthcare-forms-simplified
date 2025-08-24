@@ -63,7 +63,9 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 
 	// Create an authenticated client for Cloud Run service-to-service communication
 	ctx := context.Background()
-	client, err := idtoken.NewClient(ctx, s.url)
+	// Use the full Cloud Run service URL as audience
+	audience := "https://gotenberg-ubaop6yg4q-uc.a.run.app"
+	client, err := idtoken.NewClient(ctx, audience)
 	if err != nil {
 		// Fallback to regular HTTP client (for local development)
 		client = &http.Client{}

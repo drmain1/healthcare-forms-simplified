@@ -1,59 +1,37 @@
-// CSRF Token management utility
+// CSRF Token management utility - Redis-based Phase 3 implementation
 import debugLogger from './debugLogger';
 
-// Store token in memory for Firebase Hosting (cookies don't work through proxy)
-let csrfTokenInMemory: string | null = null;
-
-// Get CSRF token from cookie or memory
+// Get CSRF token from sessionStorage (new Redis-based approach)
 export function getCSRFToken(): string | null {
-  // First check memory (for Firebase Hosting)
-  if (csrfTokenInMemory) {
-    debugLogger.debug('[getCSRFToken] Using token from memory');
-    return csrfTokenInMemory;
+  const token = sessionStorage.getItem('csrfToken');
+  if (token) {
+    debugLogger.debug('[getCSRFToken] Using token from sessionStorage');
+    return token;
   }
   
-  // Then check cookie (for local development)
-  const name = 'csrf_token=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const cookies = decodedCookie.split(';');
-  
-  debugLogger.debug('[getCSRFToken] Looking for csrf_token in cookies', { cookies: decodedCookie });
-  
-  for (let cookie of cookies) {
-    cookie = cookie.trim();
-    if (cookie.indexOf(name) === 0) {
-      const token = cookie.substring(name.length);
-      debugLogger.info('[getCSRFToken] Found CSRF token', { token: token.substring(0, 8) + '...' });
-      return token;
-    }
-  }
-  debugLogger.warn('[getCSRFToken] CSRF token not found in cookies or memory');
+  debugLogger.warn('[getCSRFToken] CSRF token not found in sessionStorage');
   return null;
 }
 
-// Helper function to get CSRF token only from cookie
-function getCSRFTokenFromCookie(): string | null {
-  const name = 'csrf_token=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const cookies = decodedCookie.split(';');
-  
-  for (let cookie of cookies) {
-    cookie = cookie.trim();
-    if (cookie.indexOf(name) === 0) {
-      const token = cookie.substring(name.length);
-      return token;
-    }
-  }
-  return null;
+// Set CSRF token in sessionStorage (called after login)
+export function setCSRFToken(token: string): void {
+  sessionStorage.setItem('csrfToken', token);
+  debugLogger.info('[setCSRFToken] CSRF token stored in sessionStorage');
 }
 
-// Fetch CSRF token from backend
+// Clear CSRF token (called on logout)
+export function clearCSRFToken(): void {
+  sessionStorage.removeItem('csrfToken');
+  debugLogger.info('[clearCSRFToken] CSRF token cleared from sessionStorage');
+}
+
+// Fetch CSRF token from backend (standalone - not used in login flow)
 export async function fetchCSRFToken(): Promise<string | null> {
   try {
     // Handle Firebase Hosting rewrites - in production, don't double the /api prefix
     const apiUrl = process.env.REACT_APP_API_URL === '' ? '/api' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
     const url = `${apiUrl}/auth/csrf-token`;
-    debugLogger.info('Fetching CSRF token from:', { url });
+    debugLogger.info('Fetching standalone CSRF token from:', { url });
     
     const response = await fetch(url, {
       method: 'GET',
@@ -62,34 +40,28 @@ export async function fetchCSRFToken(): Promise<string | null> {
     
     if (response.ok) {
       const data = await response.json();
-      debugLogger.info('CSRF token received', { hasToken: !!data.csrfToken });
+      debugLogger.info('Standalone CSRF token received', { hasToken: !!data.csrfToken });
       
-      // Store token in memory for Firebase Hosting
       if (data.csrfToken) {
-        csrfTokenInMemory = data.csrfToken;
-        debugLogger.info('CSRF token stored in memory for Firebase Hosting');
+        setCSRFToken(data.csrfToken);
       }
-      
-      // Check if cookie was set (works in local dev)
-      const tokenFromCookie = getCSRFTokenFromCookie();
-      debugLogger.info('CSRF token in cookie after fetch', { hasToken: !!tokenFromCookie });
       
       return data.csrfToken || null;
     } else {
-      debugLogger.error('CSRF token fetch failed', { status: response.status, statusText: response.statusText });
+      debugLogger.error('Standalone CSRF token fetch failed', { status: response.status, statusText: response.statusText });
     }
   } catch (error) {
-    debugLogger.error('Failed to fetch CSRF token', error);
+    debugLogger.error('Failed to fetch standalone CSRF token', error);
   }
   return null;
 }
 
-// Ensure CSRF token exists
+// Ensure CSRF token exists (fallback - login should provide token)
 export async function ensureCSRFToken(): Promise<string | null> {
   let token = getCSRFToken();
   
   if (!token) {
-    // Fetch a new token if none exists
+    debugLogger.warn('[ensureCSRFToken] No CSRF token found, fetching from server');
     await fetchCSRFToken();
     token = getCSRFToken();
   }

@@ -76,55 +76,108 @@ func SessionLogin(firebaseApp *firebase.App) gin.HandlerFunc {
 			c.SetCookie("session", sessionCookie, int(expiresIn.Seconds()), "/", cookieDomain, isSecure, true)
 		}
 		
-		// Also generate and set CSRF token upon successful login
-		// Pass false for Firebase/custom domain/localhost, true for real cross-origin
-		shouldBeSecure := !isFirebaseOrigin && !isCustomDomain && !isLocalhost && 
-		                  (c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https")
-		GenerateCSRFTokenInternal(c, shouldBeSecure)
-
-		// Store session metadata in Redis for distributed access
+		// Store session metadata in Redis for distributed access and generate CSRF token
 		token, err := authClient.VerifyIDToken(ctx, req.IDToken)
 		if err != nil {
 			log.Printf("Error verifying token for session storage: %v", err)
 			// Continue with login - Redis failure shouldn't block auth
-		} else {
-			redisClient := data.GetRedisClient()
-			userRecord, err := authClient.GetUser(ctx, token.UID)
-			if err != nil {
-				log.Printf("Error getting user record for session storage: %v", err)
-				// Continue with login - Redis failure shouldn't block auth
-			} else {
-				// Extract organization ID from custom claims or Firestore
-				orgID := "" // Extract from userRecord.CustomClaims or query Firestore
-				if customClaims := userRecord.CustomClaims; customClaims != nil {
-					if orgIDClaim, ok := customClaims["organization_id"].(string); ok {
-						orgID = orgIDClaim
-					}
-				}
-				
-				// HIPAA audit data
-				clientIP := c.ClientIP()
-				userAgent := c.GetHeader("User-Agent")
-				
-				sessionData := &data.UserSession{
-					UserID:         token.UID,
-					OrganizationID: orgID,
-					Permissions:    []string{"read:forms", "write:responses"}, // Based on role
-					CreatedAt:      time.Now(),
-					IPAddress:      clientIP,
-					UserAgent:      userAgent,
-					SessionType:    "web",
-				}
+			c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
+			return
+		}
 
-				if err := services.CreateSession(ctx, redisClient, sessionCookie, sessionData); err != nil {
-					log.Printf("Failed to store session in Redis: %v", err)
-					// Log but don't fail login - graceful degradation
-				} else {
-					log.Printf("Successfully stored session for user %s in Redis", token.UID)
-				}
+		redisClient := data.GetRedisClient()
+		userRecord, err := authClient.GetUser(ctx, token.UID)
+		if err != nil {
+			log.Printf("Error getting user record for session storage: %v", err)
+			// Continue with login - Redis failure shouldn't block auth
+			c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
+			return
+		}
+
+		// Extract organization ID from custom claims or Firestore
+		orgID := "" // Extract from userRecord.CustomClaims or query Firestore
+		if customClaims := userRecord.CustomClaims; customClaims != nil {
+			if orgIDClaim, ok := customClaims["organization_id"].(string); ok {
+				orgID = orgIDClaim
 			}
 		}
 		
-		c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
+		// HIPAA audit data
+		clientIP := c.ClientIP()
+		userAgent := c.GetHeader("User-Agent")
+		
+		sessionData := &data.UserSession{
+			UserID:         token.UID,
+			OrganizationID: orgID,
+			Permissions:    []string{"read:forms", "write:responses"}, // Based on role
+			CreatedAt:      time.Now(),
+			IPAddress:      clientIP,
+			UserAgent:      userAgent,
+			SessionType:    "web",
+		}
+
+		if err := services.CreateSession(ctx, redisClient, sessionCookie, sessionData); err != nil {
+			log.Printf("Failed to store session in Redis: %v", err)
+			// Log but don't fail login - graceful degradation
+		} else {
+			log.Printf("Successfully stored session for user %s in Redis", token.UID)
+		}
+
+		// Generate CSRF token for this session
+		csrfToken := GenerateCSRFTokenInternal(c, token.UID)
+		if csrfToken == "" {
+			log.Printf("ERROR: Failed to generate CSRF token for user %s", token.UID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate security token"})
+			return
+		}
+
+		// Return success response with CSRF token
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"message": "Login successful",
+			"csrfToken": csrfToken,
+			"expiresIn": int(expiresIn.Seconds()),
+		})
 	}
+}
+
+// LogoutHandler handles user logout with session and CSRF cleanup
+func LogoutHandler(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Not authenticated"})
+		return
+	}
+
+	// Get cookie domain from environment variable
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+	
+	// Clear session cookie
+	origin := c.Request.Header.Get("Origin")
+	isFirebaseOrigin := strings.Contains(origin, "firebaseapp.com") || strings.Contains(origin, ".web.app")
+	isCustomDomain := strings.Contains(origin, "form.easydocforms.com")
+	isLocalhost := strings.HasPrefix(origin, "http://localhost")
+	
+	// Clear cookie with appropriate settings
+	if isFirebaseOrigin || isCustomDomain || isLocalhost {
+		c.SetCookie("session", "", -1, "/", cookieDomain, false, true)
+	} else {
+		isSecure := c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https"
+		c.SetCookie("session", "", -1, "/", cookieDomain, isSecure, true)
+	}
+
+	// Remove session from Redis
+	redisClient := data.GetRedisClient()
+	sessionCookie, _ := c.Cookie("session")
+	if sessionCookie != "" {
+		services.DeleteSession(c.Request.Context(), redisClient, sessionCookie)
+	}
+
+	// Invalidate all CSRF tokens for user
+	if err := InvalidateUserCSRFTokens(c, userID.(string)); err != nil {
+		log.Printf("ERROR: Failed to invalidate CSRF tokens: %v", err)
+	}
+
+	log.Printf("AUDIT: User %s logged out from IP %s", userID, c.ClientIP())
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Logged out successfully"})
 }

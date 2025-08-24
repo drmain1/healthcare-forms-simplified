@@ -6,15 +6,37 @@ import (
 	"strings"
 	"time"
 
+	"backend-go/internal/data"
+	"backend-go/internal/services"
 	"firebase.google.com/go/v4/auth"
 	"github.com/gin-gonic/gin"
 )
 
 func AuthMiddleware(authClient *auth.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// First, try session cookie authentication (preferred for HIPAA)
+		sessionCookie, err := c.Cookie("session")
+		if err == nil && sessionCookie != "" {
+			// Verify session cookie and get user data from Redis
+			redisClient := data.GetRedisClient()
+			sessionData, err := services.GetSession(c.Request.Context(), redisClient, sessionCookie)
+			if err == nil && sessionData != nil {
+				// Session is valid, set user context
+				c.Set("userID", sessionData.UserID)
+				c.Set("organizationID", sessionData.OrganizationID)
+				c.Set("organizationId", sessionData.OrganizationID)
+				c.Set("uid", sessionData.UserID)
+				log.Printf("AuthMiddleware: Authenticated via session cookie for user %s", sessionData.UserID)
+				c.Next()
+				return
+			}
+			log.Printf("AuthMiddleware: Session cookie invalid or expired: %v", err)
+		}
+
+		// Fallback to Bearer token authentication (for backward compatibility)
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header not provided"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No valid session or authorization header provided"})
 			return
 		}
 
@@ -49,6 +71,7 @@ func AuthMiddleware(authClient *auth.Client) gin.HandlerFunc {
 			c.Set("email", email)
 		}
 
+		log.Printf("AuthMiddleware: Authenticated via Bearer token for user %s", token.UID)
 		c.Next()
 	}
 }

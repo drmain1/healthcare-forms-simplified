@@ -1,19 +1,40 @@
 # Redis Configuration Guide
 
 ## Overview
-This healthcare forms platform uses Redis for secure nonce management to prevent replay attacks and ensure form submission integrity. Redis provides atomic operations for nonce validation and consumption.
+This HIPAA-compliant healthcare forms platform uses Redis as the core security and session infrastructure, providing:
+
+1. **Session Management**: Secure user sessions with metadata and audit trails
+2. **CSRF Protection**: Anti-CSRF tokens with automatic expiration
+3. **Nonce Management**: Replay attack prevention for public form submissions
+4. **Audit Logging**: Distributed session tracking for compliance
+
+Redis ensures atomic operations, proper TTLs, and high-performance caching for maximum security.
 
 ## Production Configuration
 
 ### GCP Memorystore Redis
-- **Instance IP**: `10.153.171.243:6379`
+- **Instance IP**: `10.35.139.228:6378` (TLS-enabled)
 - **Region**: us-central1
-- **Network**: Default VPC
+- **Network**: Default VPC with TLS encryption
 - **Service Account**: `go-backend-sa@healthcare-forms-v2.iam.gserviceaccount.com`
+- **Configuration**: 6+ connections, TLS-secured
 
 ### Cloud Run Environment Variables
 ```bash
-REDIS_ADDR=10.153.171.243:6379
+REDIS_ADDR=10.35.139.228:6378
+```
+
+### Current Production Status (Verified)
+```json
+{
+  "redis": {
+    "status": "connected",
+    "idle_connections": 6,
+    "stale_connections": 0,
+    "total_connections": 6
+  },
+  "status": "healthy"
+}
 ```
 
 ## Local Development Setup

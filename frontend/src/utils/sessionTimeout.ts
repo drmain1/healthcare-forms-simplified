@@ -3,6 +3,7 @@ import { fullLogout } from '../store/actions/authActions';
 import { clearPatientData } from '../store/slices/patientSlice';
 import { clearResponseData } from '../store/slices/responseSlice';
 import { clearEncryptionKey } from './encryption';
+import { clearCSRFToken } from './csrfToken';
 
 const TIMEOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 const WARNING_DURATION = 2 * 60 * 1000; // 2 minutes before timeout
@@ -30,8 +31,9 @@ const handleTimeout = () => {
   store.dispatch(clearPatientData());
   store.dispatch(clearResponseData());
   
-  // Clear encryption keys
+  // Clear encryption keys and CSRF tokens
   clearEncryptionKey();
+  clearCSRFToken();
   
   // Log out the user
   store.dispatch(fullLogout() as any); // Use `as any` because store.dispatch is not typed for thunks here

@@ -205,6 +205,9 @@ func main() {
 			authRequired.Use(api.AuditMiddleware(auditLogger))
 		}
 
+		// Auth routes that require authentication
+		authRequired.POST("/auth/logout", api.LogoutHandler)
+
 		// Form routes with caching
 		authRequired.POST("/forms", api.CreateForm(firestoreClient, rdb))
 		authRequired.GET("/forms", api.ListForms(firestoreClient, rdb)) // Caching list view

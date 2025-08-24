@@ -97,3 +97,15 @@ type ShareLink struct {
 	PasswordHash   string    `json:"-" firestore:"password_hash,omitempty"`
 }
 
+// UserSession represents session metadata stored in Redis for HIPAA compliance
+type UserSession struct {
+	UserID         string    `json:"user_id"`
+	OrganizationID string    `json:"organization_id"`
+	Permissions    []string  `json:"permissions"`
+	CreatedAt      time.Time `json:"created_at"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	IPAddress      string    `json:"ip_address"`      // HIPAA audit requirement
+	UserAgent      string    `json:"user_agent"`      // HIPAA audit requirement
+	SessionType    string    `json:"session_type"`    // "api" or "web"
+}
+

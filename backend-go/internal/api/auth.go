@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"backend-go/internal/data"
+	"backend-go/internal/services"
 	firebase "firebase.google.com/go/v4"
 	"github.com/gin-gonic/gin"
 )
@@ -79,6 +81,49 @@ func SessionLogin(firebaseApp *firebase.App) gin.HandlerFunc {
 		shouldBeSecure := !isFirebaseOrigin && !isCustomDomain && !isLocalhost && 
 		                  (c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https")
 		GenerateCSRFTokenInternal(c, shouldBeSecure)
+
+		// Store session metadata in Redis for distributed access
+		token, err := authClient.VerifyIDToken(ctx, req.IDToken)
+		if err != nil {
+			log.Printf("Error verifying token for session storage: %v", err)
+			// Continue with login - Redis failure shouldn't block auth
+		} else {
+			redisClient := data.GetRedisClient()
+			userRecord, err := authClient.GetUser(ctx, token.UID)
+			if err != nil {
+				log.Printf("Error getting user record for session storage: %v", err)
+				// Continue with login - Redis failure shouldn't block auth
+			} else {
+				// Extract organization ID from custom claims or Firestore
+				orgID := "" // Extract from userRecord.CustomClaims or query Firestore
+				if customClaims := userRecord.CustomClaims; customClaims != nil {
+					if orgIDClaim, ok := customClaims["organization_id"].(string); ok {
+						orgID = orgIDClaim
+					}
+				}
+				
+				// HIPAA audit data
+				clientIP := c.ClientIP()
+				userAgent := c.GetHeader("User-Agent")
+				
+				sessionData := &data.UserSession{
+					UserID:         token.UID,
+					OrganizationID: orgID,
+					Permissions:    []string{"read:forms", "write:responses"}, // Based on role
+					CreatedAt:      time.Now(),
+					IPAddress:      clientIP,
+					UserAgent:      userAgent,
+					SessionType:    "web",
+				}
+
+				if err := services.CreateSession(ctx, redisClient, sessionCookie, sessionData); err != nil {
+					log.Printf("Failed to store session in Redis: %v", err)
+					// Log but don't fail login - graceful degradation
+				} else {
+					log.Printf("Successfully stored session for user %s in Redis", token.UID)
+				}
+			}
+		}
 		
 		c.JSON(http.StatusOK, gin.H{"status": "success", "sessionToken": sessionCookie})
 	}

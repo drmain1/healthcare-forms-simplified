@@ -80,6 +80,9 @@ gcloud run deploy ${SERVICE_NAME} \
   --set-env-vars="GCP_PROJECT_ID=${PROJECT_ID}" \
   --set-env-vars="GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app" \
   --set-env-vars="CORS_ALLOWED_ORIGINS=http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com;https://form.easydocforms.com" \
+  --set-env-vars="REDIS_ADDR=10.35.139.228:6378" \
+  --set-env-vars="REDIS_TLS_ENABLED=true" \
+  --set-secrets="REDIS_PASSWORD=redis-password:latest" \
   --timeout 300 \
   --quiet
 

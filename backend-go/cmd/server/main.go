@@ -15,7 +15,7 @@ import (
 	"cloud.google.com/go/vertexai/genai"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"time"
 )
 
 func main() {
@@ -45,23 +45,8 @@ func main() {
 		log.Fatalf("Failed to create Firebase Auth client: %v", err)
 	}
 
-	// Initialize Redis Client (optional)
-	var rdb *redis.Client
-	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr != "" {
-		rdb = redis.NewClient(&redis.Options{
-			Addr: redisAddr,
-		})
-		// Ping Redis to check the connection
-		if _, err := rdb.Ping(ctx).Result(); err != nil {
-			log.Printf("WARNING: Failed to connect to Redis: %v. Redis caching disabled.", err)
-			rdb = nil
-		} else {
-			log.Printf("Connected to Redis at %s", redisAddr)
-		}
-	} else {
-		log.Printf("WARNING: REDIS_ADDR not set. Redis caching disabled.")
-	}
+	// Initialize secure Redis Client with HIPAA compliance
+	rdb := data.GetRedisClient()
 
 	// === SERVICE INITIALIZATION ===
 
@@ -121,8 +106,49 @@ func main() {
 
 	// === ROUTE DEFINITIONS ===
 
+	// Enhanced health check with Redis security validation
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		ctx := context.Background()
+		
+		// Basic service health
+		healthStatus := gin.H{"status": "healthy", "timestamp": time.Now().Unix()}
+		
+		// Redis connectivity and auth check
+		redisClient := data.GetRedisClient()
+		if redisClient == nil {
+			healthStatus["status"] = "degraded"
+			healthStatus["redis"] = gin.H{
+				"status": "unavailable",
+				"message": "Redis client initialization failed",
+			}
+		} else {
+			if err := redisClient.Ping(ctx).Err(); err != nil {
+				healthStatus["status"] = "unhealthy"
+				healthStatus["redis"] = gin.H{
+					"status": "disconnected",
+					"error": err.Error(),
+				}
+				c.JSON(500, healthStatus)
+				return
+			}
+			
+			// Redis connection pool health
+			stats := redisClient.PoolStats()
+			healthStatus["redis"] = gin.H{
+				"status": "connected",
+				"total_connections": stats.TotalConns,
+				"idle_connections": stats.IdleConns,
+				"stale_connections": stats.StaleConns,
+			}
+			
+			// Check for critical connection pool issues
+			if stats.TotalConns == 0 {
+				healthStatus["status"] = "degraded"
+				healthStatus["redis"].(gin.H)["warning"] = "no_connections_available"
+			}
+		}
+		
+		c.JSON(200, healthStatus)
 	})
 
 	// --- Public Routes ---

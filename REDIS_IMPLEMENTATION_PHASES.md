@@ -747,6 +747,79 @@ git commit -m "Phase 3: Centralize CSRF tokens in Redis
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+### Phase 3 Issue Resolution (August 24, 2024)
+
+**Problem Encountered:**
+After implementing Phase 3, CRUD operations returned 403 Forbidden errors despite successful authentication.
+
+**Root Cause Analysis:**
+The frontend was making duplicate CSRF token requests:
+1. `authService.sessionLogin()` correctly returned a CSRF token stored in Redis
+2. `FirebaseAuthContext` then called `fetchCSRFToken()` which fetched a NEW random UUID
+3. The `/api/auth/csrf-token` endpoint was returning a random token without storing it in Redis
+4. This invalid token overwrote the valid one in sessionStorage
+
+**Investigation Process:**
+1. Created diagnostic endpoints (`/api/diagnostics/csrf`) to inspect token state
+2. Built browser console diagnostic script to test token validity
+3. Discovered token mismatch between sessionStorage and Redis
+4. Traced the issue to duplicate token fetch in `FirebaseAuthContext.tsx`
+
+**Solution Applied:**
+```diff
+// FirebaseAuthContext.tsx
+try {
+  await authService.sessionLogin(authUser.idToken);
+  console.log('Session login successful');
+- // Fetch CSRF token after successful session login  
+- await fetchCSRFToken();
+- console.log('CSRF token fetched');
++ console.log('Session login successful - CSRF token received and stored');
+```
+
+Also fixed the `/api/auth/csrf-token` endpoint to properly store tokens in Redis when called.
+
+**Lessons Learned:**
+1. Always trace the complete authentication flow when debugging CSRF issues
+2. Diagnostic endpoints are invaluable for production debugging
+3. Browser console scripts can quickly validate token state
+4. Duplicate API calls can overwrite valid security tokens
+
+**Testing Tools Created:**
+- CSRF diagnostics endpoint: `/api/diagnostics/csrf`
+- Browser diagnostic script (see REDIS.md for full script)
+- Quick validation test:
+```javascript
+// Validate CSRF token is working
+(async()=>{
+  const t=sessionStorage.getItem('csrfToken');
+  console.log('Token:',t?'Present':'Missing');
+  const r=await fetch('/api/forms',{method:'POST',credentials:'include',
+    headers:{'X-CSRF-Token':t||''},body:JSON.stringify({/*...*/})});
+  console.log('Status:',r.status===201?'✅ WORKING':'❌ FAILED');
+})();
+```
+
+### Git Checkpoint 3 (Issue Resolution)
+```bash
+git add .
+git commit -m "Fix Phase 3: Resolve CSRF token duplication issue
+
+PROBLEM: 403 Forbidden on all CRUD operations
+ROOT CAUSE: Frontend was fetching duplicate CSRF token, overwriting valid one
+SOLUTION: Removed redundant fetchCSRFToken() call in FirebaseAuthContext
+
+✅ FIXED:
+- Removed duplicate token fetch in FirebaseAuthContext.tsx
+- Fixed /api/auth/csrf-token to properly store tokens in Redis
+- Added comprehensive CSRF diagnostics endpoint
+- Created browser console diagnostic scripts
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
 ---
 
 ## Phase 4: Advanced Coordination Features

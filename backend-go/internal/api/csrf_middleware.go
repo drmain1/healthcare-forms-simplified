@@ -86,8 +86,21 @@ func CSRFMiddleware() gin.HandlerFunc {
 
 // GenerateCSRFToken endpoint for standalone CSRF token generation
 func GenerateCSRFToken(c *gin.Context) {
-	// For now, return a generic token - this will be enhanced when we have user context
-	token := uuid.New().String()
+	// Check if user is authenticated
+	userID, exists := c.Get("userID")
+	if !exists {
+		// If not authenticated, this endpoint requires auth middleware
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required for CSRF token generation"})
+		return
+	}
+	
+	// Generate and store token in Redis
+	token := GenerateCSRFTokenInternal(c, userID.(string))
+	if token == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
+		return
+	}
+	
 	c.JSON(http.StatusOK, gin.H{"csrfToken": token})
 }
 

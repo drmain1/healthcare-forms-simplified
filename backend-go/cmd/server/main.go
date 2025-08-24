@@ -192,7 +192,21 @@ func main() {
 	apiAuthRoutes := r.Group("/api/auth")
 	{
 		apiAuthRoutes.POST("/session-login", api.SessionLogin(firebaseApp))
-		apiAuthRoutes.GET("/csrf-token", api.GenerateCSRFToken)
+	}
+
+	// --- Diagnostic Routes (protected by auth only, no CSRF) ---
+	diagRoutes := r.Group("/api/diagnostics")
+	{
+		diagRoutes.Use(api.AuthMiddleware(authClient))
+		diagRoutes.GET("/csrf", api.CSRFDiagnostics)
+		diagRoutes.POST("/csrf-test", api.CSRFMiddleware(), api.CSRFTestEndpoint)
+	}
+
+	// CSRF token generation endpoint (requires auth)
+	authTokenRoute := r.Group("/api/auth")
+	{
+		authTokenRoute.Use(api.AuthMiddleware(authClient))
+		authTokenRoute.GET("/csrf-token", api.GenerateCSRFToken)
 	}
 
 	// --- Authenticated API Routes ---

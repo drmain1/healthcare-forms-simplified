@@ -254,6 +254,98 @@ go test -race ./internal/services
 - [ ] Redis memory not full
 - [ ] No Redis connection limit reached
 
+## Troubleshooting Guide
+
+### Common CSRF Token Issues
+
+#### Issue: 403 Forbidden on CRUD Operations
+**Symptoms:**
+- User can login successfully
+- GET requests work fine
+- POST/PUT/DELETE requests return 403 Forbidden
+- Error message: "CSRF token not provided in header" or "Invalid or expired CSRF token"
+
+**Root Cause - Duplicate Token Fetch Issue (Resolved Aug 24, 2024):**
+The frontend was making two separate calls for CSRF tokens:
+1. `authService.sessionLogin()` - Returns valid CSRF token stored in Redis
+2. `fetchCSRFToken()` - Fetches a NEW random token (not stored in Redis)
+
+The second call overwrote the valid token with an invalid one.
+
+**Solution:**
+Remove the duplicate `fetchCSRFToken()` call in `FirebaseAuthContext.tsx`:
+```javascript
+// WRONG - Don't do this:
+await authService.sessionLogin(authUser.idToken);
+await fetchCSRFToken(); // This overwrites the valid token!
+
+// CORRECT - Just use sessionLogin:
+await authService.sessionLogin(authUser.idToken);
+// The CSRF token is already stored by sessionLogin
+```
+
+**Diagnostic Script:**
+```javascript
+// Run in browser console to diagnose CSRF issues
+(async()=>{
+  const t=sessionStorage.getItem('csrfToken');
+  console.log('Token:',t?`Present (${t.substring(0,8)}...)`:'Missing');
+  const r=await fetch('/api/forms',{
+    method:'POST',
+    credentials:'include',
+    headers:{'Content-Type':'application/json','X-CSRF-Token':t||''},
+    body:JSON.stringify({
+      title:'Test-'+Date.now(),
+      description:'Test',
+      category:'Test',
+      organization_id:'test',
+      json_schema:JSON.stringify({title:'T',pages:[{name:'p1',elements:[{type:'text',name:'t',title:'T'}]}]})
+    })
+  });
+  console.log('Status:',r.status,r.status===201?'✅ WORKING':'❌ FAILED');
+})();
+```
+
+### Quick Fixes
+
+#### Clear Session and Re-login:
+```javascript
+// Clear everything and start fresh
+sessionStorage.clear();
+document.cookie.split(";").forEach(c => {
+  document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+});
+location.reload();
+```
+
+#### Manual Token Refresh (Emergency):
+If backend migration logic is enabled, force a new token generation by:
+1. Clear the CSRF token: `sessionStorage.removeItem('csrfToken')`
+2. Make any POST request - backend will generate a new token
+3. Check response headers for `X-CSRF-Token-Generated`
+
+### Monitoring CSRF Health
+
+Check Redis for CSRF tokens:
+```bash
+# Connect to Redis
+redis-cli -h <redis-host>
+
+# List all CSRF tokens for a user
+KEYS csrf:USER_ID:*
+
+# Check token TTL
+TTL csrf:USER_ID:TOKEN
+
+# Count total CSRF tokens
+KEYS csrf:* | wc -l
+```
+
+Backend logs to monitor:
+- `AUDIT: Generated CSRF token for user`
+- `SECURITY: CSRF validation failed`
+- `MIGRATION: Generating CSRF token for existing authenticated user`
+
 ## Additional Resources
 
 - [GCP Memorystore Documentation](https://cloud.google.com/memorystore/docs/redis)

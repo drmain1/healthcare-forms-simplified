@@ -5,11 +5,14 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
 # Copy go mod files first (better layer caching)
-COPY go.mod go.sum ./
+COPY go.mod go.sum ./ 
 RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Copy the CA certificate
+COPY ca.pem .
 
 # Build static binary with security flags
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
@@ -22,6 +25,9 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 # Copy the binary
 COPY --from=builder /app/server /server
+
+# Copy the CA certificate to a standard location
+COPY --from=builder /app/ca.pem /etc/ssl/certs/ca.pem
 
 # Copy web files for serving React app
 COPY --from=builder /app/web /web

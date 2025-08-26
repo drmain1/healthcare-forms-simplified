@@ -67,6 +67,9 @@ echo -e "${GREEN}✓ Image pushed to GCR${NC}"
 
 # Step 5: Deploy to Cloud Run
 echo -e "${YELLOW}[5/5] Deploying to Cloud Run...${NC}"
+# Note: Using PSC internal endpoints for HIPAA compliance
+# - GOTENBERG_URL: Internal load balancer (10.0.0.100)  
+# - REDIS_ADDR: VPC-native Redis instance (10.37.219.28:6378)
 gcloud run deploy ${SERVICE_NAME} \
   --image ${GCR_IMAGE} \
   --region ${REGION} \
@@ -78,11 +81,13 @@ gcloud run deploy ${SERVICE_NAME} \
   --max-instances 10 \
   --min-instances 0 \
   --set-env-vars="GCP_PROJECT_ID=${PROJECT_ID}" \
-  --set-env-vars="GOTENBERG_URL=https://gotenberg-ubaop6yg4q-uc.a.run.app" \
+  --set-env-vars="GOTENBERG_URL=https://10.128.0.4" \
   --set-env-vars="CORS_ALLOWED_ORIGINS=http://localhost:3000;https://healthcare-forms-v2.web.app;https://healthcare-forms-v2.firebaseapp.com;https://form.easydocforms.com" \
-  --set-env-vars="REDIS_ADDR=10.35.139.228:6378" \
+  --set-env-vars="REDIS_ADDR=10.37.219.28:6378" \
   --set-env-vars="REDIS_TLS_ENABLED=true" \
   --set-secrets="REDIS_PASSWORD=redis-password:latest" \
+  --vpc-connector="backend-connector-new" \
+  --vpc-egress="private-ranges-only" \
   --timeout 300 \
   --quiet
 

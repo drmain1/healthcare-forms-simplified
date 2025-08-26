@@ -2,29 +2,76 @@ package services
 
 import (
 	"bytes"
-	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
-	
-	"google.golang.org/api/idtoken"
+	"time"
 )
 
 // GotenbergService provides methods for interacting with a Gotenberg instance.
 type GotenbergService struct {
-	url string
+	url    string
+	client *http.Client
+}
+
+// newSecureGotenbergClient creates an HTTP client configured to trust our private CA.
+func newSecureGotenbergClient() (*http.Client, error) {
+	// Path to the CA certificate file inside the container, copied via Dockerfile.
+	caCertPath := "/etc/ssl/certs/ca.pem"
+
+	caCert, err := os.ReadFile(caCertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA certificate from %s: %w", caCertPath, err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, fmt.Errorf("failed to append CA cert to pool")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   60 * time.Second,
+	}, nil
 }
 
 // NewGotenbergService creates a new instance of GotenbergService.
 func NewGotenbergService() *GotenbergService {
 	gotenbergURL := os.Getenv("GOTENBERG_URL")
 	if gotenbergURL == "" {
-		// Fallback for local development
-		gotenbergURL = "http://localhost:3000"
+		gotenbergURL = "http://localhost:3000" // Default for local
 	}
-	return &GotenbergService{url: gotenbergURL}
+
+	// Try to create the secure client for production environments.
+	secureClient, err := newSecureGotenbergClient()
+	if err != nil {
+		// If creating the secure client fails, log a warning and use a standard, insecure client.
+		// This allows local development to work and prevents production from crash-looping if the cert is bad.
+		log.Printf("WARNING: Could not create secure HTTP client (%v). Falling back to a standard client. This is expected for local development but is an error in production.", err)
+		return &GotenbergService{
+			url:    gotenbergURL,
+			client: &http.Client{Timeout: 60 * time.Second},
+		}
+	}
+
+	log.Println("INFO: Successfully created secure HTTP client for Gotenberg.")
+	return &GotenbergService{
+		url:    gotenbergURL,
+		client: secureClient,
+	}
 }
 
 // ConvertHTMLToPDF sends an HTML string to Gotenberg and returns the resulting PDF bytes.
@@ -34,7 +81,6 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	// Add the HTML file to the request.
 	part, err := writer.CreateFormFile("files", "index.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create form file for index.html: %w", err)
@@ -43,34 +89,22 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 		return nil, fmt.Errorf("failed to copy html content to form: %w", err)
 	}
 
-	// Add standard PDF options
 	_ = writer.WriteField("marginTop", "0.5")
 	_ = writer.WriteField("marginBottom", "0.5")
 	_ = writer.WriteField("marginLeft", "0.5")
 	_ = writer.WriteField("marginRight", "0.5")
 
-	// Close the writer.
 	if err = writer.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
 	}
 
-	// Create and send the request.
 	req, err := http.NewRequest("POST", conversionURL, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gotenberg request: %w", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	// Create an authenticated client for Cloud Run service-to-service communication
-	ctx := context.Background()
-	// Use the full Cloud Run service URL as audience
-	audience := "https://gotenberg-ubaop6yg4q-uc.a.run.app"
-	client, err := idtoken.NewClient(ctx, audience)
-	if err != nil {
-		// Fallback to regular HTTP client (for local development)
-		client = &http.Client{}
-	}
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request to gotenberg: %w", err)
 	}
@@ -81,7 +115,6 @@ func (s *GotenbergService) ConvertHTMLToPDF(htmlContent string) ([]byte, error) 
 		return nil, fmt.Errorf("gotenberg returned non-OK status %d: %s", resp.StatusCode, string(errorBody))
 	}
 
-	// Read the PDF from the response.
 	pdfBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read pdf from gotenberg response: %w", err)

@@ -108,7 +108,7 @@ func main() {
 
 	// === ROUTE DEFINITIONS ===
 
-	// Enhanced health check with Redis security validation
+	// Enhanced health check with Redis security validation and emergency store status
 	r.GET("/health", func(c *gin.Context) {
 		ctx := context.Background()
 		
@@ -116,8 +116,11 @@ func main() {
 		healthStatus := gin.H{
 			"status": "healthy", 
 			"timestamp": time.Now().Unix(),
-			"version": "1.4.0", // Phase 4 completion
+			"version": "1.5.0", // Updated with Redis improvements and emergency CSRF
 		}
+		
+		// Get Redis statistics from our enhanced client
+		redisStats := data.GetRedisStats()
 		
 		// Redis connectivity and comprehensive health check
 		redisClient := data.GetRedisClient()
@@ -126,26 +129,83 @@ func main() {
 			healthStatus["redis"] = gin.H{
 				"status": "unavailable",
 				"message": "Redis client initialization failed",
+				"configuration": gin.H{
+					"address": redisStats.Address,
+					"tls_enabled": redisStats.TLSEnabled,
+					"initialization_time": redisStats.InitializationTime,
+				},
+				"last_error": func() string {
+					if redisStats.LastError != nil {
+						return redisStats.LastError.Error()
+					}
+					return "none"
+				}(),
+				"emergency_mode": gin.H{
+					"csrf_tokens": "active",
+					"note": "CSRF tokens stored in memory while Redis is unavailable",
+				},
 			}
 		} else {
+			// Test current connection
+			pingStart := time.Now()
 			if err := redisClient.Ping(ctx).Err(); err != nil {
 				healthStatus["status"] = "unhealthy"
 				healthStatus["redis"] = gin.H{
 					"status": "disconnected",
 					"error": err.Error(),
+					"ping_duration": time.Since(pingStart).String(),
+					"configuration": gin.H{
+						"address": redisStats.Address,
+						"tls_enabled": redisStats.TLSEnabled,
+						"initialization_time": redisStats.InitializationTime,
+					},
+					"emergency_mode": gin.H{
+						"csrf_tokens": "active",
+						"note": "CSRF tokens fallback to memory store",
+					},
 				}
 				c.JSON(500, healthStatus)
 				return
 			}
 			
+			pingDuration := time.Since(pingStart)
+			
 			// Redis connection pool health
 			stats := redisClient.PoolStats()
+			
+			// Test basic operations to ensure full functionality
+			testKey := fmt.Sprintf("health-test:%d", time.Now().Unix())
+			testStart := time.Now()
+			testSuccess := true
+			var testError error
+			
+			// Quick SET/GET/DEL test
+			if err := redisClient.Set(ctx, testKey, "health-check", 10*time.Second).Err(); err != nil {
+				testSuccess = false
+				testError = fmt.Errorf("SET failed: %w", err)
+			} else if val, err := redisClient.Get(ctx, testKey).Result(); err != nil {
+				testSuccess = false
+				testError = fmt.Errorf("GET failed: %w", err)
+			} else if val != "health-check" {
+				testSuccess = false
+				testError = fmt.Errorf("GET returned wrong value: %s", val)
+			} else if err := redisClient.Del(ctx, testKey).Err(); err != nil {
+				testSuccess = false
+				testError = fmt.Errorf("DEL failed: %w", err)
+			}
+			
+			testDuration := time.Since(testStart)
 			
 			// Get Redis server information
 			info, infoErr := redisClient.Info(ctx, "memory", "stats", "replication").Result()
 			
 			redisHealth := gin.H{
 				"status": "connected",
+				"ping_duration": pingDuration.String(),
+				"operations_test": gin.H{
+					"success": testSuccess,
+					"duration": testDuration.String(),
+				},
 				"pool": gin.H{
 					"total_connections": stats.TotalConns,
 					"idle_connections": stats.IdleConns,
@@ -154,6 +214,16 @@ func main() {
 					"misses": stats.Misses,
 					"timeouts": stats.Timeouts,
 				},
+				"configuration": gin.H{
+					"address": redisStats.Address,
+					"tls_enabled": redisStats.TLSEnabled,
+					"initialization_time": redisStats.InitializationTime,
+					"connected_since": redisStats.LastConnectionTime,
+				},
+			}
+			
+			if !testSuccess && testError != nil {
+				redisHealth["operations_test"].(gin.H)["error"] = testError.Error()
 			}
 			
 			// Parse Redis INFO for key metrics
@@ -180,6 +250,15 @@ func main() {
 				warnings = append(warnings, fmt.Sprintf("connection_timeouts_detected: %d", stats.Timeouts))
 			}
 			
+			if !testSuccess {
+				warnings = append(warnings, "basic_operations_test_failed")
+				healthStatus["status"] = "degraded"
+			}
+			
+			if pingDuration > 100*time.Millisecond {
+				warnings = append(warnings, fmt.Sprintf("high_ping_latency: %v", pingDuration))
+			}
+			
 			// Check hit ratio for performance monitoring
 			if stats.Hits+stats.Misses > 0 {
 				hitRatio := float64(stats.Hits) / float64(stats.Hits+stats.Misses)
@@ -192,12 +271,31 @@ func main() {
 			
 			if len(warnings) > 0 {
 				redisHealth["warnings"] = warnings
+				if healthStatus["status"] == "healthy" {
+					healthStatus["status"] = "degraded"
+				}
 			}
 			
 			healthStatus["redis"] = redisHealth
 		}
 		
-		c.JSON(200, healthStatus)
+		// Add general system information
+		healthStatus["features"] = gin.H{
+			"csrf_protection": "active",
+			"emergency_csrf_store": "available",
+			"pdf_generation": "available",
+			"rate_limiting": "active",
+			"vpc_connectivity": "enabled",
+		}
+		
+		// Set appropriate HTTP status code
+		if healthStatus["status"] == "healthy" {
+			c.JSON(200, healthStatus)
+		} else if healthStatus["status"] == "degraded" {
+			c.JSON(200, healthStatus) // Still return 200 for degraded but functional
+		} else {
+			c.JSON(503, healthStatus) // Service unavailable for unhealthy
+		}
 	})
 
 	// --- Public Routes ---

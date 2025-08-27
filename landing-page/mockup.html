@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyDocForms - Finally, Patient Forms That Don't Suck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --blue: #0066cc;
+            --orange: #ff5722;
+            --green: #00897b;
+            --dark: #2c3e50;
+            --gray: #7f8c8d;
+            --light-gray: #ecf0f1;
+            --white: #ffffff;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-hover: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--white);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header - Simple and Clean */
+        header {
+            background: var(--white);
+            border-bottom: 1px solid var(--light-gray);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--blue);
+        }
+        
+        .logo span {
+            color: var(--orange);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--dark);
+        }
+        
+        .btn-primary {
+            background: var(--orange);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-block;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background: #e64919;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--blue);
+            padding: 0.6rem 1.2rem;
+            border: 2px solid var(--blue);
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-block;
+            font-weight: 500;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--blue);
+            color: white;
+        }
+        
+        /* Hero - Conversational and Direct */
+        .hero {
+            padding: 100px 0 60px;
+            background: linear-gradient(to bottom, #f8f9fa 0%, white 100%);
+        }
+        
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            padding-top: 40px;
+        }
+        
+        .hero-text h1 {
+            font-size: 2.8rem;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .hero-text h1 .highlight {
+            color: var(--orange);
+            position: relative;
+        }
+        
+        .hero-text h1 .underline {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .hero-text h1 .underline::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--orange);
+            opacity: 0.3;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+        
+        .trust-elements {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .trust-item strong {
+            color: var(--dark);
+        }
+        
+        /* Feature Demo Box */
+        .demo-visual {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .demo-visual::before {
+            content: '✨ Magic happens here';
+            position: absolute;
+            top: -10px;
+            left: 30px;
+            background: var(--orange);
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .pdf-upload-demo {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .pdf-upload-demo:hover {
+            border-color: var(--blue);
+            background: #eef2ff;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-arrow {
+            font-size: 2rem;
+            color: var(--orange);
+            margin: 1rem 0;
+        }
+        
+        .upload-result {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f0fdf4;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--green);
+        }
+        
+        /* Why Section - Clean Cards like FormDr */
+        .why-section {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .section-intro {
+            max-width: 800px;
+            margin: 0 auto 60px;
+            text-align: center;
+        }
+        
+        .section-intro h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .section-intro h2 span {
+            color: var(--orange);
+        }
+        
+        .section-intro p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            line-height: 1.7;
+        }
+        
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-top: 60px;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 2rem 1.5rem;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+        
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .icon-circle.blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .icon-circle.orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .icon-circle.green {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .icon-circle.purple {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+        
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--gray);
+            line-height: 1.6;
+        }
+        
+        /* Pain Points - More Personal */
+        .pain-section {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .pain-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-top: 50px;
+        }
+        
+        .pain-story {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--orange);
+            box-shadow: var(--shadow);
+        }
+        
+        .pain-story h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .pain-stat {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--orange);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pain-story p {
+            color: var(--gray);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+        
+        .pain-quote {
+            font-style: italic;
+            color: var(--dark);
+            border-left: 3px solid var(--light-gray);
+            padding-left: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* How It Works */
+        .how-section {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 60px;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+        }
+        
+        .step::after {
+            content: '→';
+            position: absolute;
+            right: -30px;
+            top: 40px;
+            font-size: 2rem;
+            color: var(--light-gray);
+        }
+        
+        .step:last-child::after {
+            display: none;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--orange);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .step h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .step p {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+        
+        /* Pricing - Straightforward */
+        .pricing-section {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .pricing-box {
+            max-width: 500px;
+            margin: 60px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .pricing-header {
+            background: var(--blue);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pricing-header .price {
+            font-size: 3.5rem;
+            font-weight: bold;
+        }
+        
+        .pricing-header .price span {
+            font-size: 1.2rem;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+        
+        .pricing-header .tagline {
+            margin-top: 1rem;
+            opacity: 0.9;
+        }
+        
+        .pricing-features {
+            padding: 2rem;
+        }
+        
+        .pricing-features ul {
+            list-style: none;
+        }
+        
+        .pricing-features li {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .check {
+            color: var(--green);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .pricing-cta {
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .pricing-cta .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .no-cc {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        /* Doctor's Note */
+        .doctors-note {
+            padding: 60px 0;
+            background: white;
+        }
+        
+        .note-box {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            background: #fffef7;
+            border: 2px solid #ffd93d;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .note-box::before {
+            content: '📝 A note from the doc who built this';
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background: #ffd93d;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .note-box p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+        }
+        
+        .note-box p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .signature {
+            margin-top: 2rem;
+            font-style: italic;
+            color: var(--gray);
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 0;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--green) 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+        
+        .cta-button-white {
+            background: white;
+            color: var(--blue);
+            padding: 1rem 2.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .cta-button-white:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            background: var(--dark);
+            color: white;
+            text-align: center;
+        }
+        
+        footer p {
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+        
+        footer a {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero-content,
+            .feature-cards,
+            .pain-grid,
+            .steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-text h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .feature-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .step::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">EasyDoc<span>Forms</span></div>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#how">How It Works</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#contact">Contact</a>
+                    <a href="#" class="btn-primary">Try Free for 30 Days</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Finally, Patient Forms That <span class="underline">Don't Suck</span></h1>
+                    <p class="subtitle">
+                        I'm a doctor who got tired of doing paperwork at 9 PM instead of reading bedtime stories. 
+                        So I built this. Upload any PDF medical form, and watch it become a smart, mobile-friendly form in seconds.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#" class="btn-primary">Start Free Trial - No Card Needed</a>
+                        <a href="#demo" class="btn-secondary">Watch 30-Second Demo</a>
+                    </div>
+                    <div class="trust-elements">
+                        <div class="trust-item">
+                            <span>🔒</span>
+                            <strong>HIPAA Compliant</strong>
+                        </div>
+                        <div class="trust-item">
+                            <span>👨‍⚕️</span>
+                            <strong>Built by Doctors</strong>
+                        </div>
+                        <div class="trust-item">
+                            <span>⚡</span>
+                            <strong>5-Minute Setup</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="demo-visual">
+                    <div class="pdf-upload-demo">
+                        <div class="upload-icon">📄</div>
+                        <h3>Drop ANY Medical PDF Here</h3>
+                        <p style="color: #718096; margin: 1rem 0;">Intake forms, consent forms, assessments - anything</p>
+                        <div class="upload-arrow">⬇️</div>
+                        <div class="upload-result">
+                            <span>✨</span>
+                            <strong>Instant Smart Form</strong>
+                            <span>Ready for patients!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why HIPAA Compliant Forms -->
+    <section class="why-section">
+        <div class="container">
+            <div class="section-intro">
+                <h2>Why HIPAA Compliant <span>Online Intake Forms?</span></h2>
+                <p>Streamline your intake forms online. Automate your new patient paperwork. Start saving time and money.</p>
+            </div>
+            
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <div class="icon-circle blue">📋</div>
+                    </div>
+                    <h3>Intake Form Packets</h3>
+                    <p>Combine multiple pages into an online form packet. Have your patients fill out their medical history, consent to treat, and demographics all in one new patient intake form packet.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <div class="icon-circle orange">✍️</div>
+                    </div>
+                    <h3>HIPAA Compliant Electronic Signatures</h3>
+                    <p>Collect electronic patient signatures before the appointment. Easily give your patients the ability to digitally sign from their phone, tablet, or computer.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <div class="icon-circle green">🔨</div>
+                    </div>
+                    <h3>HIPAA Compliant Form Builder</h3>
+                    <p>Easily build HIPAA compliant online forms. No coding required to create secure online intake forms for your patients. All patient form submissions are encrypted in transit and rest. A Business Associate Agreement is included with your service.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <div class="icon-circle purple">📸</div>
+                    </div>
+                    <h3>Card Photo Uploads</h3>
+                    <p>Have your patient take a picture of their insurance and ID cards. New patients will automatically upload a photo of their card information, so you can verify it before the appointment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Real Pain Points -->
+    <section class="pain-section">
+        <div class="container">
+            <div class="section-intro">
+                <h2>Let's Be Honest About <span>What's Broken</span></h2>
+                <p>These aren't just statistics. They're nights away from family, frustrated patients, and denied claims.</p>
+            </div>
+            
+            <div class="pain-grid">
+                <div class="pain-story">
+                    <span class="pain-stat">16.6%</span>
+                    <h3>Of Every Workday Lost to Admin</h3>
+                    <p>That's Thursday afternoon. Every week. Gone to paperwork instead of patients.</p>
+                    <p class="pain-quote">"I became a doctor to help people, not to be a glorified data entry clerk."</p>
+                </div>
+                
+                <div class="pain-story">
+                    <span class="pain-stat">86 min</span>
+                    <h3>After-Hours "Pajama Time" Daily</h3>
+                    <p>While your kids ask why you're always on the computer. While your partner eats dinner alone.</p>
+                    <p class="pain-quote">"My daughter asked if my laptop was more important than her. That hurt."</p>
+                </div>
+                
+                <div class="pain-story">
+                    <span class="pain-stat">$2.1M</span>
+                    <h3>Average HIPAA Violation Fine</h3>
+                    <p>One wrong email. One misplaced form. One tired mistake after a long day.</p>
+                    <p class="pain-quote">"The compliance anxiety keeps me up at night more than patient cases."</p>
+                </div>
+                
+                <div class="pain-story">
+                    <span class="pain-stat">73%</span>
+                    <h3>Mobile Form Abandonment Rate</h3>
+                    <p>Patients trying to pinch and zoom PDFs on phones. Showing up with blank forms. Starting appointments behind.</p>
+                    <p class="pain-quote">"We spend the first 15 minutes of every appointment doing forms."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-section" id="how">
+        <div class="container">
+            <div class="section-intro">
+                <h2>Three Steps to <span>Freedom</span></h2>
+                <p>Seriously, it's this simple. I made sure of it.</p>
+            </div>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Upload Your Forms</h3>
+                    <p>Any PDF, any format. Scanned, digital, doesn't matter. Our AI reads it all.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>We Make Them Smart</h3>
+                    <p>Auto-detection of fields, mobile optimization, conditional logic - all automatic.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Share & Relax</h3>
+                    <p>Send a link. Patients fill it out at home. Data flows to your EHR. You go home on time.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-intro">
+                <h2>One Price. <span>Everything Included.</span></h2>
+                <p>No surprises, no per-form fees, no patient limits. Just simple.</p>
+            </div>
+            
+            <div class="pricing-box">
+                <div class="pricing-header">
+                    <h3>Complete Package</h3>
+                    <div class="price">$25<span>/month</span></div>
+                    <div class="tagline">Less than one patient copay</div>
+                </div>
+                
+                <div class="pricing-features">
+                    <ul>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>Unlimited Forms & Patients</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">No limits, ever. Period.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>AI PDF Conversion</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">Any form becomes smart in seconds</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>True Mobile Optimization</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">Not just responsive - actually usable</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>Body Diagrams & Assessments</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">Pain mapping, Oswestry, PHQ-9, more</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>Insurance Card Scanner</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">Photo to data in seconds</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>EHR Integration</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">Works with Epic, Cerner, any HL7</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="check">✓</span>
+                            <div>
+                                <strong>Custom Fields Available</strong><br>
+                                <span style="color: var(--gray); font-size: 0.9rem;">$500 one-time for any custom need</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="pricing-cta">
+                    <a href="#" class="btn-primary">Start Your 30-Day Free Trial</a>
+                    <p class="no-cc">No credit card needed • Cancel anytime</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Doctor's Note -->
+    <section class="doctors-note">
+        <div class="container">
+            <div class="note-box">
+                <p>
+                    <strong>Look, I get it.</strong> You've probably tried other form solutions. They promised the moon and delivered... more complexity.
+                </p>
+                <p>
+                    I built EasyDocForms because I was drowning. 16-hour days, paperwork until midnight, missing my kid's soccer games. The breaking point? My 6-year-old asked if I loved my computer more than her.
+                </p>
+                <p>
+                    This isn't just another tech product. It's built by someone who's filled out these forms at 11 PM, who's dealt with angry patients because forms wouldn't load on phones, who's had claims denied for ridiculous paperwork reasons.
+                </p>
+                <p>
+                    Every feature exists because I needed it. The AI form converter? Built after spending a weekend manually recreating 47 forms. Mobile optimization? After watching elderly patients struggle with pinch-to-zoom for the thousandth time.
+                </p>
+                <p>
+                    <strong>Try it for 30 days. No card required.</strong> If it doesn't save you at least 5 hours a week, I'll personally help you find something that works better.
+                </p>
+                <div class="signature">
+                    - Dr. Alex (Yes, a real doctor who learned to code out of desperation)
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Go Home On Time?</h2>
+            <p>Join 500+ doctors who've reclaimed their evenings</p>
+            <a href="#" class="cta-button-white">Start Free Trial Now</a>
+            <p style="margin-top: 2rem; font-size: 0.95rem; opacity: 0.9;">
+                Setup takes 5 minutes • See results today • Cancel anytime
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 EasyDocForms.com • Built with frustration, delivered with love</p>
+            <p style="font-size: 0.9rem; margin-top: 1rem;">
+                HIPAA Compliant • SOC 2 Type II • 256-bit Encryption • <a href="#">Privacy</a> • <a href="#">Terms</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

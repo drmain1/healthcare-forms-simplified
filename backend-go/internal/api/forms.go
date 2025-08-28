@@ -4,12 +4,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"backend-go/internal/data"
+	"backend-go/internal/services"
 
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
@@ -231,5 +233,50 @@ func DeleteForm(client *firestore.Client, rdb *redis.Client) gin.HandlerFunc {
 		go clearFormCache(context.Background(), rdb, orgID.(string), formID)
 
 		c.Status(http.StatusNoContent)
+	}
+}
+
+// ProcessPDFWithVertex processes a PDF file and generates a form structure using Vertex AI
+func ProcessPDFWithVertex(client *firestore.Client, vertexService *services.VertexAIService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var request struct {
+			PDFData string `json:"pdf_data"`
+		}
+
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+			return
+		}
+
+		if request.PDFData == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "PDF data is required"})
+			return
+		}
+
+		// Debug: Log received data info
+		base64Length := len(request.PDFData)
+		log.Printf("DEBUG: Received base64 PDF data length: %d characters", base64Length)
+		log.Printf("DEBUG: First 50 chars of base64: %.50s", request.PDFData)
+		
+		// Decode base64 PDF data
+		pdfBytes, err := base64.StdEncoding.DecodeString(request.PDFData)
+		if err != nil {
+			log.Printf("ERROR: Base64 decoding failed: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid base64 PDF data"})
+			return
+		}
+		
+		log.Printf("DEBUG: Decoded PDF bytes length: %d (expected ~32KB = 32768 bytes)", len(pdfBytes))
+
+		// Use Vertex AI to generate form structure from PDF
+		ctx := c.Request.Context()
+		formJSON, err := vertexService.GenerateFormFromPDF(ctx, pdfBytes)
+		if err != nil {
+			log.Printf("Failed to generate form from PDF: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process PDF"})
+			return
+		}
+
+		c.JSON(http.StatusOK, formJSON)
 	}
 }

@@ -52,7 +52,7 @@ func main() {
 
 	// === SERVICE INITIALIZATION ===
 
-	vertexService := services.NewVertexAIService(vertexClient, "gemini-2.5-flash-lite")
+	vertexService := services.NewVertexAIService(vertexClient, "gemini-2.5-pro")
 	gotenbergService := services.NewGotenbergService()
 	insuranceCardService := services.NewInsuranceCardService(vertexClient)
 	insuranceCardHandler := api.NewInsuranceCardHandler(insuranceCardService)
@@ -379,6 +379,9 @@ func main() {
 		authRequired.PUT("/forms/:id", api.UpdateForm(firestoreClient, rdb))  // Cache invalidation
 		authRequired.PATCH("/forms/:id", api.UpdateForm(firestoreClient, rdb)) // Cache invalidation
 		authRequired.DELETE("/forms/:id", api.DeleteForm(firestoreClient, rdb))// Cache invalidation
+		
+		// PDF to Form processing route
+		authRequired.POST("/forms/process-pdf-with-vertex", api.ProcessPDFWithVertex(firestoreClient, vertexService))
 
 		// Share link routes
 		authRequired.POST("/forms/:id/share-links", api.CreateShareLink(firestoreClient))

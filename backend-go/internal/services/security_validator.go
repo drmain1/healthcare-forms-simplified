@@ -34,8 +34,8 @@ type ValidationResult struct {
 
 func NewSecurityValidator() *SecurityValidator {
 	return &SecurityValidator{
-		maxStringLength: 10000,  // Maximum length for string fields
-		maxFieldCount:   1000,   // Maximum number of fields
+		maxStringLength: 150000,  // Increased for PDF base64 data (~100KB PDF = 133KB base64)
+		maxFieldCount:   1000,    // Maximum number of fields
 		rateLimiter:     NewRateLimiter(10, time.Minute), // 10 requests per minute per user
 	}
 }

@@ -19,16 +19,25 @@ type GotenbergService struct {
 	client *http.Client
 }
 
-// newSecureGotenbergClient creates an HTTP client configured to trust our private CA.
+// newSecureGotenbergClient creates an HTTP client with optional custom CA support.
+// If ca.pem exists, it uses custom CA. Otherwise, it uses system CA (for public services).
 func newSecureGotenbergClient() (*http.Client, error) {
-	// Path to the CA certificate file inside the container, copied via Dockerfile.
+	// Path to the optional CA certificate file inside the container
 	caCertPath := "/etc/ssl/certs/ca.pem"
 
+	// Check if custom CA cert exists
 	caCert, err := os.ReadFile(caCertPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read CA certificate from %s: %w", caCertPath, err)
+		// No custom CA cert found, use system default (good for public services)
+		log.Printf("No custom CA certificate found at %s, using system CA certificates", caCertPath)
+		return &http.Client{
+			Timeout: 60 * time.Second,
+		}, nil
 	}
 
+	// Custom CA cert found, configure client to use it
+	log.Printf("Using custom CA certificate from %s", caCertPath)
+	
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
 		return nil, fmt.Errorf("failed to append CA cert to pool")

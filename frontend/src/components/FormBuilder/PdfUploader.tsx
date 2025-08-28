@@ -102,15 +102,26 @@ export const PdfUploader: React.FC<PdfUploaderProps> = ({ onFormGenerated, onErr
 
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      console.log(`DEBUG: Converting file to base64. File size: ${file.size} bytes (${(file.size/1024).toFixed(1)}KB)`);
+      
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
+        console.log(`DEBUG: FileReader result length: ${result.length} characters`);
+        
         // Remove the data:application/pdf;base64, prefix
         const base64 = result.split(',')[1];
+        console.log(`DEBUG: Base64 data length: ${base64.length} characters`);
+        console.log(`DEBUG: Expected base64 length: ~${Math.ceil(file.size * 4/3)} characters`);
+        console.log(`DEBUG: First 50 chars: ${base64.substring(0, 50)}`);
+        
         resolve(base64);
       };
-      reader.onerror = error => reject(error);
+      reader.onerror = error => {
+        console.error('DEBUG: FileReader error:', error);
+        reject(error);
+      };
     });
   };
 

@@ -8,7 +8,8 @@
 # This script handles the complete deployment process:
 # 1. Builds the frontend with production settings
 # 2. Copies frontend to backend web directory
-# 3. Builds and deploys backend to Cloud Run
+# 3. Builds and pushes backend image via Cloud Build
+# 4. Deploys to Cloud Run
 # =========================================
 
 set -e  # Exit on error
@@ -53,20 +54,14 @@ cd ..
 cp -r frontend/build/* backend-go/web/build/
 echo -e "${GREEN}✓ Frontend copied to backend/web/build${NC}"
 
-# Step 3: Build Docker Image
-echo -e "${YELLOW}[3/5] Building Docker image...${NC}"
+# Step 3: Build and Push with Cloud Build
+echo -e "${YELLOW}[3/5] Building and pushing with Cloud Build...${NC}"
 cd backend-go
-docker build --platform linux/amd64 -t ${GCR_IMAGE} .
-echo -e "${GREEN}✓ Docker image built: ${GCR_IMAGE}${NC}"
+gcloud builds submit --tag ${GCR_IMAGE} .
+echo -e "${GREEN}✓ Image built and pushed via Cloud Build: ${GCR_IMAGE}${NC}"
 
-# Step 4: Push to Google Container Registry
-echo -e "${YELLOW}[4/5] Pushing to GCR...${NC}"
-gcloud auth configure-docker --quiet
-docker push ${GCR_IMAGE}
-echo -e "${GREEN}✓ Image pushed to GCR${NC}"
-
-# Step 5: Deploy to Cloud Run
-echo -e "${YELLOW}[5/5] Deploying to Cloud Run...${NC}"
+# Step 4: Deploy to Cloud Run
+echo -e "${YELLOW}[4/4] Deploying to Cloud Run...${NC}"
 # Note: Using PSC internal endpoints for HIPAA compliance
 # - GOTENBERG_URL: Internal load balancer (10.0.0.100)  
 # - REDIS_ADDR: VPC-native Redis instance (10.37.219.28:6378)

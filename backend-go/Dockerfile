@@ -11,8 +11,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Copy the CA certificate
-COPY ca.pem .
+# Note: CA certificates should be managed via GCP Secret Manager in production
+# No longer copying ca.pem files into the image for security
 
 # Build static binary with security flags
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
@@ -26,8 +26,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 # Copy the binary
 COPY --from=builder /app/server /server
 
-# Copy the CA certificate to a standard location
-COPY --from=builder /app/ca.pem /etc/ssl/certs/ca.pem
+# CA certificates should be mounted via Secret Manager in production
+# No longer copying ca.pem files into the image
 
 # Copy web files for serving React app
 COPY --from=builder /app/web /web

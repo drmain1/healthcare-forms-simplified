@@ -91,8 +91,8 @@ func initializeRedisWithRetry() *redis.Client {
 		PoolSize:          10,
 		MinIdleConns:      2, // Reduced from 5
 		MaxIdleConns:      5, // Reduced from 10
-		ConnMaxIdleTime:   3 * time.Minute, // Reduced from 5m
-		ConnMaxLifetime:   5 * time.Minute, // Reduced from 10m
+		ConnMaxIdleTime:   10 * time.Minute, // Increased to reduce frequent reconnects
+		ConnMaxLifetime:   15 * time.Minute, // Increased for better connection stability
 	}
 
 	// Configure TLS for GCP Memorystore

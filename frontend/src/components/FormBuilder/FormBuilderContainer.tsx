@@ -17,6 +17,7 @@ import './HeightWeightSlider';
 import './DateOfBirthQuestion';
 import './TodaysDateQuestion';
 import './CustomDropdownItem';
+import './PatientHistoryPanel';
 
 // CRITICAL: Initialize metadata support BEFORE using any custom questions
 initializeSurveyMetadata();

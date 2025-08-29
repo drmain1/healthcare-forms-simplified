@@ -69,6 +69,7 @@ func (rr *RendererRegistry) registerRenderers() {
 	rr.renderers["patient_vitals"] = rr.wrapRenderer(PatientVitalsRenderer)
 	rr.renderers["insurance_card"] = rr.wrapRenderer(InsuranceCardRenderer)
 	rr.renderers["signature"] = rr.wrapRenderer(SignatureRenderer)
+	rr.renderers["patient_history_form"] = rr.wrapRenderer(PatientHistoryRenderer)
 }
 
 // wrapRenderer wraps individual renderer functions with security validation

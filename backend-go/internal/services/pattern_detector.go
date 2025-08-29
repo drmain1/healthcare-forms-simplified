@@ -39,6 +39,7 @@ func NewPatternDetector() *PatternDetector {
 			&PatientVitalsMatcher{},
 			&InsuranceCardMatcher{},
 			&SignatureMatcher{},
+			&PatientHistoryMatcher{},
 		},
 	}
 }
@@ -848,4 +849,62 @@ func (m *AdditionalDemographicsMatcher) Match(formDefinition, responseData map[s
 
 func (m *AdditionalDemographicsMatcher) GetPatternType() string { return "additional_demographics" }
 func (m *AdditionalDemographicsMatcher) GetPriority() int       { return 3 }
+
+// PatientHistoryMatcher - matches complete Patient History forms
+type PatientHistoryMatcher struct{}
+
+func (m *PatientHistoryMatcher) Match(formDefinition, responseData map[string]interface{}) (bool, PatternMetadata) {
+	// Clean metadata-only detection for 100% reliability
+	elements := extractElements(formDefinition)
+	var allFormFields []string
+	
+	for _, element := range elements {
+		// Check for metadata pattern type
+		if metadata, ok := element["metadata"].(map[string]interface{}); ok {
+			if patternType, ok := metadata["patternType"].(string); ok {
+				if patternType == "patient_history_form" {
+					// Found patient history form via metadata
+					// Collect all field names from the entire form structure
+					var collectAllFields func(elem map[string]interface{})
+					collectAllFields = func(elem map[string]interface{}) {
+						// Add field name if it exists and has data
+						if name, ok := elem["name"].(string); ok && name != "" {
+							if _, hasAnswer := responseData[name]; hasAnswer {
+								allFormFields = append(allFormFields, name)
+							}
+						}
+						
+						// Recursively collect from nested elements
+						if nestedElements, ok := elem["elements"].([]interface{}); ok {
+							for _, nested := range nestedElements {
+								if nestedMap, ok := nested.(map[string]interface{}); ok {
+									collectAllFields(nestedMap)
+								}
+							}
+						}
+					}
+					
+					// Start collecting from the main element
+					collectAllFields(element)
+					
+					// Return immediately when metadata found
+					return true, PatternMetadata{
+						PatternType:  "patient_history_form",
+						ElementNames: allFormFields,
+						TemplateData: map[string]interface{}{
+							"panel":              element,
+							"allFormFields":      allFormFields,
+							"patientHistoryData": responseData,
+						},
+					}
+				}
+			}
+		}
+	}
+	
+	return false, PatternMetadata{}
+}
+
+func (m *PatientHistoryMatcher) GetPatternType() string { return "patient_history_form" }
+func (m *PatientHistoryMatcher) GetPriority() int       { return 1 }
 

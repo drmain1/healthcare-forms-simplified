@@ -755,5 +755,319 @@ export const healthcareToolboxItems = [
         }
       ]
     }
+  },
+  
+  // Complete Patient History Form
+  {
+    name: 'patient-history-form',
+    title: 'Patient History Form',
+    iconName: 'icon-panel',
+    category: 'Healthcare',
+    json: {
+      type: 'panel',
+      name: 'patient_history_form',
+      title: 'Patient History',
+      description: 'Comprehensive patient history and assessment form',
+      metadata: { patternType: 'patient_history_form' },
+      elements: [
+        // Patient Information Panel
+        {
+          type: 'panel',
+          name: 'patient_info_panel',
+          title: 'Patient Information',
+          elements: [
+            {
+              type: 'panel',
+              name: 'patient_measurements_panel',
+              elements: [
+                {
+                  type: 'heightslider',
+                  name: 'patient_height',
+                  startWithNewLine: false,
+                  title: 'Height'
+                },
+                {
+                  type: 'weightslider',
+                  name: 'patient_weight',
+                  startWithNewLine: false,
+                  title: 'Weight'
+                }
+              ]
+            },
+            {
+              type: 'text',
+              name: 'patient_occupation',
+              title: 'Occupation'
+            }
+          ]
+        },
+        // Pain Assessment Panel
+        {
+          type: 'panel',
+          name: 'pain_assessment_panel',
+          title: 'Visual Analog Scale & Pain Assessment',
+          description: 'For each area below, please describe your present pain level and frequency.',
+          elements: [
+            // Neck Panel
+            {
+              type: 'panel',
+              name: 'neck_panel',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_neck_pain',
+                  title: 'Neck Pain',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'neck_details_panel',
+                  visibleIf: "{has_neck_pain} = 'Yes'",
+                  elements: [
+                    {
+                      type: 'slider',
+                      name: 'neck_pain_intensity',
+                      title: 'Pain Severity (0-10)',
+                      max: 10
+                    },
+                    {
+                      type: 'slider',
+                      name: 'neck_pain_frequency',
+                      title: 'How often do you experience this pain? (0-100%)',
+                      description: 'Occasional pain<--------->Constant pain',
+                      step: 5
+                    }
+                  ]
+                }
+              ]
+            },
+            // Headaches Panel
+            {
+              type: 'panel',
+              name: 'headaches_panel',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_headaches',
+                  title: 'Headaches',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'headaches_details_panel',
+                  visibleIf: "{has_headaches} = 'Yes'",
+                  elements: [
+                    {
+                      type: 'slider',
+                      name: 'headaches_intensity',
+                      title: 'Pain Severity (0-10)',
+                      max: 10
+                    },
+                    {
+                      type: 'slider',
+                      name: 'headaches_frequency',
+                      title: 'How often do you experience this pain? (0-100%)',
+                      description: 'Occasional pain<-------->Constant pain',
+                      step: 5
+                    }
+                  ]
+                }
+              ]
+            },
+            // Low Back Panel
+            {
+              type: 'panel',
+              name: 'low_back_panel',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_low_back_pain',
+                  title: 'Low Back Pain',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'low_back_details_panel',
+                  visibleIf: "{has_low_back_pain} = 'Yes'",
+                  elements: [
+                    {
+                      type: 'slider',
+                      name: 'low_back_intensity',
+                      title: 'Pain Severity (0-10)',
+                      max: 10
+                    },
+                    {
+                      type: 'slider',
+                      name: 'low_back_frequency',
+                      title: 'How often do you experience this pain? (0-100%)',
+                      description: 'Occasional pain<--------->Constant pain',
+                      step: 5
+                    }
+                  ]
+                }
+              ]
+            },
+            // Additional pain areas following same pattern
+            // Mid Back Panel
+            {
+              type: 'panel',
+              name: 'mid_back_panel',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_mid_back_pain',
+                  title: 'Mid Back Pain',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'mid_back_details_panel',
+                  visibleIf: "{has_mid_back_pain} = 'Yes'",
+                  elements: [
+                    {
+                      type: 'slider',
+                      name: 'mid_back_intensity',
+                      title: 'Pain Severity (0-10)',
+                      max: 10
+                    },
+                    {
+                      type: 'slider',
+                      name: 'mid_back_frequency',
+                      title: 'How often do you experience this pain? (0-100%)',
+                      description: 'Occasional pain<------->Constant pain',
+                      step: 5
+                    }
+                  ]
+                }
+              ]
+            },
+            // Shoulder Panel
+            {
+              type: 'panel',
+              name: 'shoulder_panel',
+              elements: [
+                {
+                  type: 'radiogroup',
+                  name: 'has_shoulder_pain',
+                  title: 'Shoulder Pain',
+                  choices: ['Yes', 'No'],
+                  colCount: 0
+                },
+                {
+                  type: 'panel',
+                  name: 'shoulder_details_panel',
+                  visibleIf: "{has_shoulder_pain} = 'Yes'",
+                  elements: [
+                    {
+                      type: 'checkbox',
+                      name: 'shoulder_side',
+                      title: 'Which side(s)?',
+                      choices: ['Left', 'Right']
+                    },
+                    {
+                      type: 'slider',
+                      name: 'shoulder_intensity',
+                      title: 'Pain Severity (0-10)',
+                      max: 10
+                    },
+                    {
+                      type: 'slider',
+                      name: 'shoulder_frequency',
+                      title: 'How often do you experience this pain? (0-100%)',
+                      description: 'Occasional pain<------------------------->Constant pain',
+                      step: 5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        // Current Complaint Panel
+        {
+          type: 'panel',
+          name: 'current_complaint_panel',
+          title: 'Current Complaint',
+          elements: [
+            {
+              type: 'radiogroup',
+              name: 'had_chiropractic_care',
+              title: '1. Have you had chiropractic care before?',
+              isRequired: true,
+              choices: ['Yes', 'No'],
+              colCount: 0
+            },
+            {
+              type: 'text',
+              name: 'chiropractic_care_recency',
+              visibleIf: "{had_chiropractic_care} = 'Yes'",
+              startWithNewLine: false,
+              title: 'If yes, how recently?',
+              isRequired: true
+            },
+            {
+              type: 'checkbox',
+              name: 'reason_for_visit',
+              title: "2. Reason for today's visit:",
+              choices: [
+                'Aches and Pains',
+                'Recent Injury',
+                'Previous Injury',
+                'Maintenance Care (No Complaints)'
+              ],
+              showOtherItem: true,
+              otherText: 'Other:',
+              colCount: 2
+            },
+            {
+              type: 'text',
+              name: 'complaint_start_date',
+              title: '3. When did your complaint(s) first begin?'
+            },
+            {
+              type: 'radiogroup',
+              name: 'condition_status',
+              startWithNewLine: false,
+              title: 'Today the condition is:',
+              choices: ['Same', 'Better', 'Worse'],
+              colCount: 0
+            }
+          ]
+        },
+        // Body Pain Diagram
+        {
+          type: 'bodypaindiagram',
+          name: 'pain_location_diagram',
+          title: '5. Use the figures below to place an ✗ on any specific area(s) where you are experiencing pain, discomfort or limited range of motion.'
+        },
+        // Signature Panel
+        {
+          type: 'panel',
+          name: 'signature_panel',
+          title: 'Signature',
+          elements: [
+            {
+              type: 'signaturepad',
+              name: 'patient_signature',
+              title: 'Patient or Legal Guardian Signature',
+              isRequired: true
+            },
+            {
+              type: 'text',
+              name: 'signature_date',
+              startWithNewLine: false,
+              title: 'Date',
+              defaultValueExpression: 'today()',
+              isRequired: true,
+              inputType: 'date'
+            }
+          ]
+        }
+      ]
+    }
   }
 ];

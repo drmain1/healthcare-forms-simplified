@@ -7,6 +7,7 @@ import { ICreatorOptions } from 'survey-creator-core';
 import { minimalToolboxItems } from './minimalToolboxConfig';
 import { reviewOfSystemsToolboxItem } from './reviewOfSystemsConfig';
 import { additionalDemographicsPanel } from '../components/FormBuilder/AdditionalDemographicsPanel';
+import { patientHistoryFormConfig } from './patientHistoryFormConfig';
 
 // Initialize metadata support before anything else
 import { initializeSurveyMetadata } from './initializeSurveyMetadata';
@@ -1658,6 +1659,7 @@ export const createMinimalSurveyCreator = (): SurveyCreator => {
   };
   
   creator.toolbox.addItem(additionalDemographicsToolboxItem);
+  creator.toolbox.addItem(patientHistoryFormConfig);
   
   /* OLD Review of Systems Panel (replaced with improved version)
   const reviewOfSystemsPanel = {

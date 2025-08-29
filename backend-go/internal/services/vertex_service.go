@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/vertexai/genai"
-	"backend-go/internal/data"
 )
 
 // VertexAIService provides methods for interacting with the Vertex AI API.
@@ -20,8 +19,16 @@ type VertexAIService struct {
 
 // NewVertexAIService creates a new instance of VertexAIService.
 func NewVertexAIService(client *genai.Client, modelName string) *VertexAIService {
+	model := client.GenerativeModel(modelName)
+	
+	// Configure generation parameters for better handling of larger inputs
+	// Gemini 2.5 Pro supports up to 8192 output tokens by default, but we can go higher
+	// Large medical forms can easily need 100K+ output tokens
+	model.GenerationConfig.SetMaxOutputTokens(100000)
+	model.GenerationConfig.SetCandidateCount(1)
+	
 	return &VertexAIService{
-		client: client.GenerativeModel(modelName),
+		client: model,
 	}
 }
 

@@ -11,10 +11,10 @@ export const generateFormFromPdfViaBackend = async (base64Pdf: string, token: st
   // which already proxies /api/* requests, so we use empty prefix to avoid double /api/api
   const apiUrl = process.env.REACT_APP_API_URL === '' ? '' : (process.env.REACT_APP_API_URL || 'http://localhost:8080/api');
   
-  // Build the endpoint URL - when apiUrl is empty, use /api prefix for production
+  // Build the endpoint URL - when apiUrl is empty, don't add /api prefix since axios.defaults.baseURL already has it
   const endpoint = apiUrl 
     ? `${apiUrl}/forms/process-pdf-with-vertex`
-    : `/api/forms/process-pdf-with-vertex`;
+    : `/forms/process-pdf-with-vertex`;  // No /api prefix here - axios adds it
   
   try {
     const response = await axios.post(
